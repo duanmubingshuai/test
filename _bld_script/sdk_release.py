@@ -43,7 +43,7 @@ optioninfo = '--help: help\n' + \
              '--mkbranch=\'branch name\': create a branch in remote, and upload files to this new-created branch\n' + \
              '--mkbranch (format --mkbranch \'branch name\')\n' +\
              '--mktag=\'tag name\': create a tag (format --mktag tagname SHA \'commit message\')\n' + \
-             '--2releaseR= \'TAG name\' \'build name\' \'cfg or None\' \'branch name\n' + \
+             '--2releaseR= \'TAG name\' \'build name\' \'cfg or None\' \'branch name\'\n' + \
              '--tag=\'tag name\' \'new branch name\': export a tag to local\n' +\
              '--rls=\'release config yaml\': export a tag to local push release remote repo\n'
 helpstr = usage + optioninfo

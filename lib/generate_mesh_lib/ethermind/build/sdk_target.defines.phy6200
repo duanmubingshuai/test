@@ -1,0 +1,21 @@
+
+# Copyright (C) 2013. Mindtree Ltd.
+# All rights reserved.
+
+# SDK Configurations are maintained in this file.
+SDK_ROOT = ../../../../components
+
+SDK_FLAGS = \
+	-DCFG_CP \
+        -DOSAL_CBTIMER_NUM_TASKS=1 \
+        -DOSALMEM_METRICS=0 \
+        -DDEBUG_INFO=1 \
+        -DPHY_MCU_TYPE=MCU_BUMBEE_M0
+#        -DCONFIG_DEBUG     \
+#        -DACCESS_DEBUG
+
+SDK_INCLUDES = \
+	-I$(SDK_ROOT)/inc \
+	-I$(SDK_ROOT)/osal/include \
+	-I$(SDK_ROOT)/common
+
