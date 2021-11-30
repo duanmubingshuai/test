@@ -42,8 +42,6 @@
 #include "rf_phy_driver.h"
 #include "flash.h"
 #include "version.h"
-#include "adc.h"
-
 
 #define DEFAULT_UART_BAUD   115200
 
@@ -64,8 +62,8 @@ extern void hal_rom_boot_init(void);
 */
 
 #define   BLE_MAX_ALLOW_CONNECTION              1
-#define   BLE_MAX_ALLOW_PKT_PER_EVENT_TX        4
-#define   BLE_MAX_ALLOW_PKT_PER_EVENT_RX        4
+#define   BLE_MAX_ALLOW_PKT_PER_EVENT_TX        3
+#define   BLE_MAX_ALLOW_PKT_PER_EVENT_RX        3
 #define   BLE_PKT_VERSION                       BLE_PKT_VERSION_5_1 //BLE_PKT_VERSION_5_1 //BLE_PKT_VERSION_5_1     
 
 
@@ -112,8 +110,8 @@ llConnState_t               pConnContext[BLE_MAX_ALLOW_CONNECTION];
 /*********************************************************************
     OSAL LARGE HEAP CONFIG
 */
-#define     LARGE_HEAP_SIZE  (4*1024)
-ALIGN4_U8       g_largeHeap[LARGE_HEAP_SIZE];
+#define     LARGE_HEAP_SIZE  (2*1024)
+ALIGN4_U8   g_largeHeap[LARGE_HEAP_SIZE];
 
 /*********************************************************************
     GLOBAL VARIABLES
@@ -168,8 +166,8 @@ static void hal_low_power_io_init(void)
     DCDC_CONFIG_SETTING(0x0a);
     DCDC_REF_CLK_SETTING(1);
     DIG_LDO_CURRENT_SETTING(0x01);
-    //hal_pwrmgr_RAM_retention(RET_SRAM0|RET_SRAM1|RET_SRAM2);
-    hal_pwrmgr_RAM_retention(RET_SRAM0);
+    hal_pwrmgr_RAM_retention(RET_SRAM0|RET_SRAM2);
+    //hal_pwrmgr_RAM_retention(RET_SRAM0);
     hal_pwrmgr_RAM_retention_set();
     hal_pwrmgr_LowCurrentLdo_enable();
 }
@@ -223,34 +221,51 @@ static void hal_init(void)
     hal_spif_cache_init(cfg);
     LOG_INIT();
     hal_gpio_init();
-    hal_adc_init();
 }
 
-#define _BUILD_FOR_DTM_IN_APP_ 0
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 int  main(void)
 {
-//		memcpy((void *)0x11010000, (const void *)0x1fff0000, 256);
-		uint32_t* const jump_table_base[256];
-    g_system_clk = SYS_CLK_DBL_32M;//SYS_CLK_DLL_64M;//SYS_CLK_XTAL_16M;
+    g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
-    #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
-    #endif
     drv_irq_init();
     init_config();
+    extern void ll_patch_slave(void);
+    ll_patch_slave();
     hal_rfphy_init();
     hal_init();
-    #if(_BUILD_FOR_DTM_IN_APP_==1)
-    rf_phy_direct_test();
-    #endif
+
+    if(hal_gpio_read(P20)==1)
+        rf_phy_direct_test();
+
     LOG("SDK Version ID %08x \n",SDK_VER_RELEASE_ID);
     LOG("rfClk %d rcClk %d sysClk %d tpCap[%02x %02x]\n",g_rfPhyClkSel,g_clk32K_config,g_system_clk,g_rfPhyTpCal0,g_rfPhyTpCal1);
     LOG("sizeof(struct ll_pkt_desc) = %d, buf size = %d\n", sizeof(struct ll_pkt_desc), BLE_CONN_BUF_SIZE);
     LOG("sizeof(g_pConnectionBuffer) = %d, sizeof(pConnContext) = %d, sizeof(largeHeap)=%d \n",\
         sizeof(g_pConnectionBuffer), sizeof(pConnContext),sizeof(g_largeHeap));
+    LOG("[REST CAUSE] %d\n ",g_system_reset_cause);
     app_main();
 }
 
 
 /////////////////////////////////////  end  ///////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
