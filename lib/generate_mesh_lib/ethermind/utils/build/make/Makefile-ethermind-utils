@@ -1,0 +1,222 @@
+
+# Copyright (C) 2000-2008. MindTree Ltd.
+# All rights reserved.
+
+# Makefile for MindTree Bluetooth Stack
+# Written in compliance with GNU Make
+
+#
+# ==== User Definition Section ================================
+#
+TARGETOS = $(call upper_case,$(TARGET_OS))
+
+#
+# Feature Flags that you want to include for this build.
+# (For example, -DGATT_DB, -DATT_CLIENT etc.)
+#
+FEATURE_FLAGS = -DAES_CMAC -DHAVE_CLI
+
+
+#
+# Debug Flags that you want to include for this build.
+# (For example, -DL2CAP_DEBUG, -DHCI_DEBUG etc.)
+#
+DEBUG_FLAGS =
+
+ifeq ($(MEMWATCH), 1)
+DEBUG_FLAGS += -DMEMWATCH -DMEMWATCH_STDIO
+endif
+
+# ---- End of User Definition Section -------------------------
+
+
+#
+# ---- Ideally, there should not be any need to touch anything
+# ---- below this point. Contact the author if you have any need
+# ---- to modify below this line.
+#
+
+# --------------------------- Variable definitions
+# EtherMind directory references
+include ./sdk_path.defines
+
+# Host directives
+include ./sdk_host.defines
+
+# Compiler & Linker location
+include ./sdk_toolchain.defines.$(TOOL_CHAIN)
+
+# SDK Configurations
+include ./sdk_target.defines.$(TARGET)
+
+# Root Directories
+UTILS_ROOT = $(ROOT)/utils
+UTILS_INC  = $(ROOT)/../../../components/ethermind/utils
+MESH_ROOT = $(ROOT)/mesh
+OSAL_ROOT = $(ROOT)/../../../components/ethermind/osal
+PLATFORM_ROOT = $(ROOT)/../../../components/ethermind/platforms
+DRIVER_INC  = $(ROOT)/../../../components/
+COMPONENT_ROOT = $(ROOT)/../../../components/ethermind/mesh
+MISC_INC  = $(ROOT)/../../../misc
+
+
+# File to Log Size Calculations (if any)
+SIZE_LOG = size_ethermind_utils_$(TARGET_OS)_$(TOOL_CHAIN)_$(TARGET).txt
+
+# Library Name
+LIB_UTILS_NAME = libethermind_utils.$(LIB_EXTENSION)
+LIB_ECDH_NAME = libethermind_ecdh.$(LIB_EXTENSION)
+
+# Common Compilation Flags.
+COMPILATION_FLAGS = \
+	$(FEATURE_FLAGS) \
+	$(DEBUG_FLAGS) \
+	$(WARNING_FLAG) \
+	$(OPTIMIZATION_FLAG) \
+	$(SDK_FLAGS)
+
+# Include Directories for Header Files.
+INCLUDE_DIRS = \
+	$(SDK_INCLUDES) \
+	-I$(ROOT)/include/ \
+	-I$(MISC_INC)/ \
+	-I$(PLATFORM_ROOT)/mesh/ \
+	-I$(PLATFORM_ROOT)/ \
+	-I$(PLATFORM_ROOT)/interfaces/crypto/ \
+	-I$(COMPONENT_ROOT)/export/include/ \
+	-I$(COMPONENT_ROOT)/export/platforms/ext/ \
+	-I$(PLATFORM_ROOT)/interfaces/nvs/ \
+	-I$(MESH_ROOT)/private/core/access/ \
+	-I$(OSAL_ROOT)/src/$(TARGET_OS)/ \
+	-I$(UTILS_INC)/include/ \
+	-I$(DRIVER_INC)/driver/flash/ \
+	-I$(DRIVER_INC)/driver/timer/ \
+	-I$(DRIVER_INC)/driver/clock/ \
+	-I$(DRIVER_INC)/driver/gpio/ \
+	-I$(DRIVER_INC)/arch/cm0/ \
+	-I$(UTILS_ROOT)/source/crypto/aes_cmac/ \
+	-I$(UTILS_ROOT)/source/crypto/ecdh/ \
+	-I$(UTILS_ROOT)/source/math/ \
+	-I$(UTILS_ROOT)/source/cli/ \
+	-I$(UTILS_ROOT)/source/nvsto/
+
+override CFLAGS = $(TOOLCHAIN_CFLAGS) $(COMPILATION_FLAGS) $(INCLUDE_DIRS)
+NON_ANSI_CFLAGS = $(TOOLCHAIN_ADDL_CFLAGS) $(COMPILATION_FLAGS) $(INCLUDE_DIRS)
+
+# VPATHs
+vpath %.c .:\
+	$(UTILS_ROOT)/source/crypto/aes_cmac/: \
+	$(UTILS_ROOT)/source/crypto/ecdh/: \
+	$(UTILS_ROOT)/source/math/: \
+	$(UTILS_ROOT)/source/cli/: \
+	$(UTILS_ROOT)/source/nvs/: \
+	$(UTILS_ROOT)/source/nvsto/:
+
+#
+# Object Modules ...
+#
+CRYPTO_MODULE = crypto
+MATH_MODULE = math
+CLI_MODULE = cli
+NVS_MODULE = nvs
+NVSTO_MODULE = nvsto
+
+ECDH_MODULE = ecdh
+
+# Module specific Object Files
+
+CRYPTO_OBJS = \
+	aes_cmac.$(OBJ_EXTENSION) \
+	aes_cmac_pl.$(OBJ_EXTENSION)
+
+MATH_OBJS = \
+	bitarray.$(OBJ_EXTENSION)
+
+CLI_OBJS = \
+	cliface.$(OBJ_EXTENSION)
+
+NVSTO_OBJS = \
+	nvsto.$(OBJ_EXTENSION)
+
+NVS_OBJS = \
+	nvs.$(OBJ_EXTENSION)
+
+ECDH_OBJS = \
+	crypto.$(OBJ_EXTENSION) \
+	ecdh.$(OBJ_EXTENSION) \
+	mpal.$(OBJ_EXTENSION)
+
+#
+# ----------- Modules ----------------------
+#
+BASIC_UTILS_MODULE = \
+	crypto \
+	math \
+	cli \
+	nvs \
+	nvsto
+
+# ---- Targets
+
+all: $(LIBDIR) $(LIBDIR)/$(LIB_UTILS_NAME)
+
+clean:
+	$(RM) *.$(OBJ_EXTENSION)
+	$(RM) $(BASIC_UTILS_MODULE)
+
+$(LIBDIR)/$(LIB_UTILS_NAME): $(BASIC_UTILS_MODULE)
+	@echo "Linking EtherMind Modules: Platform Library Build ......"
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(LIBDIR)/$(LIB_UTILS_NAME) $^
+
+$(LIBDIR)/$(LIB_ECDH_NAME): ecdh
+	@echo "Linking EtherMind Modules: Platform Library Build ......"
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(LIBDIR)/$(LIB_ECDH_NAME) $^
+
+$(LIBDIR):
+	@echo "Starting Build... Dectected Machine: $(host), OS: $(os)"
+	@echo "Creating Library Folder......"
+	$(MAKEDIR) $(call FixPath, $@)
+
+crypto: $(CRYPTO_OBJS)
+	@echo "--------------------CRYPTO---------------------------" >> $(SIZE_LOG)
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(CRYPTO_MODULE) $(CRYPTO_OBJS)
+	$(SIZE) $(CRYPTO_MODULE) >> $(SIZE_LOG)
+	@echo "-------------------------------------------------------" >> $(SIZE_LOG)
+	@echo ""
+
+math: $(MATH_OBJS)
+	@echo "--------------------MATH---------------------------" >> $(SIZE_LOG)
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(MATH_MODULE) $(MATH_OBJS)
+	$(SIZE) $(MATH_MODULE) >> $(SIZE_LOG)
+	@echo "-------------------------------------------------------" >> $(SIZE_LOG)
+	@echo ""
+
+cli: $(CLI_OBJS)
+	@echo "--------------------CLI---------------------------" >> $(SIZE_LOG)
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(CLI_MODULE) $(CLI_OBJS)
+	$(SIZE) $(CLI_MODULE) >> $(SIZE_LOG)
+	@echo "-------------------------------------------------------" >> $(SIZE_LOG)
+	@echo ""
+
+nvs: $(NVS_OBJS)
+	@echo "--------------------NVS---------------------------" >> $(SIZE_LOG)
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(NVS_MODULE) $(NVS_OBJS)
+	$(SIZE) $(CLI_MODULE) >> $(SIZE_LOG)
+	@echo "-------------------------------------------------------" >> $(SIZE_LOG)
+	@echo ""
+
+
+nvsto: $(NVSTO_OBJS)
+	@echo "--------------------NVSTO---------------------------" >> $(SIZE_LOG)
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(NVSTO_MODULE) $(NVSTO_OBJS)
+	$(SIZE) $(CLI_MODULE) >> $(SIZE_LOG)
+	@echo "-------------------------------------------------------" >> $(SIZE_LOG)
+	@echo ""
+
+ecdh: $(ECDH_OBJS)
+	@echo "--------------------ECDH---------------------------" >> $(SIZE_LOG)
+	$(LD) $(LD_FLAGS) $(LD_OUTPUT)$(ECDH_MODULE) $(ECDH_OBJS)
+	$(SIZE) $(ECDH_MODULE) >> $(SIZE_LOG)
+	@echo "-------------------------------------------------------" >> $(SIZE_LOG)
+	@echo ""
+
