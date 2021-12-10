@@ -169,7 +169,7 @@ def sdk_rls(args):
     print('remove protect file')
     protectfile(cfg['ProtectFile'])
     print('build', cfg['BuildConfig'])
-
+    
     # choose sdk_build.yaml
     #os.system('python .\sdk_build.py ' + '-l ' + cfg['BuildConfig'][0] + ' -b ' + cfg['BuildConfig'][1])   # with modified sdk_build.yaml
     os.system('python .\sdk_build.py ' + '-l ' + cfg['BuildConfig'][0] + ' -b all')   # with modified sdk_build.yaml

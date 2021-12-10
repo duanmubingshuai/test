@@ -1,33 +1,33 @@
 /**************************************************************************************************
+ 
+  Phyplus Microelectronics Limited confidential and proprietary. 
+  All rights reserved.
 
-    Phyplus Microelectronics Limited confidential and proprietary.
-    All rights reserved.
+  IMPORTANT: All rights of this software belong to Phyplus Microelectronics 
+  Limited ("Phyplus"). Your use of this Software is limited to those 
+  specific rights granted under  the terms of the business contract, the 
+  confidential agreement, the non-disclosure agreement and any other forms 
+  of agreements as a customer or a partner of Phyplus. You may not use this 
+  Software unless you agree to abide by the terms of these agreements. 
+  You acknowledge that the Software may not be modified, copied, 
+  distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy 
+  (BLE) integrated circuit, either as a product or is integrated into your 
+  products.  Other than for the aforementioned purposes, you may not use, 
+  reproduce, copy, prepare derivative works of, modify, distribute, perform, 
+  display or sell this Software and/or its documentation for any purposes.
 
-    IMPORTANT: All rights of this software belong to Phyplus Microelectronics
-    Limited ("Phyplus"). Your use of this Software is limited to those
-    specific rights granted under  the terms of the business contract, the
-    confidential agreement, the non-disclosure agreement and any other forms
-    of agreements as a customer or a partner of Phyplus. You may not use this
-    Software unless you agree to abide by the terms of these agreements.
-    You acknowledge that the Software may not be modified, copied,
-    distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy
-    (BLE) integrated circuit, either as a product or is integrated into your
-    products.  Other than for the aforementioned purposes, you may not use,
-    reproduce, copy, prepare derivative works of, modify, distribute, perform,
-    display or sell this Software and/or its documentation for any purposes.
-
-    YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-    PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
-    INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
-    NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
-    PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
-    NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
-    LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
-    INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
-    OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
-    OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
-    (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
-
+  YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
+  PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
+  NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
+  PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
+  NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
+  LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
+  INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
+  OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
+  OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
+  (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
+  
 **************************************************************************************************/
 
 
@@ -42,16 +42,16 @@ extern "C"
 #endif
 
 /*********************************************************************
-    INCLUDES
-*/
+ * INCLUDES
+ */
 
 /*********************************************************************
-    MACROS
-*/
+ * MACROS
+ */
 
 /*********************************************************************
-    CONSTANTS
-*/
+ * CONSTANTS
+ */
 
 // HID Device Parameters
 #define HIDDEV_ERASE_ALLBONDS       0  // Erase all of the bonded devices. Write Only. No Size.
@@ -90,7 +90,7 @@ extern "C"
 #define HID_INFORMATION_LEN         4    // HID Information
 #define HID_REPORT_REF_LEN          2    // HID Report Reference Descriptor
 #define HID_EXT_REPORT_REF_LEN      2    // External Report Reference Descriptor
-
+  
 // HID Keyboard/Keypad Usage IDs (subset of the codes available in the USB HID Usage Tables spec)
 #define HID_KEYBOARD_RESERVED       0    // 0x00 - No event inidicated
 #define HID_KEYBOARD_A              4    // 0x04 - Keyboard a and A
@@ -244,80 +244,80 @@ extern "C"
 #define HID_CONSUMER_VOLUME_DOWN    234 // 0xEA - Volume Decrement
 
 /*********************************************************************
-    TYPEDEFS
-*/
+ * TYPEDEFS
+ */
 
 // HID report mapping table
 typedef struct
 {
-    uint16    handle;           // Handle of report characteristic
-    uint16    cccdHandle;       // Handle of CCCD for report characteristic
-    uint8     id;               // Report ID
-    uint8     type;             // Report type
-    uint8     mode;             // Protocol mode (report or boot)
+  uint16    handle;           // Handle of report characteristic
+  uint16    cccdHandle;       // Handle of CCCD for report characteristic
+  uint8     id;               // Report ID
+  uint8     type;             // Report type
+  uint8     mode;             // Protocol mode (report or boot)
 } hidRptMap_t;
 
 // HID dev configuration structure
 typedef struct
 {
-    uint32    idleTimeout;      // Idle timeout in milliseconds
-    uint8     hidFlags;         // HID feature flags
+  uint32    idleTimeout;      // Idle timeout in milliseconds
+  uint8     hidFlags;         // HID feature flags
 
 } hidDevCfg_t;
 
 /*********************************************************************
-    Global Variables
-*/
+ * Global Variables
+ */
 
 // These variables are defined in the service .c file that uses HID Dev
 
 // HID report map length
-extern uint16 hidReportMapLen;
+extern uint8 hidReportMapLen;
 
 // HID protocol mode
 extern uint8 hidProtocolMode;
 
 /*********************************************************************
-    Profile Callbacks
-*/
+ * Profile Callbacks
+ */
 
 // HID Report callback
 typedef uint8 (*hidDevReportCB_t)( uint8 id, uint8 type, uint16 uuid,
-                                   uint8 oper, uint16* pLen, uint8* pData );
+                                   uint8 oper, uint8 *pLen, uint8 *pData );
 
 // HID event callback
 typedef void (*hidDevEvtCB_t)( uint8 evt );
 
 // HID passcode callback
-typedef void (*hidDevPasscodeCB_t)( uint8*  deviceAddr, uint16 connectionHandle,
+typedef void (*hidDevPasscodeCB_t)( uint8  *deviceAddr, uint16 connectionHandle,
                                     uint8 uiInputs, uint8 uiOutputs );
 
 typedef struct
 {
-    hidDevReportCB_t    reportCB;
-    hidDevEvtCB_t       evtCB;
-    hidDevPasscodeCB_t  passcodeCB;
+  hidDevReportCB_t    reportCB;
+  hidDevEvtCB_t       evtCB;
+  hidDevPasscodeCB_t  passcodeCB;
 } hidDevCB_t;
 
 
 extern void hidDevGapStateCB( gaprole_States_t newState );
 extern void hidDevPairStateCB( uint16 connHandle, uint8 state, uint8 status );
-extern void hidDevPasscodeCB( uint8* deviceAddr, uint16 connectionHandle,
+extern void hidDevPasscodeCB( uint8 *deviceAddr, uint16 connectionHandle,
                               uint8 uiInputs, uint8 uiOutputs );
 extern void HidDev_Init( uint8 task_id );
 extern uint16 HidDev_ProcessEvent( uint8 task_id, uint16 events );
-extern void HidDev_Register( hidDevCfg_t* pCfg, hidDevCB_t* pCBs );
-extern void HidDev_RegisterReports( uint8 numReports, hidRptMap_t* pRpt );
-extern void HidDev_Report( uint8 id, uint8 type, uint8 len, uint8* pData );
+extern void HidDev_Register( hidDevCfg_t *pCfg, hidDevCB_t *pCBs );
+extern void HidDev_RegisterReports( uint8 numReports, hidRptMap_t *pRpt );
+extern void HidDev_Report( uint8 id, uint8 type, uint8 len, uint8 *pData );
 extern void HidDev_Close( void );
-extern bStatus_t HidDev_SetParameter( uint8 param, uint8 len, void* pValue );
-extern bStatus_t HidDev_GetParameter( uint8 param, void* pValue );
+extern bStatus_t HidDev_SetParameter( uint8 param, uint8 len, void *pValue );
+extern bStatus_t HidDev_GetParameter( uint8 param, void *pValue );
 extern void HidDev_PasscodeRsp( uint8 status, uint32 passcode );
-extern bStatus_t HidDev_ReadAttrCB( uint16 connHandle, gattAttribute_t* pAttr,
-                                    uint8* pValue, uint16* pLen, uint16 offset,
+extern bStatus_t HidDev_ReadAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                    uint8 *pValue, uint8 *pLen, uint16 offset,
                                     uint8 maxLen);
-extern bStatus_t HidDev_WriteAttrCB( uint16 connHandle, gattAttribute_t* pAttr,
-                                     uint8* pValue, uint16 len, uint16 offset);
+extern bStatus_t HidDev_WriteAttrCB( uint16 connHandle, gattAttribute_t *pAttr,
+                                     uint8 *pValue, uint8 len, uint16 offset);
 
 /*********************************************************************
 *********************************************************************/
