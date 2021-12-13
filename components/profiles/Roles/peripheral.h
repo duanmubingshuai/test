@@ -1,70 +1,66 @@
 /**************************************************************************************************
+ 
+  Phyplus Microelectronics Limited confidential and proprietary. 
+  All rights reserved.
 
-    Phyplus Microelectronics Limited confidential and proprietary.
-    All rights reserved.
+  IMPORTANT: All rights of this software belong to Phyplus Microelectronics 
+  Limited ("Phyplus"). Your use of this Software is limited to those 
+  specific rights granted under  the terms of the business contract, the 
+  confidential agreement, the non-disclosure agreement and any other forms 
+  of agreements as a customer or a partner of Phyplus. You may not use this 
+  Software unless you agree to abide by the terms of these agreements. 
+  You acknowledge that the Software may not be modified, copied, 
+  distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy 
+  (BLE) integrated circuit, either as a product or is integrated into your 
+  products.  Other than for the aforementioned purposes, you may not use, 
+  reproduce, copy, prepare derivative works of, modify, distribute, perform, 
+  display or sell this Software and/or its documentation for any purposes.
 
-    IMPORTANT: All rights of this software belong to Phyplus Microelectronics
-    Limited ("Phyplus"). Your use of this Software is limited to those
-    specific rights granted under  the terms of the business contract, the
-    confidential agreement, the non-disclosure agreement and any other forms
-    of agreements as a customer or a partner of Phyplus. You may not use this
-    Software unless you agree to abide by the terms of these agreements.
-    You acknowledge that the Software may not be modified, copied,
-    distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy
-    (BLE) integrated circuit, either as a product or is integrated into your
-    products.  Other than for the aforementioned purposes, you may not use,
-    reproduce, copy, prepare derivative works of, modify, distribute, perform,
-    display or sell this Software and/or its documentation for any purposes.
-
-    YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-    PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
-    INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
-    NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
-    PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
-    NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
-    LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
-    INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
-    OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
-    OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
-    (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
-
+  YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
+  PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
+  NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
+  PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
+  NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
+  LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
+  INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
+  OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
+  OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
+  (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
+  
 **************************************************************************************************/
 
 /**
-    @headerfile:    peripheral.h
-    $Date:
-    $Revision:
+  @headerfile:    peripheral.h
+  $Date:  
+  $Revision: 
 
 
 
-    This GAP profile advertises and allows connections.
+  This GAP profile advertises and allows connections.
 
-
+ 
 */
 
 #ifndef PERIPHERAL_H
 #define PERIPHERAL_H
-
-#ifdef EXT_ADV_ENABLE
-    #include "rflib_LR.h"
-#endif
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-/*  -------------------------------------------------------------------
-    INCLUDES
-*/
+/*-------------------------------------------------------------------
+ * INCLUDES
+ */
 
-/*  -------------------------------------------------------------------
-    CONSTANTS
-*/
+/*-------------------------------------------------------------------
+ * CONSTANTS
+ */
 
 /** @defgroup GAPROLE_PROFILE_PARAMETERS GAP Role Parameters
-    @{
-*/
+ * @{
+ */
 #define GAPROLE_PROFILEROLE         0x300  //!< Reading this parameter will return GAP Role type. Read Only. Size is uint8.
 #define GAPROLE_IRK                 0x301  //!< Identity Resolving Key. Read/Write. Size is uint8[KEYLEN]. Default is all 0, which means that the IRK will be randomly generated.
 #define GAPROLE_SRK                 0x302  //!< Signature Resolving Key. Read/Write. Size is uint8[KEYLEN]. Default is all 0, which means that the SRK will be randomly generated.
@@ -96,333 +92,200 @@ extern "C"
 #define GAPROLE_CONNECTION_INTERVAL  0x31B
 #define GAPROLE_CONNECTION_LATENCY 0x31C
 
-#ifdef EXT_ADV_ENABLE
-#define GAPROLE_EXT_ADVERT_ENABLED      0x0320
-#define GAPROLE_EXT_ADVERT_DATA         0x0321
-#define GAPROLE_EXT_SCAN_RSP_DATA       0x0322
-#define GAPROLE_EXT_ADV_EVENT_TYPE      0x0323
-#endif
-
 /** @} End GAPROLE_PROFILE_PARAMETERS */
 
-/*  -------------------------------------------------------------------
-    TYPEDEFS
-*/
+/*-------------------------------------------------------------------
+ * TYPEDEFS
+ */
 
 /**
-    GAP Peripheral Role States.
-*/
-typedef enum
-{
-    GAPROLE_INIT = 0,                       //!< Waiting to be started
-    GAPROLE_STARTED,                        //!< Started but not advertising
-    GAPROLE_ADVERTISING,                    //!< Currently Advertising
-    GAPROLE_WAITING,                        //!< Device is started but not advertising, is in waiting period before advertising again
-    GAPROLE_WAITING_AFTER_TIMEOUT,          //!< Device just timed out from a connection but is not yet advertising, is in waiting period before advertising again
-    GAPROLE_CONNECTED,                      //!< In a connection
-    GAPROLE_CONNECTED_ADV,                  //!< In a connection + advertising
-    GAPROLE_ERROR                           //!< Error occurred - invalid state
-} gaprole_States_t;
+ * GAP Peripheral Role States.
+ */
+//typedef enum
+//{
+//  GAPROLE_INIT = 0,                       //!< Waiting to be started
+//  GAPROLE_STARTED,                        //!< Started but not advertising
+//  GAPROLE_ADVERTISING,                    //!< Currently Advertising
+//  GAPROLE_WAITING,                        //!< Device is started but not advertising, is in waiting period before advertising again
+//  GAPROLE_WAITING_AFTER_TIMEOUT,          //!< Device just timed out from a connection but is not yet advertising, is in waiting period before advertising again
+//  GAPROLE_CONNECTED,                      //!< In a connection
+//  GAPROLE_CONNECTED_ADV,                  //!< In a connection + advertising
+//  GAPROLE_ERROR                           //!< Error occurred - invalid state
+//} gaprole_States_t;
 
 /**
-    Possible actions the peripheral device may take if an unsuccessful parameter
-    update is received.
-
-    Parameters for GAPRole_SendUpdateParam() only
-*/
+ *  Possible actions the peripheral device may take if an unsuccessful parameter
+ *  update is received.
+ *
+ *  Parameters for GAPRole_SendUpdateParam() only
+ */
 
 #define GAPROLE_NO_ACTION                    0 // Take no action upon unsuccessful parameter updates
 #define GAPROLE_RESEND_PARAM_UPDATE          1 // Continue to resend request until successful update
 #define GAPROLE_TERMINATE_LINK               2 // Terminate link upon unsuccessful parameter updates
 
-/*  -------------------------------------------------------------------
-    MACROS
-*/
+/*-------------------------------------------------------------------
+ * MACROS
+ */
 
-/*  -------------------------------------------------------------------
-    Profile Callbacks
-*/
+/*-------------------------------------------------------------------
+ * Profile Callbacks
+ */
 
 /**
-    Callback when the connection parameteres are updated.
-*/
+ * Callback when the connection parameteres are updated.
+ */
 typedef void (*gapRolesParamUpdateCB_t)( uint16 connInterval,
                                          uint16 connSlaveLatency,
                                          uint16 connTimeout );
 
 /**
-    Callback when the device has been started.  Callback event to
-    the Notify of a state change.
-*/
-typedef void (*gapRolesStateNotify_t)( gaprole_States_t newState );
+ * Callback when the device has been started.  Callback event to
+ * the Notify of a state change.
+ */
+//typedef void (*gapRolesStateNotify_t)( gaprole_States_t newState );
 
 /**
-    Callback when the device has read an new RSSI value during a connection.
-*/
+ * Callback when the device has read an new RSSI value during a connection.
+ */
 typedef void (*gapRolesRssiRead_t)( int8 newRSSI );
 
 /**
-    Callback structure - must be setup by the application and used when gapRoles_StartDevice() is called.
-*/
-typedef struct
-{
-    gapRolesStateNotify_t    pfnStateChange;  //!< Whenever the device changes state
-    gapRolesRssiRead_t       pfnRssiRead;     //!< When a valid RSSI is read from controller
-} gapRolesCBs_t;
+ * Callback structure - must be setup by the application and used when gapRoles_StartDevice() is called.
+ */
+//typedef struct
+//{
+//  gapRolesStateNotify_t    pfnStateChange;  //!< Whenever the device changes state
+//  gapRolesRssiRead_t       pfnRssiRead;     //!< When a valid RSSI is read from controller
+//} gapRolesCBs_t;
 
-/*  -------------------------------------------------------------------
-    API FUNCTIONS
-*/
-#ifdef EXT_ADV_ENABLE
-// extended advertising
-typedef unsigned int uintptr_t;
-typedef void (*pfnGapCB_t)
-(
-    uint32_t event,   //!< see @ref GapAdvScan_Event_IDs and GapAdvScan_Event_IDs
-    void* pBuf,       //!< data potentially accompanying event
-    uintptr_t arg     //!< custom application argument that can be return through this callback
-);
-typedef enum
-{
-    GAP_ADV_DATA_TYPE_ADV,        //!< Advertising data
-    GAP_ADV_DATA_TYPE_SCAN_RSP    //!< Scan response data
-} GapAdv_dataTypes_t;
-#endif
+/*-------------------------------------------------------------------
+ * API FUNCTIONS
+ */
 /**
-    @defgroup GAPROLES_PERIPHERAL_API GAP Peripheral Role API Functions
-
-    @{
-*/
+ * @defgroup GAPROLES_PERIPHERAL_API GAP Peripheral Role API Functions
+ *
+ * @{
+ */
 
 /**
-    @brief       Set a GAP Role parameter.
-
-    NOTE: You can call this function with a GAP Parameter ID and it will set the
-          GAP Parameter.  GAP Parameters are defined in (gap.h).  Also,
-          the "len" field must be set to the size of a "uint16" and the
-          "pValue" field must point to a "uint16".
-
-    @param       param - Profile parameter ID: @ref GAPROLE_PROFILE_PARAMETERS
-    @param       len - length of data to write
-    @param       pValue - pointer to data to write.  This is dependent on
-            the parameter ID and WILL be cast to the appropriate
-            data type (example: data type of uint16 will be cast to
-            uint16 pointer).
-
-    @return      SUCCESS or INVALIDPARAMETER (invalid paramID)
-*/
-extern bStatus_t GAPRole_SetParameter( uint16 param, uint8 len, void* pValue );
-
-/**
-    @brief       Get a GAP Role parameter.
-
-    NOTE: You can call this function with a GAP Parameter ID and it will get a
-          GAP Parameter.  GAP Parameters are defined in (gap.h).  Also, the
-          "pValue" field must point to a "uint16".
-
-    @param       param - Profile parameter ID: @ref GAPROLE_PROFILE_PARAMETERS
-    @param       pValue - pointer to location to get the value.  This is dependent on
-            the parameter ID and WILL be cast to the appropriate
-            data type (example: data type of uint16 will be cast to
-            uint16 pointer).
-
-    @return      SUCCESS or INVALIDPARAMETER (invalid paramID)
-*/
-extern bStatus_t GAPRole_GetParameter( uint16 param, void* pValue );
-#ifdef EXT_ADV_ENABLE
-extern bStatus_t GapRoleAdv_loadByHandle(uint8 handle, GapAdv_dataTypes_t dataType,
-                                         uint16 len, uint8* pBuf);
-
-#endif
+ * @brief       Set a GAP Role parameter.
+ *
+ *  NOTE: You can call this function with a GAP Parameter ID and it will set the
+ *        GAP Parameter.  GAP Parameters are defined in (gap.h).  Also,
+ *        the "len" field must be set to the size of a "uint16" and the
+ *        "pValue" field must point to a "uint16".
+ *
+ * @param       param - Profile parameter ID: @ref GAPROLE_PROFILE_PARAMETERS
+ * @param       len - length of data to write
+ * @param       pValue - pointer to data to write.  This is dependent on
+ *          the parameter ID and WILL be cast to the appropriate
+ *          data type (example: data type of uint16 will be cast to
+ *          uint16 pointer).
+ *
+ * @return      SUCCESS or INVALIDPARAMETER (invalid paramID)
+ */
+//extern bStatus_t GAPRole_SetParameter( uint16 param, uint8 len, void *pValue );
 
 /**
-    @brief       Does the device initialization.  Only call this function once.
-
-    @param       pAppCallbacks - pointer to application callbacks.
-
-    @return      SUCCESS or bleAlreadyInRequestedMode
-*/
-extern bStatus_t GAPRole_StartDevice( gapRolesCBs_t* pAppCallbacks );
+ * @brief       Get a GAP Role parameter.
+ *
+ *  NOTE: You can call this function with a GAP Parameter ID and it will get a
+ *        GAP Parameter.  GAP Parameters are defined in (gap.h).  Also, the
+ *        "pValue" field must point to a "uint16".
+ *
+ * @param       param - Profile parameter ID: @ref GAPROLE_PROFILE_PARAMETERS
+ * @param       pValue - pointer to location to get the value.  This is dependent on
+ *          the parameter ID and WILL be cast to the appropriate
+ *          data type (example: data type of uint16 will be cast to
+ *          uint16 pointer).
+ *
+ * @return      SUCCESS or INVALIDPARAMETER (invalid paramID)
+ */
+//extern bStatus_t GAPRole_GetParameter( uint16 param, void *pValue );
 
 /**
-    @brief       Terminates the existing connection.
-
-    @return      SUCCESS or bleIncorrectMode
-*/
-extern bStatus_t GAPRole_TerminateConnection( void );
+ * @brief       Does the device initialization.  Only call this function once.
+ *
+ * @param       pAppCallbacks - pointer to application callbacks.
+ *
+ * @return      SUCCESS or bleAlreadyInRequestedMode
+ */
+extern bStatus_t GAPRole_StartDevice( void );
 
 /**
-    @brief       Update the parameters of an existing connection
+ * @brief       Terminates the existing connection.
+ *
+ * @return      SUCCESS or bleIncorrectMode
+ */
+//extern bStatus_t GAPRole_TerminateConnection( void );
 
-    @param       connInterval - the new connection interval
-    @param       latency - the new slave latency
-    @param       connTimeout - the new timeout value
-    @param       handleFailure - what to do if the update does not occur.
-                Method may choose to terminate connection, try again, or take no action
-
-    @return      SUCCESS, bleNotConnected or bleInvalidRange
-*/
+/**
+ * @brief       Update the parameters of an existing connection
+ *
+ * @param       connInterval - the new connection interval
+ * @param       latency - the new slave latency
+ * @param       connTimeout - the new timeout value
+ * @param       handleFailure - what to do if the update does not occur.
+ *              Method may choose to terminate connection, try again, or take no action
+ *
+ * @return      SUCCESS, bleNotConnected or bleInvalidRange
+ */
 extern bStatus_t GAPRole_SendUpdateParam( uint16 minConnInterval, uint16 maxConnInterval,
                                           uint16 latency, uint16 connTimeout, uint8 handleFailure );
 
 /**
-    @brief       Register application's callbacks.
-
-    @param       pParamUpdateCB - pointer to param update callback.
-
-    @return      none
-*/
-extern void GAPRole_RegisterAppCBs( gapRolesParamUpdateCB_t* pParamUpdateCB );
-
-/**
-    @} End GAPROLES_PERIPHERAL_API
-*/
-
-
-/*  -------------------------------------------------------------------
-    TASK FUNCTIONS - Don't call these. These are system functions.
-*/
+ * @brief       Register application's callbacks.
+ *
+ * @param       pParamUpdateCB - pointer to param update callback.
+ *
+ * @return      none
+ */
+//extern void GAPRole_RegisterAppCBs( gapRolesParamUpdateCB_t *pParamUpdateCB );
 
 /**
-    @internal
+ * @} End GAPROLES_PERIPHERAL_API
+ */
 
-    @brief       Initialization function for the GAP Role Task.
-            This is called during initialization and should contain
-            any application specific initialization (ie. hardware
-            initialization/setup, table initialization, power up
-            notificaiton ... ).
 
-    @param       the ID assigned by OSAL.  This ID should be
-                      used to send messages and set timers.
+/*-------------------------------------------------------------------
+ * TASK FUNCTIONS - Don't call these. These are system functions.
+ */
 
-    @return      void
-*/
+/**
+ * @internal
+ *
+ * @brief       Initialization function for the GAP Role Task.
+ *          This is called during initialization and should contain
+ *          any application specific initialization (ie. hardware
+ *          initialization/setup, table initialization, power up
+ *          notificaiton ... ).
+ *
+ * @param       the ID assigned by OSAL.  This ID should be
+ *                    used to send messages and set timers.
+ *
+ * @return      void
+ */
 extern void GAPRole_Init( uint8 task_id );
 
 /**
-    @internal
-
-    @brief       GAP Role Task event processor.
-            This function is called to process all events for the task.
-            Events include timers, messages and any other user defined
-            events.
-
-    @param   task_id  - The OSAL assigned task ID.
-    @param   events - events to process.  This is a bit map and can
-                     contain more than one event.
-
-    @return      events not processed
-*/
+ * @internal
+ *
+ * @brief       GAP Role Task event processor.
+ *          This function is called to process all events for the task.
+ *          Events include timers, messages and any other user defined
+ *          events.
+ *
+ * @param   task_id  - The OSAL assigned task ID.
+ * @param   events - events to process.  This is a bit map and can
+ *                   contain more than one event.
+ *
+ * @return      events not processed
+ */
 extern uint16 GAPRole_ProcessEvent( uint8 task_id, uint16 events );
 
-/*  -------------------------------------------------------------------
-    -------------------------------------------------------------------*/
-#ifdef EXT_ADV_ENABLE
-extern bStatus_t GAP_UpdateExtAdvertisingData( uint8 taskID, uint16_t adType,
-                                               uint8 dataLen, uint8* pAdvertData );
-
-
-
-
-
-/**
-    GAP Advertiser bitfields to enable / disable callback events
-
-    These are used in @ref GapAdv_setEventMask
-    The events that that these flags control are defined in
-    @ref GapAdvScan_Event_IDs
-*/
-// Advertising Scan Request Notification Flag
-#define AE_NOTIFY_DISABLE_SCAN_REQUEST                      ~BV(0)
-#define AE_NOTIFY_ENABLE_SCAN_REQUEST                        BV(0)
-#define AE_NOTIFY
-#define AE_NOTIFY_DISABLE_ADV_SET_START                     ~BV(4)
-#define AE_NOTIFY_ENABLE_ADV_SET_START                       BV(4)
-#define AE_NOTIFY_DISABLE_ADV_START                         ~BV(5)
-#define AE_NOTIFY_ENABLE_ADV_START                           BV(5)
-#define AE_NOTIFY_DISABLE_ADV_END                           ~BV(6)
-#define AE_NOTIFY_ENABLE_ADV_END                             BV(6)
-#define AE_NOTIFY_DISABLE_ADV_SET_END                       ~BV(7)
-#define AE_NOTIFY_ENABLE_ADV_SET_END                         BV(7)
-
-typedef enum
-{
-    /**
-        Enables / disables the @ref GAP_EVT_SCAN_REQ_RECEIVED event
-    */
-    GAP_ADV_EVT_MASK_SCAN_REQ_NOTI       = AE_NOTIFY_ENABLE_SCAN_REQUEST,
-    /**
-        Enables / disables the @ref GAP_EVT_ADV_SET_TERMINATED event
-    */
-    GAP_ADV_EVT_MASK_SET_TERMINATED      = BV(1),
-    /**
-        Enables / disables the @ref GAP_EVT_ADV_START_AFTER_ENABLE event
-    */
-    GAP_ADV_EVT_MASK_START_AFTER_ENABLE  = AE_NOTIFY_ENABLE_ADV_SET_START,
-    /**
-        Enables / disables the @ref GAP_EVT_ADV_START event
-    */
-    GAP_ADV_EVT_MASK_START               = AE_NOTIFY_ENABLE_ADV_START,
-    /**
-        Enables / disables the @ref GAP_EVT_ADV_END event
-    */
-    GAP_ADV_EVT_MASK_END                 = AE_NOTIFY_ENABLE_ADV_END,
-    /**
-        Enables / disables the @ref GAP_EVT_ADV_END_AFTER_DISABLE event
-    */
-    GAP_ADV_EVT_MASK_END_AFTER_DISABLE   = AE_NOTIFY_ENABLE_ADV_SET_END,
-    /**
-        Mask to enables / disable all advertising events
-    */
-    GAP_ADV_EVT_MASK_ALL                 = GAP_ADV_EVT_MASK_SCAN_REQ_NOTI |
-                                           GAP_ADV_EVT_MASK_START_AFTER_ENABLE |
-                                           GAP_ADV_EVT_MASK_START |
-                                           GAP_ADV_EVT_MASK_END |
-                                           GAP_ADV_EVT_MASK_END_AFTER_DISABLE |
-                                           GAP_ADV_EVT_MASK_SET_TERMINATED,
-/// @cond NODOC
-    /**
-        Used to set this to 16 bits for future events
-    */
-    GAP_ADV_EVT_MASK_RESERVED            = BV(15)
-/// @endcond // NODOC
-} GapAdv_eventMaskFlags_t;
-
-/// Enable options for @ref GapAdv_enable
-typedef enum
-{
-    /**
-        Use the maximum possible value. This is the spec-defined maximum for
-        directed advertising and infinite advertising for all other types
-    */
-    GAP_ADV_ENABLE_OPTIONS_USE_MAX,
-    /**
-        Use the user-specified duration
-    */
-    GAP_ADV_ENABLE_OPTIONS_USE_DURATION,
-    /**
-        Use the user-specified maximum number of events
-    */
-    GAP_ADV_ENABLE_OPTIONS_USE_MAX_EVENTS,
-} GapAdv_enableOptions_t;
-
-
-
-extern bStatus_t GapAdv_create(pfnGapCB_t* cb, Gap_ExtAdv_Param* advParam,
-                               uint8* advHandle);
-
-bStatus_t GapAdv_loadByHandle(uint8 handle, GapAdv_dataTypes_t dataType,
-                              uint16 len, uint8* pBuf);
-
-extern bStatus_t GapAdv_setEventMask(uint8 handle, GapAdv_eventMaskFlags_t mask);
-
-extern bStatus_t GapAdv_enable(uint8 handle,
-                               GapAdv_enableOptions_t enableOptions,
-                               uint16 durationOrMaxEvents);
-
-extern bStatus_t GapAdv_UpdateParameter(uint8* pBuf);
-#endif
-
+/*-------------------------------------------------------------------
+-------------------------------------------------------------------*/
 #ifdef __cplusplus
 }
 #endif

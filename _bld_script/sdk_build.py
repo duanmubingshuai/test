@@ -8,7 +8,9 @@ import random
 import msvcrt
 import traceback
 import yaml
+import shutil
 from datetime import datetime
+from collections import Counter
 
 '''
 curpath = os.path.dirname(os.path.realpath(__file__))
@@ -50,7 +52,7 @@ def checkTimeCost(strIn,lastTick,prtFlg=0,logFile=None):
 	return tCur,tCost
 
 class build:
-	def __init__(self, path, keil_path = 'C:\\Keil_v5\\UV4\\UV4.exe'):
+	def __init__(self, path, keil_path = 'C:\\C-Sky\\CDK\\cdk-make.exe'):
 		global dict_yml_name
 		self.yml_name = dict_yml_name
 		self.m_path = path
@@ -152,7 +154,7 @@ class build:
 	def new_hex(self, output):
 		path = self.m_fold
 		os.system('copy /Y '+ path + output[0] + ' ' + path + output[1])
-	
+
 	def gen_asm(self, output):
 		if(len(output)<3):
 			print("Check Output[3] no asm config!!!")
@@ -168,17 +170,20 @@ class build:
 			return False
 		asmPath = path + '\\Listings\\'+ output[2]
 		os.system(fromElfPath +' -c -a -d -e -v -o '+ asmPath + ' ' + axfPath)
-		return True
+		return True 
 
 
 	def setlogfile(self, logf):
 		self.m_logfile = logf
 
 	#return True, False
+	
+	'''
 	def build_check(self, timeout = 100):
 		i = 0
 		for i in range(timeout):
 			if(os.path.exists(self.m_fold + '_bld.txt')):
+			#if(os.path.exists(self.m_fold)):
 				time.sleep(1)
 				break
 			time.sleep(0.1)
@@ -208,13 +213,87 @@ class build:
 			print('Compile Failed')
 			self.log('Compile Failed', log_list)
 			return False
-		return True
+		return True'''
 		#if():#check warning
 		
+	def find_str(self, name, str):
+		with open('_bld.txt', 'r') as f:
+			counts = 0
+			for line in f.readlines():
+				str1 = line.count(str)
+				counts += str1
+			print("%s:%d" %(name, counts))
+	
+	
+	def read_log(self, keyword):
+		with open('_bld.txt', 'r') as file:
+			counts = 0
+			for line in file.readlines():
+				keywords = line.count(keyword)
+				counts += keywords
+			return counts
+
+	def build_check(self, timeout = 100):
+		i = 0
 		
+		for i in range(timeout):
+			if(os.path.exists('_bld.txt')):
+			#if(os.path.exists(self.m_fold)):
+				time.sleep(1)
+				break
+			time.sleep(0.1)
+		if(i == timeout):
+			print('Wait build result timeout')
+			self.log('Wait build result timeout', [])
+			return False
+		
+		log_list = []
+		flog = open('_bld.txt', 'r')
+		
+		errlog = self.find_str('Error', ': error:')
+		warnlog = self.find_str('Warning', ': warning:')
+		
+		errnum = self.read_log(': error:')
+		warnum = self.read_log(': warning:')
+		#print('%d\n' %(errnum))
+		
+		compile_flg = False
+		while(True):
+			logstr = flog.readline()
+			if(len(logstr) == 0):
+				break #read conpleted
+			log_list.append(logstr)
+			
+			if(errnum > 0):
+				compile_flg = False			
+			else:
+				return True
+			
+				#errnum = int(logstr[logstr.find('-')+1:logstr.find('modified')])
+				#errnum = int(logstr[logstr.find('-')+1:logstr.find('Cleaning')])
+				#warnum = int(logstr[logstr.find('errors')+9: logstr.find('warning')])
+				#if(errnum + warnum):
+				
+				#if(counts):
+					#print('Error %d, Warning %d'%(errnum, warnum))
+					#self.log(errnum, warnum, log_list)
+					#print('Error %d'%(errnum))
+					#self.log(errnum, log_list)
+					#if(errnum):
+						#return False
+						
+		if(compile_flg is False):
+			print('Compile Failed')
+			#self.log('Compile Failed', log_list)
+			return False
+		
+		return True
+		#if():#check warning
+
 	
 	def __call__(self, build_param = None, output = None):
 		#print('build', build_param, output)
+		
 		lastTick=time.perf_counter()
 		tcLog = self.m_logfile
 		tcPrtFlg = 1
@@ -224,13 +303,13 @@ class build:
 			self.log('\n\nProject file is not exist:',self.m_path)
 			return False
 		if(os.path.exists(self.m_keil_path) != True):
-			print('Can\'t find Keil_V5 IDE :',self.m_keil_path)
+			print('Can\'t find CDK IDE :',self.m_keil_path)
 			return False
 		
 		#delete log file
 		#os.system('del '+self.m_fold + '_bld.txt 2>1>nul')
-		os.system('del /f /q  '+ self.m_fold + '_bld.txt')
-
+		#os.system('del /f /q  '+ self.m_fold + '_bld.txt')
+		
 		print('\n\nBuilding...\n'+self.m_path)
 		self.log('\n\nBuilding...\n'+self.m_path)
 		[lastTick,tCost]=checkTimeCost('T0',lastTick,tcPrtFlg,tcLog)
@@ -240,9 +319,17 @@ class build:
 		
 		[lastTick,tCost]=checkTimeCost('Config Proj',lastTick,tcPrtFlg,tcLog)
 		#run build
-		cmd = self.m_keil_path + ' -r -j0 ' + self.m_path + ' -o _bld.txt' 
-		os.system(cmd)
 		
+		#os.system(' copy nul '+ self.m_fold + '_bld.txt')
+		#op = self.build_txt()
+        
+		cmd = self.m_keil_path + ' -w ' + self.m_path +  ' -d rebuild ' + ' -c BuildSet ' + ' 1>_bld.txt 2>&1 '
+		#print(cmd)
+        
+		os.system(cmd)
+		#os.system(' copy /Y ' + ' _bld.txt ' + self.m_fold )
+		#shutil.move()
+		 
 		[lastTick,tCost]=checkTimeCost('CMD Build',lastTick,tcPrtFlg,tcLog)
 		#check and save result
 		ret = self.build_check(200)
@@ -261,7 +348,7 @@ class build:
 
 		if(output is not None):
 			if(len(output)>=3):
-				self.gen_asm(output)
+#				self.gen_asm(output)
 				[lastTick,tCost]=checkTimeCost('GEN ASM',lastTick,tcPrtFlg,tcLog)
 		
 
@@ -325,7 +412,7 @@ def make_version_file(path, major, minor, revision, test_build = ''):
 	if(path[-1] == '\\'):
 		path = path[:-1]
 		
-	fp = open(path+'\\components\\inc\\version.h', 'w')
+	fp = open(path+'components\\inc\\version.h', 'w')
 	for ln in list_sdk_version_h:
 		fp.writelines(ln+'\n')
 	
@@ -384,7 +471,7 @@ def get_param(param):
 			phase_param = []
 			continue
 			
-		if s == '-path': #set project path
+		if s == 'path': #set project path
 			dict_param['path'] = None
 			phase_opt = 'path'
 			phase_param = []
@@ -415,7 +502,7 @@ def get_param(param):
 def help(prj = None):
 	print('sdk_build.py: Build PhyPlus BLE SDK')
 	print('useage:')
-	print('	sdk_build.py [-help [projectname]] [-clear] [-ver 1.1.1.b] [-path sdk_path][-list] [-b [projectname]|[all]]')
+	print('	sdk_build.py [-help [projectname]] [-clear] [-ver 1.1.1.b] [-path sdk_path][-list] [-b [projectname]|[all]]') 
 	
 def files(curr_dir, ext):
 	for i in glob.glob(os.path.join(curr_dir, ext)):
@@ -442,7 +529,7 @@ def list_config(param):
 		yamlpath = os.path.join(curpath, dict_yml_name+'.yml')  # sdk_build.yml is default file
 	f = open(yamlpath, 'r', encoding='utf-8')
 	c = f.read()
-	d = yaml.load(c, Loader=yaml.FullLoader)
+	d = yaml.load(c, Loader=yaml.FullLoader)#Added Loader=yaml.FullLoader avoid warnings
 	dict_build_list = d
 
 def list_prj():
@@ -481,6 +568,7 @@ def build_single(path, blditm, logfile= None):
 	ret =bld(cfg, output)
 	return ret
 
+'''
 def log_err_check(flog):
 	flog.seek(0,0)
 	errnum,warnum,failnum=0,0,0
@@ -489,13 +577,13 @@ def log_err_check(flog):
 		if(len(logstr) == 0):
 			break #read completed
 		if(logstr.find('Error(s)')>0 and logstr.find('Warning(s)')>0 ):
-			errnum =errnum+ int(logstr[logstr.find('-')+1:logstr.find('Error(s)')])
-			warnum = warnum+int(logstr[logstr.find('Error(s)')+9: logstr.find('Warning(s)')])
+			errnum = errnum+ int(logstr[logstr.find('-')+1:logstr.find('Error(s)')])
+			warnum = warnum+ int(logstr[logstr.find('Error(s)')+9: logstr.find('Warning(s)')])
 		if(logstr.find('prj build fail check _bld.txt')>0):
 			failnum = failnum+1
 
 	return errnum,warnum,failnum
-
+'''
 		
 def build_prj(param, path):
 	global dict_build_list
@@ -546,9 +634,34 @@ def build_prj(param, path):
 		logfile.write('-'*88+'\n'+'ProjName: '+prjname)
 		#logfile.write('------------------------------------------------\n'+prjname)
 		build_single(path, prjitm, logfile)
-
-
+	
 	checkTimeCost('All Build Finished',bldT0,1,logfile)
+	
+	#-------Error or Warning---------#
+	
+	with open('_bld.txt', 'r') as file:
+		errnum,warnum=0,0
+		#warnum=0
+		for line in file.readlines():
+			errnum += line.count(': error:')
+			warnum += line.count(': warning:')
+	#print('%d, %d\n' %(errnum,warnum))
+		
+	logfile.write('-'*88+'\n'+'Error %d , Warning %d: \n' %(errnum,warnum))
+	
+	if(errnum > 0):
+		logfile.write('Compile Failed\n\n')
+	
+	logfile.write('\n')
+	with open('_bld.txt', 'r') as file1, logfile as file2:
+		for line in file1.readlines():
+			line = line.strip()
+			if ': error:' in line:
+				file2.write(line + '\n')
+			elif ': warning:' in line:
+				file2.write(line + '\n')
+		file2.close()
+	
 	return
 		
 def main(argv):
@@ -614,6 +727,7 @@ def main(argv):
 	#bld.config_proj(cfg)
 	#bld.new_hex(['bin\\ota.hex','bin\\ota1.hex'])
 	#bld(cfg, ['bin\\ota.hex','bin\\ota2.hex'])
+    
 		
 if __name__ == '__main__':
 	#sys.argv = ['.\\sdk_build.py', '-lcfg', 'newname','-list']   #ok  config file not exist

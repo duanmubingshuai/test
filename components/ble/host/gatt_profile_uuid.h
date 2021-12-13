@@ -1,44 +1,44 @@
 /**************************************************************************************************
+ 
+  Phyplus Microelectronics Limited confidential and proprietary. 
+  All rights reserved.
 
-    Phyplus Microelectronics Limited confidential and proprietary.
-    All rights reserved.
+  IMPORTANT: All rights of this software belong to Phyplus Microelectronics 
+  Limited ("Phyplus"). Your use of this Software is limited to those 
+  specific rights granted under  the terms of the business contract, the 
+  confidential agreement, the non-disclosure agreement and any other forms 
+  of agreements as a customer or a partner of Phyplus. You may not use this 
+  Software unless you agree to abide by the terms of these agreements. 
+  You acknowledge that the Software may not be modified, copied, 
+  distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy 
+  (BLE) integrated circuit, either as a product or is integrated into your 
+  products.  Other than for the aforementioned purposes, you may not use, 
+  reproduce, copy, prepare derivative works of, modify, distribute, perform, 
+  display or sell this Software and/or its documentation for any purposes.
 
-    IMPORTANT: All rights of this software belong to Phyplus Microelectronics
-    Limited ("Phyplus"). Your use of this Software is limited to those
-    specific rights granted under  the terms of the business contract, the
-    confidential agreement, the non-disclosure agreement and any other forms
-    of agreements as a customer or a partner of Phyplus. You may not use this
-    Software unless you agree to abide by the terms of these agreements.
-    You acknowledge that the Software may not be modified, copied,
-    distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy
-    (BLE) integrated circuit, either as a product or is integrated into your
-    products.  Other than for the aforementioned purposes, you may not use,
-    reproduce, copy, prepare derivative works of, modify, distribute, perform,
-    display or sell this Software and/or its documentation for any purposes.
-
-    YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-    PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
-    INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
-    NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
-    PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
-    NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
-    LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
-    INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
-    OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
-    OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
-    (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
-
+  YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
+  PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
+  NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
+  PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
+  NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
+  LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
+  INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
+  OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
+  OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
+  (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
+  
 **************************************************************************************************/
 
 /**************************************************************************************************
-    Filename:       gatt_profile_uuid.h
-    Revised:
-    Revision:
+  Filename:       gatt_profile_uuid.h
+  Revised:        
+  Revision:       
 
-    Description:    This file contains GATT Profile UUID types.
+  Description:    This file contains GATT Profile UUID types.
 
 
-
+ 
 **************************************************************************************************/
 
 #ifndef GATT_PROFILE_UUID_H
@@ -50,22 +50,22 @@ extern "C"
 #endif
 
 /*********************************************************************
-    INCLUDES
-*/
+ * INCLUDES
+ */
 
 /*********************************************************************
-    CONSTANTS
-*/
+ * CONSTANTS
+ */
 
 /*
-    WARNING: The 16-bit UUIDs are assigned by the Bluetooth SIG and published
-            in the Bluetooth Assigned Numbers page. Do not change these values.
-            Changing them will cause Bluetooth interoperability issues.
-*/
+ * WARNING: The 16-bit UUIDs are assigned by the Bluetooth SIG and published
+ *          in the Bluetooth Assigned Numbers page. Do not change these values.
+ *          Changing them will cause Bluetooth interoperability issues.
+ */
 
 /**
-    GATT Service UUIDs
-*/
+ * GATT Service UUIDs
+ */
 #define IMMEDIATE_ALERT_SERV_UUID       0x1802  // Immediate Alert
 #define LINK_LOSS_SERV_UUID             0x1803  // Link Loss
 #define TX_PWR_LEVEL_SERV_UUID          0x1804  // Tx Power
@@ -87,10 +87,10 @@ extern "C"
 #define CSC_SERV_UUID                   0x1816  // Cycling Speed and Cadence
 #define CYCPWR_SERV_UUID                0x1818  // Cycling Power
 #define LOC_NAV_SERV_UUID               0x1819  // Location and Navigation
-
+  
 /**
-    GATT Characteristic UUIDs
-*/
+ * GATT Characteristic UUIDs
+ */
 #define ALERT_LEVEL_UUID                0x2A06  // Alert Level
 #define TX_PWR_LEVEL_UUID               0x2A07  // Tx Power Level
 #define DATE_TIME_UUID                  0x2A08  // Date Time
@@ -167,10 +167,10 @@ extern "C"
 #define POS_QUALITY_UUID                0x2A69  // Position Quality
 #define LN_FEATURE_UUID                 0x2A6A  // LN Feature
 #define LN_CTRL_PT_UUID                 0x2A6B  // LN Control Point  
-
+  
 /**
-    GATT Unit UUIDs
-*/
+ * GATT Unit UUIDs
+ */
 #define GATT_UNITLESS_UUID                    0x2700  // <Symbol>, <Expressed in terms of SI base units>
 #define GATT_UNIT_LENGTH_METER_UUID           0x2701  // m, m
 #define GATT_UNIT_MASS_KGRAM_UUID             0x2702  // kg, kg
@@ -240,20 +240,20 @@ extern "C"
 #define GATT_UNIT_TIME_MONTH_UUID             0x27B4  //
 
 /*********************************************************************
-    MACROS
-*/
+ * MACROS
+ */
 
 /*********************************************************************
-    TYPEDEFS
-*/
+ * TYPEDEFS
+ */
 
 /*********************************************************************
-    VARIABLES
-*/
+ * VARIABLES
+ */
 
 /*********************************************************************
-    FUNCTIONS
-*/
+ * FUNCTIONS
+ */
 
 /*********************************************************************
 *********************************************************************/
