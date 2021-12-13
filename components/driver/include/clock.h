@@ -73,6 +73,11 @@ void hal_system_soft_reset(void);
 
 void hal_rtc_clock_config(CLK32K_e clk32Mode);
 
+// _symrom_
+void clk_gate_disable(MODULE_e module);
+void clk_gate_enable(MODULE_e module);
+void clk_reset(MODULE_e module);
+
 #ifdef __cplusplus
 }
 #endif

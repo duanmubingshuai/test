@@ -1,0 +1,2 @@
+
+set *(unsigned int)0x4000f0cc = 0x1fff4001

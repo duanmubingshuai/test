@@ -73,7 +73,7 @@ extern uint32_t s_gpio_wakeup_src[2];
 typedef void (*pwrmgr_Hdl_t)(void);
 
 int hal_pwrmgr_init(void);
-bool pwrmgr_config(uint8_t pwrmode);
+
 int pwrmgr_init(void);
 bool pwrmgr_is_lock(MODULE_e mod);
 int pwrmgr_lock(MODULE_e mod);
@@ -91,6 +91,12 @@ int pwrmgr_LowCurrentLdo_disable(void);
 
 void pwrmgr_poweroff(pwroff_cfg_t* pcfg, uint8_t wakeup_pin_num);
 void pwrmgr_enter_standby(pwroff_cfg_t* pcfg,uint8_t wakeup_pin_num) ;
+
+
+
+//_symrom_
+extern int _symrom_pwrmgr_lock(MODULE_e mod);
+extern int _symrom_pwrmgr_unlock(MODULE_e mod);
 
 #ifdef __cplusplus
 }

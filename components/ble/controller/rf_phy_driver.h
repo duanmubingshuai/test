@@ -51,12 +51,11 @@
  * INCLUDES
  */
  
-#include "rom_sym_def.h"
+ 
 #include "clock.h"
 #include "ll_hw_drv.h"
-#include "ll_common.h"
 #include "jump_function.h"
-
+#include "rom_sym_def.h"
 
 
 typedef enum  _RF_PHY_CLK_SEL {
@@ -128,7 +127,7 @@ extern volatile uint8_t         g_dtmManualConfig;
  */
 #define RF_PHY_EXT_PREAMBLE_US                      (8)             // ext ble preamble length
 
-#define PHY_REG_RD(x)                               *(volatile uint32_t *)(x)
+#define PHY_REG_RD(x)                               {*(volatile uint32_t *)(x);__asm volatile("nop");}
 #define PHY_REG_WT(x,y)                             {*(volatile uint32_t *)(x) = (y);__asm volatile("nop");}
 #define RF_CHN_TO_FREQ(x)
 #define DCDC_REF_CLK_SETTING(x)                     subWriteReg(0x4000f014,25,25, (0x01&(x)))
@@ -265,10 +264,8 @@ extern volatile uint8_t         g_dtmManualConfig;
  * FUNCION DEFINE
  */
 void        rf_phy_ini      (void);
-void        rf_phy_ini1      (void);
 void        rf_phy_ana_cfg  (void);
 void        rf_phy_bb_cfg   (uint8_t pktFmt);
-void        rf_phy_bb_cfg1   (uint8_t pktFmt);
 void        rf_phy_change_cfg0(uint8_t pktFmt);
 void        rf_tpCal_cfg    (uint8_t rfChn);
 void        rf_tpCal_cfg_avg(uint8 rfChn,uint8 avgNum);
@@ -285,8 +282,7 @@ void        rf_phy_get_pktFoot  (uint8* rssi, uint16* foff,uint8* carrSens);
 void        rf_phy_set_txPower  (uint8 txPower);
 
 uint8_t     rf_phy_direct_test_ate(uint32_t cmdWord,uint8_t regPatchNum,uint32_t* regPatchAddr,uint8_t* regPatchHigh,uint8_t* regPatchLow,uint32_t* regPatchVal,uint8_t* dOut);
-void rf_phy_get_pktFoot_fromPkt(uint32 pktFoot0, uint32 pktFoot1,
-                                uint8* rssi, uint16* foff,uint8* carrSens);
+
 //void        rf_phy_dtm_zigbee_pkt_gen(void);
 
 #endif

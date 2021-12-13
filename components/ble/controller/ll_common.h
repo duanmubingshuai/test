@@ -323,7 +323,5 @@ uint8  llGetNextAuxAdvChn(uint8 current);
  ******************************************************************************/
 uint8 llGetNextDataChanCSA2(uint16_t counter ,uint16_t chan_id,uint8 *chan_map,uint8 *cMap_tab,uint8 chanCnt);
 
-
-uint16_t ll_hw_get_tfifo_wrptr(void);
 #endif
 

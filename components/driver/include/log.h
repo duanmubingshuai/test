@@ -49,18 +49,14 @@ extern "C" {
 #endif
 
 #include "uart.h"
-#include <stdio.h>
 void dbg_printf(const char* format, ...);
 void dbg_printf_init(void);
 void my_dump_byte(uint8_t* pData, int dlen);
-
-
 #ifndef DEBUG_INFO
 #error "DEBUG_INFO undefined!"
 #endif
 typedef void(*std_putc)(char* data, uint16_t size);
-void log_vsprintf(std_putc putc, const char* fmt, va_list args);
-void log_printf(const char* format, ...);
+
 #define LOG_ERROR(...)  dbg_printf(__VA_ARGS__)
 
 #if(DEBUG_INFO == 1)

@@ -35,24 +35,64 @@
 #include "clock.h"
 #include "jump_function.h"
 
+
+extern int _symrom_clk_gate_get(MODULE_e module);
+
 extern volatile uint8 g_clk32K_config;
 extern uint32_t s_config_swClk1;
 #if(CFG_WDT_ENABLE==1)
 WDG_CYCLE_Type_e g_wdt_cycle = 0xFF;//valid value:0~7.0xFF:watchdog disable.
 #endif
 
-
 #if(CFG_WDT_ENABLE==1)
+void watchdog_init_x(WDG_CYCLE_Type_e cycle,bool int_mode)
+{
+	uint8_t delay;	
+	
+	_symrom_clk_gate_enable(MOD_WDT);        
+	if((AP_PCR->SW_RESET0 & 0x04)==0)
+	{
+		AP_PCR->SW_RESET0 |= 0x04;
+		delay = 20;
+		while(delay-->0);
+	}
+
+	if((AP_PCR->SW_RESET2 & 0x04)==0)
+	{    
+		AP_PCR->SW_RESET2 |= 0x04;
+		delay=20;
+		while(delay-->0);
+	}
+  
+	AP_PCR->SW_RESET2 &= ~0x20;
+	delay=20;
+	while(delay-->0);
+  
+	AP_PCR->SW_RESET2 |= 0x20;
+	delay=20;
+	while(delay-->0);
+
+    AP_WDT->EOI; 
+	AP_WDT->TORR = cycle;
+ 
+	{
+		AP_WDT->CR = 0x1D;//no use int
+		NVIC_DisableIRQ((IRQn_Type)WDT_IRQn);
+	}
+
+    AP_WDT->CRR = 0x76;
+}
+
+
 void hal_watchdog_init(void)
 {
-	watchdog_init(g_wdt_cycle,/*int_mode*/0);//wdt polling_mode
+	watchdog_init_x(g_wdt_cycle,/*int_mode*/0);//wdt polling_mode
 	s_config_swClk1|=_CLK_WDT;
 }
 #endif
 
 int hal_watchdog_config(WDG_CYCLE_Type_e cycle)
-{
-	
+{	
 #if(CFG_WDT_ENABLE==1)
     if(cycle > WDG_256S)
         return PPlus_ERR_INVALID_PARAM;

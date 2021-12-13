@@ -1,90 +1,56 @@
+/**************************************************************************************************
+
+    Phyplus Microelectronics Limited confidential and proprietary.
+    All rights reserved.
+
+    IMPORTANT: All rights of this software belong to Phyplus Microelectronics
+    Limited ("Phyplus"). Your use of this Software is limited to those
+    specific rights granted under  the terms of the business contract, the
+    confidential agreement, the non-disclosure agreement and any other forms
+    of agreements as a customer or a partner of Phyplus. You may not use this
+    Software unless you agree to abide by the terms of these agreements.
+    You acknowledge that the Software may not be modified, copied,
+    distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy
+    (BLE) integrated circuit, either as a product or is integrated into your
+    products.  Other than for the aforementioned purposes, you may not use,
+    reproduce, copy, prepare derivative works of, modify, distribute, perform,
+    display or sell this Software and/or its documentation for any purposes.
+
+    YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
+    PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+    INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
+    NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
+    PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
+    NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
+    LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
+    INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
+    OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
+    OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
+    (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
+
+**************************************************************************************************/
+
 /*******************************************************************************
-* @file		adc.h
-* @brief	Contains all functions support for adc driver
-* @version	0.0
-* @date		18. Oct. 2017
-* @author	qing.han
-* 
-* Copyright(C) 2016, PhyPlus Semiconductor
-* All rights reserved.
-*
+    @file     adc_x.h
+    @brief    Contains all functions support for adc driver
+    @version  0.0
+    @date     18. Oct. 2017
+    @author   qing.han
+
 *******************************************************************************/
-#ifndef __ADC_ROM_H__
-#define __ADC_ROM_H__
+#ifndef __ADC_X_H__
+#define __ADC_X_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define read_half_word(addr)            (*(volatile unsigned short *)(addr))
+#include "types.h"
+#include "bus_dev.h"
+#include "gpio.h"
 
-#define    POWER_UP_ADC                 *(volatile unsigned int *)0x4000f048 |= BIT(3)
-#define    ADC_CLOCK_ENABLE             *(volatile unsigned int *)0x4000f044 |= BIT(13)
-#define    ADC_DBLE_CLOCK_DISABLE       *(volatile unsigned int *)0x4000f044 &= ~BIT(21)
-#define    POWER_UP_TEMPSENSOR          *(volatile unsigned int *)0x4000f048 |= BIT(29)
-    
-#define    ENABLE_XTAL_OUTPUT    *(volatile unsigned int *)0x4000f040 |= BIT(18)
-#define    ENABLE_DLL            *(volatile unsigned int *)0x4000f044 |= BIT(7)
-    
-typedef enum {
-	ADC_CH0 =0,
-	ADC_CH1 =1,
-	ADC_CH2 =2,
-	ADC_CH3 =3,
-	ADC_CH4 =4,
-	ADC_CH5 =5,
-	ADC_CH6 =6,
-	ADC_CH7 =7,
-	ADC_CH_VOICE =8,
-}ADC_CH_e;
-
-typedef enum {
-	SAM_AUTO,
-	SAM_MANNUAL,
-}ADC_MODE_e;
-
-typedef enum{
-	DIFF,
-	SINGLE_END,
-}ADC_SEMODE_e;
-
-typedef enum{
-	BELOW_1V,
-	UP_1V,
-}IO_CONTROL_e;
-
-/*
- * rom use
- * */
-/**************************************************************************************
- * @fn          adc_init
- *
- * @brief       This function process for adc initial 
- *
- * input parameters
- *
- * @param       ADC_MODE_e mode: adc sample mode select;1:SAM_MANNUAL(mannual mode),0:SAM_AUTO(auto mode)
- *              ADC_CH_e adc_pin: adc pin select;ADC_CH0~ADC_CH7 and ADC_CH_VOICE
- *              ADC_SEMODE_e semode: signle-ended mode negative side enable; 1:SINGLE_END(single-ended mode) 0:DIFF(Differentail mode)
- *              IO_CONTROL_e amplitude: input signal amplitude, 0:BELOW_1V,1:UP_1V
- *
- * output parameters
- *
- * @param       None.
- *
- * @return      None.
- **************************************************************************************/
-void adc_init_r(ADC_MODE_e mode,ADC_CH_e adc_pin,ADC_SEMODE_e semode,IO_CONTROL_e amplitude);
-
-
-/*
- * sdk use
- * */
 #define    MAX_ADC_SAMPLE_SIZE     32
 #define    ADC_CH_BASE             (0x40050400UL)
-
-#define    ENABLE_ADC_INT       AP_ADCC->intr_mask |= 0x000001ff
-#define    MASK_ADC_INT         AP_ADCC->intr_mask &= 0xfffffe00
 
 #define    CLEAR_ADC_INT(n)     AP_ADC->intr_clear |= BIT(n)
 
@@ -96,8 +62,13 @@ void adc_init_r(ADC_MODE_e mode,ADC_CH_e adc_pin,ADC_SEMODE_e semode,IO_CONTROL_
 #define    ENABLE_ADC             (AP_PCRM->ANA_CTL |= BIT(3))
 #define    DISABLE_ADC            (AP_PCRM->ANA_CTL &= ~BIT(3))
 
-//#define    ADC_CLOCK_ENABLE       (AP_PCRM->CLKHF_CTL1 |= BIT(13))
+#define    ADC_CLOCK_ENABLE       (AP_PCRM->CLKHF_CTL1 |= BIT(13))
 #define    ADC_CLOCK_DISABLE       (AP_PCRM->CLKHF_CTL1 &= ~BIT(13))
+
+
+#define SPIF_RSVD_AREA_1                 (0x1000)
+#define pSPIF_RSVD1_ADC_CALIBRATE       ((volatile uint32_t*)(SPIF_BASE_ADDR + SPIF_RSVD_AREA_1))
+#define SPIF_RSVD1_ADC_CALIBRATE        (SPIF_BASE_ADDR + SPIF_RSVD_AREA_1)
 
 /**************************************************************************************
     @fn          hal_get_adc_int_source
@@ -114,16 +85,49 @@ void adc_init_r(ADC_MODE_e mode,ADC_CH_e adc_pin,ADC_SEMODE_e semode,IO_CONTROL_
 
     @return      adc interrupt source bit loaction(uint8_t)
  **************************************************************************************/
+/*
+    ADC note:
+    There are ten pins which can config as analogy,there are some differences between them.
+    hardware analogy index:
+    gpio<11>/aio<0>
+    gpio<23>/aio<1>/micphone bias reference voltage
+    gpio<24>/aio<2>
+    gpio<14>/aio<3>
+    gpio<15>/aio<4>/micphone bias
+    gpio<16>/aio<5>/32K XTAL input
+    gpio<17>/aio<6>/32K XTAL output
+    gpio<18>/aio<7>/pga in+
+    gpio<25>/aio<8>
+    gpio<20>/aio<9>/pga in-
+
+    There are six pins which can work in adc single mode.Such as:
+    ADC_CH0 = 2,ADC_CH1N_P11 = 2,
+    ADC_CH1 = 3,ADC_CH1P_P23 = 3,
+    ADC_CH2 = 4,ADC_CH2N_P24 = 4,
+    ADC_CH3 = 5,ADC_CH2P_P14 = 5,
+    ADC_CH4 = 6,ADC_CH3N_P15 = 6,
+    ADC_CH9 = 7,ADC_CH3P_P20 = 7,
+
+    There are four pair pins which can work in adc diff mode.Such as:
+    ADC_CH0DIFF = 1,p18(p) and P25(n)
+    ADC_CH1DIFF = 3,P23(p) and P11(n)
+    ADC_CH2DIFF = 5,P14(p) and P24(n)
+    ADC_CH3DIFF = 7,P20(p) and P15(n)
+
+    There are two pins which uses with 32.768K crystal oscillator.
+    gpio<16>/aio<5>/32K XTAL input
+    gpio<17>/aio<6>/32K XTAL output
+*/
 typedef enum
 {
     ADC_CH0DIFF = 1,/*p18(positive),p25(negative),only works in diff*/
-    /*ADC_CH0 = 2,*/ADC_CH1N_P11 = 2,
-    /*ADC_CH1 = 3,*/ADC_CH1P_P23 = 3,ADC_CH1DIFF = 3,/*P23 and P11*/
-    /*ADC_CH2 = 4,*/ADC_CH2N_P24 = 4,
-    /*ADC_CH3 = 5,*/ADC_CH2P_P14 = 5,ADC_CH2DIFF = 5,/*P14 and P24*/
-    /*ADC_CH4 = 6,*/ADC_CH3N_P15 = 6,
-    ADC_CH9 = 7,ADC_CH3P_P20 = 7,ADC_CH3DIFF = 7,/*P20 and P15*/
-    //ADC_CH_VOICE = 8,
+    ADC_CH0 = 2,ADC_CH1N_P11 = 2,MIN_ADC_CH = 2,
+    ADC_CH1 = 3,ADC_CH1P_P23 = 3,ADC_CH1DIFF = 3,/*P23 and P11*/
+    ADC_CH2 = 4,ADC_CH2N_P24 = 4,
+    ADC_CH3 = 5,ADC_CH2P_P14 = 5,ADC_CH2DIFF = 5,/*P14 and P24*/
+    ADC_CH4 = 6,ADC_CH3N_P15 = 6,
+    ADC_CH9 = 7,ADC_CH3P_P20 = 7,MAX_ADC_CH = 7,ADC_CH3DIFF = 7,/*P20 and P15*/
+    ADC_CH_VOICE = 8,
     ADC_CH_NUM =9,
 } adc_CH_t;
 
@@ -148,7 +152,7 @@ typedef struct _adc_Cfg_t
     uint8_t channel;
     bool  is_continue_mode;
     uint8_t  is_differential_mode;
-    uint8_t  is_high_resolution;	
+    uint8_t  is_high_resolution;
 } adc_Cfg_t;
 
 
@@ -162,15 +166,7 @@ typedef struct _adc_Evt_t
 
 typedef void (*adc_Hdl_t)(adc_Evt_t* pev);
 
-typedef struct _adc_Contex_t
-{
-    bool        enable;
-    uint8_t     all_channel;
-    bool        continue_mode;
-    adc_Hdl_t   evt_handler[ADC_CH_NUM];
-} adc_Ctx_t;
-
-extern const gpio_pin_e s_pinmap[ADC_CH_NUM];
+extern gpio_pin_e s_pinmap[ADC_CH_NUM];
 /**************************************************************************************
     @fn          hal_adc_init
 
@@ -188,19 +184,19 @@ extern const gpio_pin_e s_pinmap[ADC_CH_NUM];
 
     @return      None.
  **************************************************************************************/
-void hal_adc_init(void);
+void hal_adc_init_x(void);
 
-int hal_adc_config_channel(adc_Cfg_t cfg, adc_Hdl_t evt_handler);
+int hal_adc_config_channel_x(adc_Cfg_t cfg, adc_Hdl_t evt_handler);
 
-int hal_adc_clock_config(adc_CLOCK_SEL_t clk);
+//int hal_adc_clock_config(adc_CLOCK_SEL_t clk);
 
-int hal_adc_start(void);
+int hal_adc_start_x(void);
 
-int hal_adc_stop(void);
+int hal_adc_stop_x(void);
 
-void __attribute__((weak)) hal_ADC_IRQHandler(void);
+void __attribute__((weak)) hal_ADC_IRQHandler_x(void);
 
-float hal_adc_value_cal(adc_CH_t ch,uint16_t* buf, uint32_t size, uint8_t high_resol, uint8_t diff_mode);
+float hal_adc_value_cal_x(adc_CH_t ch,uint16_t* buf, uint32_t size, uint8_t high_resol, uint8_t diff_mode);
 
 #ifdef __cplusplus
 }
