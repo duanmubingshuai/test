@@ -1,7 +1,7 @@
 ---
 #release tag name @ current repo
 ReleaseTagName: 
-- tag_v310
+- tag_v410
 
 ReleaseBranchName:
 - PHY62XX_SDK_3.1.0
