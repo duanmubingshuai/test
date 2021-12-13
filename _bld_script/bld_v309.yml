@@ -1,0 +1,10 @@
+---
+
+mesh_ali_heater:
+- example\ble_mesh\aliGenie_bleMesh\aliGenie_bleMesh_heater\aliGenie_mesh_heater.uvprojx
+
+mesh_ali_light:
+- example\ble_mesh\aliGenie_bleMesh\aliGenie_bleMesh_light\aliGenie_mesh_light.uvprojx
+
+mesh_ali_socket:
+- example\ble_mesh\aliGenie_bleMesh\aliGenie_bleMesh_socket\aliGenie_mesh_socket.uvprojx
