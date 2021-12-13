@@ -568,7 +568,7 @@ def build_single(path, blditm, logfile= None):
 	ret =bld(cfg, output)
 	return ret
 
-'''
+
 def log_err_check(flog):
 	flog.seek(0,0)
 	errnum,warnum,failnum=0,0,0
@@ -583,7 +583,7 @@ def log_err_check(flog):
 			failnum = failnum+1
 
 	return errnum,warnum,failnum
-'''
+
 		
 def build_prj(param, path):
 	global dict_build_list
