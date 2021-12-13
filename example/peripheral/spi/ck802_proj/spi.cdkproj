@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project Name="spi" Version="v1.6" Language="C">
+  <Description>CPU: ck802
+Chip: smartl
+Board: smartl_802_evb
+BareMetal: Without RTOS</Description>
+  <Dependencies Name="Debug"/>
+  <VirtualDirectory Name="ck802">
+    <File Name="ck802/board_init.c">
+      <FileOption/>
+    </File>
+    <File Name="ck802/gcc_csky.ld">
+      <FileOption/>
+    </File>
+    <VirtualDirectory Name="include"/>
+    <File Name="ck802/startup.S">
+      <FileOption/>
+    </File>
+    <File Name="ck802/system.c">
+      <FileOption/>
+    </File>
+    <File Name="ck802/trap_c.c">
+      <FileOption/>
+    </File>
+    <File Name="ck802/vectors.S">
+      <FileOption/>
+    </File>
+  </VirtualDirectory>
+  <VirtualDirectory Name="utilities">
+    <File Name="utilities/aft_build.sh">
+      <FileOption/>
+    </File>
+    <File Name="utilities/flash.init">
+      <FileOption/>
+    </File>
+    <File Name="utilities/gdb.init">
+      <FileOption/>
+    </File>
+  </VirtualDirectory>
+  <MonitorProgress>
+    <DebugLaunch>28</DebugLaunch>
+  </MonitorProgress>
+  <VirtualDirectory Name="jump">
+    <File Name="../../../../misc/jump_table.c">
+      <FileOption/>
+    </File>
+  </VirtualDirectory>
+  <VirtualDirectory Name="lib" ExcludeProjConfig="">
+    <File Name="../../../../lib/librf.a">
+      <FileOption/>
+    </File>
+  </VirtualDirectory>
+  <VirtualDirectory Name="driver">
+    <File Name="../../../../components/driver/source/clock.c">
+      <FileOption/>
+    </File>
+    <File Name="../../../../components/driver/source/my_printf.c">
+      <FileOption/>
+    </File>
+    <File Name="../../../../components/driver/source/pwrmgr.c">
+      <FileOption/>
+    </File>
+    <File Name="../../../../components/driver/source/watchdog.c">
+      <FileOption/>
+    </File>
+    <File Name="../../../../components/driver/source/spi.c">
+      <FileOption/>
+    </File>
+  </VirtualDirectory>
+  <VirtualDirectory Name="main">
+    <File Name="../source/main.c">
+      <FileOption/>
+    </File>
+    <File Name="../source/spiflash.c">
+      <FileOption/>
+    </File>
+    <File Name="../source/OSAL_spi.c">
+      <FileOption/>
+    </File>
+    <File Name="../source/spi_demo.c">
+      <FileOption/>
+    </File>
+    <File Name="../source/spi_Main.c">
+      <FileOption/>
+    </File>
+  </VirtualDirectory>
+  <BuildConfigs>
+    <BuildConfig Name="BuildSet">
+      <Target>
+        <ROMBank Selected="1">
+          <ROM1>
+            <InUse>no</InUse>
+            <Start>0x00000000</Start>
+            <Size>0x18000</Size>
+          </ROM1>
+          <ROM2>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+          </ROM2>
+          <ROM3>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+          </ROM3>
+          <ROM4>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+          </ROM4>
+          <ROM5>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+          </ROM5>
+        </ROMBank>
+        <RAMBank>
+          <RAM1>
+            <InUse>no</InUse>
+            <Start>0x20000000</Start>
+            <Size>0xc000</Size>
+            <Init>yes</Init>
+          </RAM1>
+          <RAM2>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+            <Init>yes</Init>
+          </RAM2>
+          <RAM3>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+            <Init>yes</Init>
+          </RAM3>
+          <RAM4>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+            <Init>yes</Init>
+          </RAM4>
+          <RAM5>
+            <InUse>no</InUse>
+            <Start/>
+            <Size/>
+            <Init>yes</Init>
+          </RAM5>
+        </RAMBank>
+        <CPU>ck802</CPU>
+        <UseMiniLib>yes</UseMiniLib>
+        <Endian>little</Endian>
+        <UseHardFloat>no</UseHardFloat>
+        <UseEnhancedLRW>no</UseEnhancedLRW>
+        <UseContinueBuild>no</UseContinueBuild>
+        <UseSemiHost>no</UseSemiHost>
+      </Target>
+      <Output>
+        <OutputName>$(ProjectName)</OutputName>
+        <Type>Executable</Type>
+        <CreateHexFile>yes</CreateHexFile>
+        <CreateBinFile>yes</CreateBinFile>
+        <Preprocessor>yes</Preprocessor>
+        <Disassmeble>yes</Disassmeble>
+        <CallGraph>yes</CallGraph>
+        <Map>yes</Map>
+      </Output>
+      <User>
+        <BeforeCompile>
+          <RunUserProg>no</RunUserProg>
+          <UserProgName/>
+        </BeforeCompile>
+        <BeforeMake>
+          <RunUserProg>no</RunUserProg>
+          <UserProgName/>
+        </BeforeMake>
+        <AfterMake>
+          <RunUserProg>no</RunUserProg>
+          <UserProgName/>
+        </AfterMake>
+      </User>
+      <Compiler>
+        <Define>_PHY_DEBUG SERV_GGS=0 SERV_GATT_SERV=0 SERV_DEV_INFO=0 PHY_MCU_TYPE=MCU_BUMBEE_CK802 MAIN_HAS_NOARGC MAIN_HAS_NORETURN OSAL_CBTIMER_NUM_TASKS=1 HCI_TL_NONE=1 OSALMEM_METRICS=0 DEBUG_INFO=1 CFG_WDT_ENABLE=1 CFG_SLEEP_MODE=PWR_MODE_SLEEP USE_ROMSYM_ALIAS=1  HOST_CONFIG=6</Define>
+        <Undefine/>
+        <Optim>Optimize size (-Os)</Optim>
+        <DebugLevel>Maximum (-g3)</DebugLevel>
+        <IncludePath>$(ProjectPath);$(ProjectPath)/../../../../components/arch/ck802;$(ProjectPath)/../../../../components/ble/controller;$(ProjectPath)/../../../../components/ble/hci;$(ProjectPath)/../../../../components/ble/host;$(ProjectPath)/../../../../components/ble/include;$(ProjectPath)/../../../../components/driver/include;$(ProjectPath)/../../../../components/inc;$(ProjectPath)/../../../../components/libraries/crc16;$(ProjectPath)/../../../../components/libraries/dfl;$(ProjectPath)/../../../../components/libraries/dwc;$(ProjectPath)/../../../../components/libraries/secure;$(ProjectPath)/../../../../components/osal/include;$(ProjectPath)/../../../../components/profiles/DevInfo;$(ProjectPath)/../../../../components/profiles/Roles;$(ProjectPath)/../../../../components/profiles/SimpleProfile;$(ProjectPath)/../../../../misc;$(ProjectPath)/../source;$(ProjectPath)/ck802/include;$(ProjectPath)/driver/include;$(ProjectPath)/include</IncludePath>
+        <OtherFlags>-ffunction-sections -fdata-sections -DADV_NCONN_CFG=0x01  -DADV_CONN_CFG=0x02  -DSCAN_CFG=0x04   -DINIT_CFG=0x08   -DBROADCASTER_CFG=0x01 -DOBSERVER_CFG=0x02  -DPERIPHERAL_CFG=0x04  -DCENTRAL_CFG=0x08 </OtherFlags>
+        <Verbose>no</Verbose>
+        <Ansi>no</Ansi>
+        <Syntax>no</Syntax>
+        <Pedantic>no</Pedantic>
+        <PedanticErr>no</PedanticErr>
+        <InhibitWarn>no</InhibitWarn>
+        <AllWarn>yes</AllWarn>
+        <WarnErr>no</WarnErr>
+        <OneElfS>yes</OneElfS>
+        <Fstrict>no</Fstrict>
+      </Compiler>
+      <Asm>
+        <Define/>
+        <Undefine/>
+        <IncludePath>$(ProjectPath);$(ProjectPath)/../source;$(ProjectPath)/driver_rom/include;$(ProjectPath)/include</IncludePath>
+        <OtherFlags>-ffunction-sections -fdata-sections</OtherFlags>
+        <DebugLevel>gdwarf2</DebugLevel>
+      </Asm>
+      <Linker>
+        <Garbage>yes</Garbage>
+        <Garbage2>yes</Garbage2>
+        <LDFile>$(ProjectPath)\ck802\gcc_csky.ld</LDFile>
+        <LibName>m</LibName>
+        <LibPath/>
+        <OtherFlags>-u jump_table_base -u global_config -Wl,-zmax-page-size=1024 "$(ProjectPath)/../../../../misc/jack_rom_ck802.elf.ck802sym"</OtherFlags>
+        <AutoLDFile>no</AutoLDFile>
+        <LinkType/>
+      </Linker>
+      <Debug>
+        <LoadApplicationAtStartup>no</LoadApplicationAtStartup>
+        <Connector>ICE</Connector>
+        <StopAt>yes</StopAt>
+        <StopAtText>main</StopAtText>
+        <InitFile>$(ProjectPath)/utilities/gdb.init</InitFile>
+        <AfterLoadFile/>
+        <AutoRun>yes</AutoRun>
+        <ResetType>Hard Reset</ResetType>
+        <SoftResetVal>0</SoftResetVal>
+        <ResetAfterLoad>no</ResetAfterLoad>
+        <AfterResetFile/>
+        <Dumpcore>no</Dumpcore>
+        <DumpcoreText>$(ProjectPath)/$(ProjectName).cdkcore</DumpcoreText>
+        <ConfigICE>
+          <IP>localhost</IP>
+          <PORT>1025</PORT>
+          <CPUNumber>0</CPUNumber>
+          <Clock>12000</Clock>
+          <Delay>100</Delay>
+          <WaitReset>50</WaitReset>
+          <DDC>yes</DDC>
+          <TRST>no</TRST>
+          <DebugPrint>no</DebugPrint>
+          <Connect>Normal</Connect>
+          <ResetType>Soft Reset</ResetType>
+          <SoftResetVal>0</SoftResetVal>
+          <RTOSType>Bare Metal</RTOSType>
+          <DownloadToFlash>no</DownloadToFlash>
+          <ResetAfterConnect>yes</ResetAfterConnect>
+          <GDBName/>
+          <GDBServerType>Local</GDBServerType>
+          <OtherFlags/>
+        </ConfigICE>
+        <ConfigSIM>
+          <SIMTarget>soccfg/userconfig/phy/phy_802.xml</SIMTarget>
+          <OtherFlags/>
+          <NoGraphic>yes</NoGraphic>
+          <Log>no</Log>
+          <SimTrace>no</SimTrace>
+        </ConfigSIM>
+        <ConfigOpenOCD>
+          <OpenOCDExecutablePath/>
+          <OpenOCDTelnetPortEnable>no</OpenOCDTelnetPortEnable>
+          <OpenOCDTelnetPort>4444</OpenOCDTelnetPort>
+          <OpenOCDTclPortEnable>no</OpenOCDTclPortEnable>
+          <OpenOCDTclPort>6666</OpenOCDTclPort>
+          <OpenOCDConfigOptions/>
+        </ConfigOpenOCD>
+      </Debug>
+      <Flash>
+        <InitFile>$(ProjectPath)/utilities/flash.init</InitFile>
+        <Erase>Do Not Erase</Erase>
+        <Algorithms Path=""/>
+        <Program>no</Program>
+        <Verify>no</Verify>
+        <ResetAndRun>no</ResetAndRun>
+        <ResetType>Soft Reset</ResetType>
+        <SoftResetVal/>
+        <External>no</External>
+        <Command/>
+        <Arguments/>
+      </Flash>
+    </BuildConfig>
+  </BuildConfigs>
+  <DebugSessions>
+    <watchExpressions>g_maxConnNum:1;g_pConnectionBuffer:1;pConnContext:1;(uint8 *)&amp;(connPtr-&gt;ll_buf.tx_ntrm_pkts[i]-&gt;header):1;pkt0:1;pkt1:1</watchExpressions>
+    <memoryExpressions>0x40030000;0x40030000;0x1fff0000;0x40031074</memoryExpressions>
+    <statistics>;;MHZ;</statistics>
+    <peripheralTabs/>
+    <WatchDisplayFormat>1</WatchDisplayFormat>
+    <LocalDisplayFormat>0</LocalDisplayFormat>
+    <debugLayout/>
+    <memoryTabColSizeExpressions>72:4;72:4;48:8;100:8;</memoryTabColSizeExpressions>
+  </DebugSessions>
+</Project>
