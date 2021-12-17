@@ -1,0 +1,27 @@
+
+# Copyright (C) 2013. Mindtree Ltd.
+# All rights reserved.
+
+# Toolchain Configurations are maintained in this file.
+TOOL = C:\Keil_v5\ARM\ARMCC\bin
+CC = $(TOOL)/armcc
+AR = $(TOOL)/armar
+LD = $(TOOL)/armlink
+OBJ_EXTENSION = o
+LIB_EXTENSION = lib
+BIN_EXTENSION = axf
+SIZE = echo
+LINKER = $(CC)
+
+WARNING_FLAG =
+OPTIMIZATION_FLAG = -O3
+
+TOOLCHAIN_CFLAGS = --c99 -c --cpu Cortex-M0 -D__MICROLIB --li -g --apcs=interwork --split_sections 
+TOOLCHAIN_ADDL_CFLAGS = -c
+
+LD_FLAGS = -r
+LD_OUTPUT = -o
+
+LINKER_FLAGS =
+LINKER_OUTPUT = -o
+

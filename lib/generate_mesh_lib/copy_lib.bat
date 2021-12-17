@@ -1,0 +1,1 @@
+copy .\ethermind\lib\phy6200\phyos\keil\*.lib ..\..\components\ethermind\lib\meshlibs\phyos\keil
