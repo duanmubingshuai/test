@@ -8,7 +8,11 @@ import random
 import msvcrt
 import traceback
 import yaml
+import shutil
+import re
+import git
 from datetime import datetime
+from collections import Counter
 
 '''
 curpath = os.path.dirname(os.path.realpath(__file__))
@@ -25,6 +29,10 @@ dict_build_list = d
 '''
 dict_yml_name = 'sdk_build'
 dict_build_list = {}
+
+locallocation = os.path.dirname(os.path.realpath(__file__))
+locallocation = os.path.dirname(locallocation)
+
 '''
 dict_build_list={'rfslave' : ['lib\\generate_lib\\rf.uvprojx',['Objects\\rf.lib', '..\\rf.lib']],
 'ble_host' : ['lib\\generate_ble_host_lib\\ble_host.uvprojx',['Objects\\ble_host.lib', '..\\ble_host.lib']],
@@ -48,13 +56,41 @@ def checkTimeCost(strIn,lastTick,prtFlg=0,logFile=None):
 		pass
 
 	return tCur,tCost
+def Search_for():
+	m_path = ["C:\\" , "D:\\" , "E:\\" , "F:\\" , "G:\\"]
+	n_path =  ["proj\\C-sky\\CDK\\", "C-sky\\CDK\\" , "CDK\\","Software\\CDK\\install\\"]
+	file = "cdk-make.exe"
+	curpath = os.path.dirname(os.path.realpath(__file__))
+	result = os.path.exists('cdk-make.yml')
+	flg=0;
+	if result:
+		yamlfile = os.path.join(curpath, 'cdk-make.yml')
+		f = open(yamlfile, 'r', encoding='utf-8')
+		fr = f.read()
+		yamls = yaml.load(fr, Loader=yaml.FullLoader)#Added Loader=yaml.FullLoader avoid warnings
+		for prj in yamls:
+			yamlpath = yamls[prj][0]
+			if(os.path.exists(yamlpath)):
+				break
+	else:
+		for m in m_path:
+			if(flg):
+				break
+			
+			for n in n_path:
+				yamlpath = m + n + file 
+				if(os.path.exists(yamlpath)):
+					flg=1	
+					break
+	return yamlpath
+
 
 class build:
-	def __init__(self, path, keil_path = 'C:\\Keil_v5\\UV4\\UV4.exe'):
+	def __init__(self, path):
 		global dict_yml_name
 		self.yml_name = dict_yml_name
 		self.m_path = path
-		
+		keil_path = Search_for()
 		self.m_keil_path = keil_path
 		self.m_logfile = None
 
@@ -88,9 +124,10 @@ class build:
 	def new_config_line(self, proj_line, build_param):
 		#apply new config
 		new_line = proj_line[:proj_line.find('<Define>')+8]
+        # print(new_line)
 		start_space = ''
 		proj_cfg = proj_line[proj_line.find('<Define>')+8:proj_line.find('</Define>')]
-		#print(proj_cfg)
+		# print(proj_cfg)
 		proj_cfg = proj_cfg.split(' ')
 		for i in range(len(proj_cfg)):
 			proj_cfg[i] = proj_cfg[i].split('=')
@@ -109,7 +146,7 @@ class build:
 				new_line = new_line +start_space + cfg[0]+'='+cfg[1]
 			start_space = ' '
 		new_line = new_line + '</Define>\r'
-		
+		# print(new_line)
 		return new_line
 				
 
@@ -118,18 +155,25 @@ class build:
 		c_flg = False
 		proj_backup = ''
 		proj_items = []
-		fsize = os.path.getsize(self.m_path)
-		fprj = open(self.m_path, 'r')
+		filename = re.split('[.]', self.m_path)
+		file_n = '..' + filename[0] + filename[1] + filename[2] + '.cdkproj'
+		
+		# print(self.m_path)
+		# print(filename)
+		# print(file_n)
+		fsize = os.path.getsize(file_n)
+		fprj = open(file_n, 'r')
 		project_backup = fprj.read(fsize)
+		# print(project_backup)
 		fprj.seek(0)
 		while(True):
 			proj_line = fprj.readline()
-			if(proj_line.find('<Cads>')>0):
+			if(proj_line.find('<Compiler>')>0):
 				#print('<Cads>')
 				c_flg = True
-			if(proj_line.find('<Aads>')>0):
+			# if(proj_line.find('<Aads>')>0):
 				#print('<Aads>')
-				c_flg = False
+				# c_flg = False
 			if(c_flg):
 				if(proj_line.find('<Define>')>=0):
 					proj_line = self.new_config_line(proj_line, build_param)
@@ -140,7 +184,7 @@ class build:
 		fprj.close()
 		
 		#new project file
-		fprj = open(self.m_path, 'wb')
+		fprj = open(file_n, 'wb')
 		for proj_line in proj_items:
 			fprj.write(proj_line.encode())
 			fprj.write(b'\n')
@@ -152,7 +196,11 @@ class build:
 	def new_hex(self, output):
 		path = self.m_fold
 		os.system('copy /Y '+ path + output[0] + ' ' + path + output[1])
-	
+
+	def new_asm(self, output):
+		path = self.m_fold
+		os.system('copy /Y '+ path + output[2] + ' ' + path + output[3])
+
 	def gen_asm(self, output):
 		if(len(output)<3):
 			print("Check Output[3] no asm config!!!")
@@ -168,17 +216,22 @@ class build:
 			return False
 		asmPath = path + '\\Listings\\'+ output[2]
 		os.system(fromElfPath +' -c -a -d -e -v -o '+ asmPath + ' ' + axfPath)
-		return True
+		return True 
 
 
 	def setlogfile(self, logf):
 		self.m_logfile = logf
+		
+
 
 	#return True, False
+	
+	'''
 	def build_check(self, timeout = 100):
 		i = 0
 		for i in range(timeout):
 			if(os.path.exists(self.m_fold + '_bld.txt')):
+			#if(os.path.exists(self.m_fold)):
 				time.sleep(1)
 				break
 			time.sleep(0.1)
@@ -208,13 +261,110 @@ class build:
 			print('Compile Failed')
 			self.log('Compile Failed', log_list)
 			return False
-		return True
+		return True'''
 		#if():#check warning
 		
+	def find_str(self, fname, name, str):
+		flog = open(fname, "r")
+		#with open('_bld.txt', 'r') as f:
+		with flog as f:
+			counts = 0
+			for line in f.readlines():
+				str1 = line.count(str)
+				counts += str1
+			print("%s:%d" %(name, counts))
+	
+	def find_str1(self, fname, name, str, sstr):
+		flog = open(fname, "r")
+		#with open('_bld.txt', 'r') as f:
+		with flog as f:
+			counts = 0
+			for line in f.readlines():
+				str1 = line.count(str) + line.count(sstr)
+				counts += str1
+			print("%s:%d" %(name, counts))
+	
+	def read_log(self, fname, keyword):
+		flog = open(fname, "r")
+		#with open('_bld.txt', 'r') as file:
+		with flog as file:
+			counts = 0
+			for line in file.readlines():
+				keywords = line.count(keyword)
+				counts += keywords
+			return counts
+
+	def build_check(self, timeout = 100):
+		i = 0
 		
+		for i in range(timeout):
+			if(os.path.exists('_bld.txt')):
+			#if(os.path.exists(self.m_fold)):
+				time.sleep(1)
+				break
+			time.sleep(0.1)
+		if(i == timeout):
+			print('Wait build result timeout')
+			self.log('Wait build result timeout', [])
+			return False
+		
+		log_list = []
+		fname = '_bld.txt'
+		flog = open(fname, 'r')
+		
+		errlog = self.find_str1(fname, 'Total Error', ': error:', ': fatal error:')
+		warnlog = self.find_str(fname, 'Total Warning', ': warning:')
+		
+		errnum = (self.read_log(fname, ': error:') + self.read_log(fname, ': fatal error:'))
+		warnum = self.read_log(fname, ': warning:')
+		#print('%d\n' %(errnum))
+		
+		compile_flg = False
+		while(True):
+			logstr = flog.readline()
+			if(len(logstr) == 0):
+				break #read conpleted
+			log_list.append(logstr)
+			if(errnum > 0):
+				compile_flg = False			
+			else:
+				return True
+				
+			'''
+			if(errnum>0):
+				compile_flg = True
+				#if(errnum + warnum):
+				errnum1 = int(errnum)
+				warnum1 = int(warnum)
+				print('Error %d, Warning %d'%(errnum, warnum))
+				self.log(errnum, warnum, log_list)
+					#if(errnum1):
+						#return False
+				#errnum = int(logstr[logstr.find('-')+1:logstr.find('modified')])
+				#errnum = int(logstr[logstr.find('-')+1:logstr.find('Cleaning')])
+				#warnum = int(logstr[logstr.find('errors')+9: logstr.find('warning')])
+				#if(errnum + warnum):
+				
+				#if(counts):
+					#print('Error %d, Warning %d'%(errnum, warnum))
+					#self.log(errnum, warnum, log_list)
+					#print('Error %d'%(errnum))
+					#self.log(errnum, log_list)
+					#if(errnum):
+						#return False
+						'''
+		if(compile_flg is False):
+			print('Compile Failed')
+			#self.log('Compile Failed', log_list)
+			return False
+		
+		return True
+		#if():#check warning
+
 	
 	def __call__(self, build_param = None, output = None):
 		#print('build', build_param, output)
+		
 		lastTick=time.perf_counter()
 		tcLog = self.m_logfile
 		tcPrtFlg = 1
@@ -224,15 +374,15 @@ class build:
 			self.log('\n\nProject file is not exist:',self.m_path)
 			return False
 		if(os.path.exists(self.m_keil_path) != True):
-			print('Can\'t find Keil_V5 IDE :',self.m_keil_path)
+			print('Can\'t find CDK IDE :',self.m_keil_path)
 			return False
 		
 		#delete log file
 		#os.system('del '+self.m_fold + '_bld.txt 2>1>nul')
-		os.system('del /f /q  '+ self.m_fold + '_bld.txt')
-
-		print('\n\nBuilding...\n'+self.m_path)
-		self.log('\n\nBuilding...\n'+self.m_path)
+		#os.system('del /f /q  '+ self.m_fold + '_bld.txt')
+		
+		print('\nBuilding...\n'+self.m_path)
+		self.log('\nBuilding...\n'+self.m_path)
 		[lastTick,tCost]=checkTimeCost('T0',lastTick,tcPrtFlg,tcLog)
 		
 		if(build_param is not None):
@@ -240,9 +390,18 @@ class build:
 		
 		[lastTick,tCost]=checkTimeCost('Config Proj',lastTick,tcPrtFlg,tcLog)
 		#run build
-		cmd = self.m_keil_path + ' -r -j0 ' + self.m_path + ' -o _bld.txt' 
-		os.system(cmd)
 		
+		#os.system(' copy nul '+ self.m_fold + '_bld.txt')
+		#op = self.build_txt()
+
+		cmd = self.m_keil_path + ' -w ' + self.m_path +  ' -d rebuild ' + ' -c BuildSet ' + ' 1>>_bld.txt 2>&1 '
+
+		# print(self.m_path)
+        
+		os.system(cmd)
+		#os.system(' copy /Y ' + ' _bld.txt ' + self.m_fold )
+		#shutil.move()
+		 
 		[lastTick,tCost]=checkTimeCost('CMD Build',lastTick,tcPrtFlg,tcLog)
 		#check and save result
 		ret = self.build_check(200)
@@ -250,7 +409,10 @@ class build:
 		[lastTick,tCost]=checkTimeCost('Build Check',lastTick,tcPrtFlg,tcLog)
 		#restore project
 		if(build_param is not None):
-			fprj = open(self.m_path, 'wb')
+			# fprj = open(self.m_path, 'wb')
+			filename = re.split('[.]', self.m_path)
+			file_n = '..' + filename[0] + filename[1] + filename[2] + '.cdkproj'
+			fprj = open(file_n, 'wb')
 			fprj.write(project_backup.encode())
 			fprj.close()
 		
@@ -261,13 +423,27 @@ class build:
 
 		if(output is not None):
 			if(len(output)>=3):
-				self.gen_asm(output)
+				# self.gen_asm(output)
+				self.new_asm(output)
 				[lastTick,tCost]=checkTimeCost('GEN ASM',lastTick,tcPrtFlg,tcLog)
 		
 
 		if(output is not None):
+			
 			self.new_hex(output)
 			[lastTick,tCost]=checkTimeCost('Copy Hex',lastTick,tcPrtFlg,tcLog)
+		
+		#run py3 sympol
+		filename = re.split('[\\\\.]', self.m_path)
+		# filename = re.split('[.]', self.m_path)
+		# file_n = '..' + filename[0] + filename[1] + filename[2] + '.cdkproj'
+		# print(filename[7])
+		# print(self.m_path)
+		# print(filename)
+		# print(file_n)
+		# cmd = 'py3' + 'symbol_2s.py' + self.m_fold + '\\obj\\' + filename[7] + '.elf'
+		# os.system(cmd)
+		
 		
 		return True
 
@@ -325,7 +501,7 @@ def make_version_file(path, major, minor, revision, test_build = ''):
 	if(path[-1] == '\\'):
 		path = path[:-1]
 		
-	fp = open(path+'\\components\\inc\\version.h', 'w')
+	fp = open(path+'components\\inc\\version.h', 'w')
 	for ln in list_sdk_version_h:
 		fp.writelines(ln+'\n')
 	
@@ -371,7 +547,7 @@ def get_param(param):
 			phase_opt = 'help'
 			phase_param = []
 			continue
-
+		
 		if (s == '-lcfg' or s == '-l'):  # list config
 			dict_param['listconfig'] = None
 			phase_opt = 'listconfig'
@@ -415,7 +591,7 @@ def get_param(param):
 def help(prj = None):
 	print('sdk_build.py: Build PhyPlus BLE SDK')
 	print('useage:')
-	print('	sdk_build.py [-help [projectname]] [-clear] [-ver 1.1.1.b] [-path sdk_path][-list] [-b [projectname]|[all]]')
+	print('	sdk_build.py [-help [projectname]] [-clear] [-ver 1.1.1.b] [-path sdk_path][-list] [[-l ymlfile] [-b [projectname]|[all]]]') 
 	
 def files(curr_dir, ext):
 	for i in glob.glob(os.path.join(curr_dir, ext)):
@@ -425,9 +601,261 @@ def remove_files(rootdir, ext, show = False):
 	for i in files(rootdir, ext):
 		if show:
 			print(i)
-		os.remove(i)	
+		os.remove(i)
+
 def clear_log():
 	remove_files('.', 'buildlog_*.txt', True)
+
+def delete_bld():
+	#os.system('del /f /q  '+ self.m_fold + '_bld.txt')
+	remove_files('.', '_bld.txt', True)
+'''
+def delete_commit():
+	#os.system('del /f /q  '+ self.m_fold + '_bld.txt')
+	remove_files('.', '_commit.txt', True)
+
+def read_id(fname):
+	flog = open(fname, "r")
+	counts = flog.readline()
+	return counts
+'''
+def sha_finder():
+	new_repo = git.Repo(locallocation)
+
+	log_message = new_repo.git.log()
+	log_SHA = log_message.split(' ')[1]
+	log_SHA = log_SHA.split('\n')[0]
+	
+	return log_SHA
+
+def new_commit_line( proj_line, commit): 
+	#apply new commit 
+	new_line = proj_line[:proj_line.find('<Define>')+8]
+	# print(new_line)
+	start_space = ''
+	proj_cfg = proj_line[proj_line.find('<Define>')+8:proj_line.find('</Define>')]
+	# print(proj_cfg)
+	proj_cfg = proj_cfg.split(' ')
+	for i in range(len(proj_cfg)):
+		proj_cfg[i] = proj_cfg[i].split('=')
+		value = proj_cfg[i][0]
+		# print(value)
+		if('COMMIT_ID' == value):
+			# proj_cfg[i][1] = ('"' +commit+ '"')
+			proj_cfg[i][1] = (commit)
+	# print(proj_cfg[i][1])
+	
+	for cfg in proj_cfg:
+		if(len(cfg) == 1):
+			new_line = new_line +start_space + cfg[0]
+		else:
+			new_line = new_line +start_space + cfg[0]+'='+cfg[1]
+		start_space = ' '
+	new_line = new_line + '</Define>\r'
+	
+	return new_line
+
+def clear_commit_line(proj_line): 
+	#apply new commit 
+	new_line = proj_line[:proj_line.find('<Define>')+8]
+	# print(new_line)
+	start_space = ''
+	proj_cfg = proj_line[proj_line.find('<Define>')+8:proj_line.find('</Define>')]
+	# print(proj_cfg)
+	proj_cfg = proj_cfg.split(' ')
+	for i in range(len(proj_cfg)):
+		proj_cfg[i] = proj_cfg[i].split('=')
+		value = proj_cfg[i][0]
+		# print(value)
+		if('COMMIT_ID' == value):
+			proj_cfg[i][1] = ('"' + '"')
+	# print(proj_cfg[i][1])
+	
+	for cfg in proj_cfg:
+		if(len(cfg) == 1):
+			new_line = new_line +start_space + cfg[0]
+		else:
+			new_line = new_line +start_space + cfg[0]+'='+cfg[1]
+		start_space = ' '
+	new_line = new_line + '</Define>\r'
+	
+	return new_line
+
+def commit_id():
+
+	commit = sha_finder()
+	
+	# fname = '_commit.txt'
+	# delete_commit()
+	# cmd = 'git log --pretty=format:"%h" -1 ' + ' 1>>_commit.txt 2>&1 '  
+	# os.system(cmd)
+	# commit = read_id(fname)
+
+	proj_items = []
+	file_n = '..\\lib\\generate_lib\\ck802_proj\\rf.cdkproj'
+	fsize = os.path.getsize(file_n)
+	fproj = open(file_n, 'r+', encoding = 'utf-8')
+	
+	fproj.seek(0)
+	while(True):
+		proj_line = fproj.readline()
+		if(proj_line.find('COMMIT_ID')>0):
+			proj_line = new_commit_line(proj_line, commit)
+			# print('proj_line_id:', proj_line)
+		if(len(proj_line) == 0):
+			break
+		proj_line = proj_line[:-1]
+		proj_items.append(proj_line)
+	fproj.close()
+	
+	#new project file
+	fprj = open(file_n, 'wb')
+	for proj_line in proj_items:
+		fprj.write(proj_line.encode())
+		fprj.write(b'\n')
+	fprj.close()
+	
+	fprj1 = open(file_n, 'r+', encoding = 'utf-8')
+	fprj1.close()
+	
+    
+def clear_commit_id():
+	proj_items = []
+	file_n = '..\\lib\\generate_lib\\ck802_proj\\rf.cdkproj'
+	fsize = os.path.getsize(file_n)
+	fproj = open(file_n, 'r+', encoding = 'utf-8')
+	
+	fproj.seek(0)
+	while(True):
+		proj_line = fproj.readline()
+		if(proj_line.find('COMMIT_ID')>0):
+			proj_line = clear_commit_line(proj_line)
+			# print('proj_line_id:', proj_line)
+		if(len(proj_line) == 0):
+			break
+		proj_line = proj_line[:-1]
+		proj_items.append(proj_line)
+	fproj.close()
+	
+	#new project file
+	fprj = open(file_n, 'wb')
+	for proj_line in proj_items:
+		fprj.write(proj_line.encode())
+		fprj.write(b'\n')
+	fprj.close()
+
+def new_date_line( proj_line, date): 
+	#apply new commit 
+	new_line = proj_line[:proj_line.find('<Define>')+8]
+	# print(new_line)
+	start_space = ''
+	proj_cfg = proj_line[proj_line.find('<Define>')+8:proj_line.find('</Define>')]
+	# print(proj_cfg)
+	proj_cfg = proj_cfg.split(' ')
+	for i in range(len(proj_cfg)):
+		proj_cfg[i] = proj_cfg[i].split('=')
+		value = proj_cfg[i][0]
+		# print(value)
+		if('COMMIT_DATE' == value):
+			# proj_cfg[i][1] = ('"' + date + '"')
+			proj_cfg[i][1] = ( date )
+	# print(proj_cfg[i][1])
+	
+	for cfg in proj_cfg:
+		if(len(cfg) == 1):
+			new_line = new_line +start_space + cfg[0]
+		else:
+			new_line = new_line +start_space + cfg[0]+'='+cfg[1]
+		start_space = ' '
+	new_line = new_line + '</Define>\r'
+	
+	return new_line
+
+def clear_date_line( proj_line ): 
+	#apply new commit 
+	new_line = proj_line[:proj_line.find('<Define>')+8]
+	# print(new_line)
+	start_space = ''
+	proj_cfg = proj_line[proj_line.find('<Define>')+8:proj_line.find('</Define>')]
+	# print(proj_cfg)
+	proj_cfg = proj_cfg.split(' ')
+	for i in range(len(proj_cfg)):
+		proj_cfg[i] = proj_cfg[i].split('=')
+		value = proj_cfg[i][0]
+		# print(value)
+		if('COMMIT_DATE' == value):
+			proj_cfg[i][1] = ('"' + '"')
+	# print(proj_cfg[i][1])
+	
+	for cfg in proj_cfg:
+		if(len(cfg) == 1):
+			new_line = new_line +start_space + cfg[0]
+		else:
+			new_line = new_line +start_space + cfg[0]+'='+cfg[1]
+		start_space = ' '
+	new_line = new_line + '</Define>\r'
+	
+	return new_line
+
+def date_finder():
+	# new_repo = git.Repo(locallocation)
+	# log_date = new_repo.git.log('--pretty=format:%ad', '--date=format:%Y%m%d%H%M%S', '-1')
+	log_date = datetime.strftime(datetime.now(),'%Y%m%d%H%M%S')
+	# print(log_date)
+	return log_date
+
+def commit_date():
+	date = date_finder()
+	
+	proj_items = []
+	file_n = '..\\lib\\generate_lib\\ck802_proj\\rf.cdkproj'
+	fsize = os.path.getsize(file_n)
+	fproj = open(file_n, 'r+', encoding = 'utf-8')
+	
+	fproj.seek(0)
+	while(True):
+		proj_line = fproj.readline()
+		if(proj_line.find('COMMIT_DATE')>0):
+			proj_line = new_date_line(proj_line, date)
+			# print('proj_line_id:', proj_line)
+		if(len(proj_line) == 0):
+			break
+		proj_line = proj_line[:-1]
+		proj_items.append(proj_line)
+	fproj.close()
+	
+	#new project file
+	fprj = open(file_n, 'wb')
+	for proj_line in proj_items:
+		fprj.write(proj_line.encode())
+		fprj.write(b'\n')
+	fprj.close()
+
+def clear_commit_date():
+
+	proj_items = []
+	file_n = '..\\lib\\generate_lib\\ck802_proj\\rf.cdkproj'
+	fsize = os.path.getsize(file_n)
+	fproj = open(file_n, 'r+', encoding = 'utf-8')
+	
+	fproj.seek(0)
+	while(True):
+		proj_line = fproj.readline()
+		if(proj_line.find('COMMIT_DATE')>0):
+			proj_line = clear_date_line(proj_line)
+			# print('proj_line_id:', proj_line)
+		if(len(proj_line) == 0):
+			break
+		proj_line = proj_line[:-1]
+		proj_items.append(proj_line)
+	fproj.close()
+	
+	#new project file
+	fprj = open(file_n, 'wb')
+	for proj_line in proj_items:
+		fprj.write(proj_line.encode())
+		fprj.write(b'\n')
+	fprj.close()
 
 def list_config(param):
 
@@ -442,7 +870,7 @@ def list_config(param):
 		yamlpath = os.path.join(curpath, dict_yml_name+'.yml')  # sdk_build.yml is default file
 	f = open(yamlpath, 'r', encoding='utf-8')
 	c = f.read()
-	d = yaml.load(c, Loader=yaml.FullLoader)
+	d = yaml.load(c, Loader=yaml.FullLoader)#Added Loader=yaml.FullLoader avoid warnings
 	dict_build_list = d
 
 def list_prj():
@@ -465,6 +893,8 @@ def list_prj():
 
 def build_single(path, blditm, logfile= None):
 	bld = build(path+'\\'+blditm[0])
+	# print('bld：%s\n' %path)
+	# print('blditm：%s\n' %blditm[0])
 	bld.setlogfile(logfile)
 	#cfg = {'CFG_OTA_BANK_MODE':'OTA_SINGLE_BANK','USE_FCT':'0'}
 	cfg = None
@@ -481,6 +911,31 @@ def build_single(path, blditm, logfile= None):
 	ret =bld(cfg, output)
 	return ret
 
+def read_l(keyword):
+	with open('_bld.txt', 'r') as file:
+		counts = 0
+		for line in file.readlines():
+			keywords = line.count(keyword)
+			counts += keywords
+		return counts
+
+def log_err_check(flog):
+	flog.seek(0,0)
+	errnum,warnum,failnum=0,0,0
+	while(True):
+		logstr = flog.readline()
+		if(len(logstr) == 0):
+			break #read completed
+		#if(logstr.find(': error:')>0 and logstr.find(': warning:')>0 ):
+		errnum = (read_l(': error:') + read_l(': fatal error:'))
+		warnum = read_l(': warning:')
+		if(logstr.find('prj build fail check _bld.txt')>0):
+			failnum = failnum+1
+
+	return errnum,warnum,failnum
+
+
+'''
 def log_err_check(flog):
 	flog.seek(0,0)
 	errnum,warnum,failnum=0,0,0
@@ -489,13 +944,13 @@ def log_err_check(flog):
 		if(len(logstr) == 0):
 			break #read completed
 		if(logstr.find('Error(s)')>0 and logstr.find('Warning(s)')>0 ):
-			errnum =errnum+ int(logstr[logstr.find('-')+1:logstr.find('Error(s)')])
-			warnum = warnum+int(logstr[logstr.find('Error(s)')+9: logstr.find('Warning(s)')])
+			errnum = errnum+ int(logstr[logstr.find('-')+1:logstr.find('Error(s)')])
+			warnum = warnum+ int(logstr[logstr.find('Error(s)')+9: logstr.find('Warning(s)')])
 		if(logstr.find('prj build fail check _bld.txt')>0):
 			failnum = failnum+1
 
 	return errnum,warnum,failnum
-
+'''
 		
 def build_prj(param, path):
 	global dict_build_list
@@ -514,6 +969,7 @@ def build_prj(param, path):
 		list_prj()
 		print('input id:')
 		id = int(input())
+		
 		if(id < 0 or id >= len(lprj)):
 			print('input out of range, exiting')
 			exit()
@@ -543,12 +999,38 @@ def build_prj(param, path):
 		logfile = open('buildlog_'+datetime.strftime(datetime.now(),'%Y%m%d%H%M%S')+'.txt', 'w')
 		prjname = lprj[id]
 		prjitm = dict_build_list[prjname]
-		logfile.write('-'*88+'\n'+'ProjName: '+prjname)
+		logfile.write('-'*88+'\n'+'ProjName: '+prjname+'\n')
 		#logfile.write('------------------------------------------------\n'+prjname)
 		build_single(path, prjitm, logfile)
-
-
+	
 	checkTimeCost('All Build Finished',bldT0,1,logfile)
+	
+	#-------Error or Warning---------#
+	bldfile = os.path.exists('_bld.txt')
+	if(bldfile):
+		errnum,warnum=0,0
+		errnum = (read_l(': error:') + read_l(': fatal error:'))
+		warnum = read_l(': warning:')
+		#print('%d, %d\n' %(errnum,warnum))
+			
+		logfile.write('-'*88+'\n'+'- %d Error(s), %d Warning(s) .\n' %(errnum,warnum))
+		# logfile.write('-'*88+'\n'+'Error(s) %d -, Warning(s) %d -.\n' %(errnum,warnum))
+		
+		if(errnum > 0):
+			logfile.write('Compile Failed\n\n')
+		
+		logfile.write('\n')
+		with open('_bld.txt', 'r') as file1, logfile as file2:
+			for line in file1.readlines():
+				line = line.strip()
+				if ': error:' in line:
+					file2.write(line + '\n')
+				elif ': fatal error:' in line:
+					file2.write(line + '\n')
+				elif ': warning:' in line:
+					file2.write(line + '\n')
+			file2.close()
+	
 	return
 		
 def main(argv):
@@ -560,12 +1042,13 @@ def main(argv):
 		
 	if('help' in dict_param):
 		help(dict_param['help'])
+		commit_id()
 		return
 	
 	if('clear' in dict_param):
 		clear_log()
 		return
-
+	
 	if('listconfig' in dict_param):
 		if(dict_param['listconfig'] is None):
 			dict_param['listconfig'] = ['sdk_build.yml']
@@ -606,7 +1089,13 @@ def main(argv):
 			print('-version parameter is not correct, please check:',  dict_param['version'])
 			return
 	if('build' in dict_param):
+		delete_bld()
+		commit_id()
+		commit_date()
 		build_prj(dict_param['build'], path)
+
+		clear_commit_id()
+		clear_commit_date()
 		return
 	#bld = build(argv[1])
 	#bld.build_check()
@@ -614,9 +1103,13 @@ def main(argv):
 	#bld.config_proj(cfg)
 	#bld.new_hex(['bin\\ota.hex','bin\\ota1.hex'])
 	#bld(cfg, ['bin\\ota.hex','bin\\ota2.hex'])
+    
 		
 if __name__ == '__main__':
 	#sys.argv = ['.\\sdk_build.py', '-lcfg', 'newname','-list']   #ok  config file not exist
 	#sys.argv = ['.\\sdk_build.py', '-lcfg', '-list']  #no config file name  #ok
 	#sys.argv = ['.\\sdk_build.py', '-lcfg', 'sdk_build', '-list']  # ok #config file exist
+	# clear_commit_id()
+	# commit_date()
+	# commit_id()
 	main(sys.argv)

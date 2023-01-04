@@ -1,46 +1,46 @@
 /**************************************************************************************************
+ 
+  Phyplus Microelectronics Limited confidential and proprietary. 
+  All rights reserved.
 
-    Phyplus Microelectronics Limited confidential and proprietary.
-    All rights reserved.
+  IMPORTANT: All rights of this software belong to Phyplus Microelectronics 
+  Limited ("Phyplus"). Your use of this Software is limited to those 
+  specific rights granted under  the terms of the business contract, the 
+  confidential agreement, the non-disclosure agreement and any other forms 
+  of agreements as a customer or a partner of Phyplus. You may not use this 
+  Software unless you agree to abide by the terms of these agreements. 
+  You acknowledge that the Software may not be modified, copied, 
+  distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy 
+  (BLE) integrated circuit, either as a product or is integrated into your 
+  products.  Other than for the aforementioned purposes, you may not use, 
+  reproduce, copy, prepare derivative works of, modify, distribute, perform, 
+  display or sell this Software and/or its documentation for any purposes.
 
-    IMPORTANT: All rights of this software belong to Phyplus Microelectronics
-    Limited ("Phyplus"). Your use of this Software is limited to those
-    specific rights granted under  the terms of the business contract, the
-    confidential agreement, the non-disclosure agreement and any other forms
-    of agreements as a customer or a partner of Phyplus. You may not use this
-    Software unless you agree to abide by the terms of these agreements.
-    You acknowledge that the Software may not be modified, copied,
-    distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy
-    (BLE) integrated circuit, either as a product or is integrated into your
-    products.  Other than for the aforementioned purposes, you may not use,
-    reproduce, copy, prepare derivative works of, modify, distribute, perform,
-    display or sell this Software and/or its documentation for any purposes.
-
-    YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-    PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
-    INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
-    NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
-    PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
-    NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
-    LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
-    INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
-    OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
-    OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
-    (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
-
+  YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
+  PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
+  NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
+  PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
+  NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
+  LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
+  INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
+  OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
+  OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
+  (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
+  
 **************************************************************************************************/
 
 /**
-    @headerfile:       bcomdef.h
+  @headerfile:       bcomdef.h
 
-    <!--
-    Revised:
-    Revision:
+  <!--
+  Revised:         
+  Revision:        
 
-    Description:    Type definitions and macros for BLE stack.
+  Description:    Type definitions and macros for BLE stack.
 
 
-    -->
+  -->
 **************************************************************************************************/
 
 #ifndef BCOMDEF_H
@@ -53,76 +53,80 @@ extern "C"
 
 
 /*********************************************************************
-    INCLUDES
-*/
+ * INCLUDES
+ */
 #include "rom_sym_def.h"
 
 #include "comdef.h"
 #include "log.h"
-
+    
 //#define LOG_DEBUG(...)
 //#define LOG(...)
 //#define OM_LOG(...)
 /*********************************************************************
-    CONSTANTS
-*/
+ * CONSTANTS
+ */
 
 #define CTRL_CONFIG   ( ADV_NCONN_CFG | ADV_CONN_CFG | SCAN_CFG | INIT_CFG )
-
+	
 //#if defined ( HOST_CONFIG )
 //  // Set the Controller Configuration
 
 /*
-    //  #if ( HOST_CONFIG == ( CENTRAL_CFG | PERIPHERAL_CFG ) )
-    //    #define CTRL_CONFIG   ( ADV_NCONN_CFG | ADV_CONN_CFG | SCAN_CFG | INIT_CFG )
-    //  #elif ( HOST_CONFIG == ( CENTRAL_CFG | BROADCASTER_CFG ) )
-    //    #define CTRL_CONFIG   ( ADV_NCONN_CFG | SCAN_CFG | INIT_CFG )
-    //  #elif ( HOST_CONFIG == ( PERIPHERAL_CFG | OBSERVER_CFG ) )
-    //    #define CTRL_CONFIG   ( ADV_NCONN_CFG | ADV_CONN_CFG | SCAN_CFG )
-    //  #elif ( HOST_CONFIG == ( BROADCASTER_CFG | OBSERVER_CFG ) )
-    //    #define CTRL_CONFIG   ( ADV_NCONN_CFG | SCAN_CFG )
-    //  #elif ( HOST_CONFIG == CENTRAL_CFG )
-    //    #define CTRL_CONFIG   ( SCAN_CFG | INIT_CFG )
-    //  #elif ( HOST_CONFIG == PERIPHERAL_CFG )
-    //    #define CTRL_CONFIG   ( ADV_NCONN_CFG | ADV_CONN_CFG )
-    //  #elif ( HOST_CONFIG == OBSERVER_CFG )
-    //    #define CTRL_CONFIG   SCAN_CFG
-    //  #elif ( HOST_CONFIG == BROADCASTER_CFG )
-    //    #define CTRL_CONFIG   ADV_NCONN_CFG
-    //  #else
-    //    #error "Build Configuration Error: Invalid Host Role!"
-    //  #endif
+//  #if ( HOST_CONFIG == ( CENTRAL_CFG | PERIPHERAL_CFG ) )
+//    #define CTRL_CONFIG   ( ADV_NCONN_CFG | ADV_CONN_CFG | SCAN_CFG | INIT_CFG )
+//  #elif ( HOST_CONFIG == ( CENTRAL_CFG | BROADCASTER_CFG ) )
+//    #define CTRL_CONFIG   ( ADV_NCONN_CFG | SCAN_CFG | INIT_CFG )
+//  #elif ( HOST_CONFIG == ( PERIPHERAL_CFG | OBSERVER_CFG ) )
+//    #define CTRL_CONFIG   ( ADV_NCONN_CFG | ADV_CONN_CFG | SCAN_CFG )
+//  #elif ( HOST_CONFIG == ( BROADCASTER_CFG | OBSERVER_CFG ) )
+//    #define CTRL_CONFIG   ( ADV_NCONN_CFG | SCAN_CFG )
+//  #elif ( HOST_CONFIG == CENTRAL_CFG )
+//    #define CTRL_CONFIG   ( SCAN_CFG | INIT_CFG )
+//  #elif ( HOST_CONFIG == PERIPHERAL_CFG )
+//    #define CTRL_CONFIG   ( ADV_NCONN_CFG | ADV_CONN_CFG )
+//  #elif ( HOST_CONFIG == OBSERVER_CFG )
+//    #define CTRL_CONFIG   SCAN_CFG
+//  #elif ( HOST_CONFIG == BROADCASTER_CFG )
+//    #define CTRL_CONFIG   ADV_NCONN_CFG
+//  #else
+//    #error "Build Configuration Error: Invalid Host Role!"
+//  #endif
 
-    //#else
-    //  // Controller Sanity Check: Stop build when no configuration is defined.
-    //  #if !defined( CTRL_CONFIG ) || !( CTRL_CONFIG & ( ADV_NCONN_CFG | \
-    //                                                    ADV_CONN_CFG  | \
-    //                                                    SCAN_CFG      | \
-    //                                                    INIT_CFG ) )
-    //    #error "Build Configuration Error: At least one Controller build component required!"
-    //  #endif // no Controller build components defined
-    //#endif
+//#else
+//  // Controller Sanity Check: Stop build when no configuration is defined.
+//  #if !defined( CTRL_CONFIG ) || !( CTRL_CONFIG & ( ADV_NCONN_CFG | \
+//                                                    ADV_CONN_CFG  | \
+//                                                    SCAN_CFG      | \
+//                                                    INIT_CFG ) )
+//    #error "Build Configuration Error: At least one Controller build component required!"
+//  #endif // no Controller build components defined
+//#endif
 */
 
-#if !defined ( MAX_NUM_LL_CONN )
-#if ( CTRL_CONFIG & INIT_CFG )
-#define MAX_NUM_LL_CONN                       8
-#elif ( !( CTRL_CONFIG & INIT_CFG ) && ( CTRL_CONFIG & ADV_CONN_CFG ) )
-#define MAX_NUM_LL_CONN                       1
-#else // no connection needed
-#define MAX_NUM_LL_CONN                       0
-#endif // CTRL_CONFIG=INIT_CFG
-#endif // !MAX_NUM_LL_CONN
+//#if !defined ( MAX_NUM_LL_CONN )
+//  #if ( CTRL_CONFIG & INIT_CFG )
+//    #define MAX_NUM_LL_CONN                       1
+//  #elif ( !( CTRL_CONFIG & INIT_CFG ) && ( CTRL_CONFIG & ADV_CONN_CFG ) )
+//    #define MAX_NUM_LL_CONN                       1
+//  #else // no connection needed
+//    #define MAX_NUM_LL_CONN                       0
+//  #endif // CTRL_CONFIG=INIT_CFG
+//#endif // !MAX_NUM_LL_CONN
 
-#define MAX_NUM_LL_CONN_ROM_LIMT                 16          //hard code for BBB ROM define
+#define MAX_NUM_LL_CONN 					  6
+
+#define MAX_NUM_LL_CONN_ROM_LIMT                 6          //hard code for BBB ROM define
 
 #if (MAX_NUM_LL_CONN_ROM_LIMT<MAX_NUM_LL_CONN)
 #warning "MAX_NUM_LL_CONN > MAX_NUM_LL_CONN_ROM"
 #endif
-
+#if (MAX_NUM_LL_CONN==0)
+#warning "ERR!!!! MAX_NUM_LL_CONN=0 !!!!!!"
+#endif
 /** @defgroup BLE_COMMON_DEFINES BLE Common Defines
-    @{
-*/
+ * @{
+ */
 //! Default Public and Random Address Length
 #define B_ADDR_LEN                                6
 
@@ -145,7 +149,7 @@ extern "C"
 #define B_MAX_PERIOD_ADV_LEN                      247
 
 // 2020-01-14 AOA/AOD IQ Sample LEN
-#define B_MAX_IQ_LEN                            0x52
+#define B_MAX_IQ_LEN							0x52
 
 //! BLE Random Number Size
 #define B_RANDOM_NUM_SIZE                         8
@@ -154,9 +158,9 @@ extern "C"
 #define B_FEATURE_SUPPORT_LENGTH                  8
 
 /** @defgroup BLE_STATUS_VALUES BLE Default BLE Status Values
-    returned as bStatus_t
-    @{
-*/
+ * returned as bStatus_t
+ * @{
+ */
 #define bleInvalidTaskID                INVALID_TASK  //!< Task ID isn't setup properly
 #define bleNotReady                     0x10  //!< Not ready to perform task
 #define bleAlreadyInRequestedMode       0x11  //!< Already performing that task
@@ -187,8 +191,8 @@ extern "C"
 /** @} End BLE_STATUS_VALUES */
 
 /** @defgroup BLE_NV_IDS BLE Non-volatile IDs
-    @{
-*/
+ * @{
+ */
 // Device NV Items -    Range 0 - 0x1F
 #define BLE_NVID_IRK                    0x02  //!< The Device's IRK
 #define BLE_NVID_CSRK                   0x03  //!< The Device's CSRK
@@ -204,17 +208,17 @@ extern "C"
 /** @} End BLE_NV_IDS */
 
 /*********************************************************************
-    BLE OSAL GAP GLOBAL Events
-*/
+ * BLE OSAL GAP GLOBAL Events
+ */
 #define GAP_EVENT_SIGN_COUNTER_CHANGED  0x4000  //!< The device level sign counter changed
 
 
 /** @defgroup BLE_MSG_IDS BLE OSAL Message ID Events
-        Reserved Message ID Event Values:<BR>
-          0xC0 - Key Presses<BR>
-          0xE0 to 0xFC - App<BR>
-    @{
-*/
+ *      Reserved Message ID Event Values:<BR>
+ *        0xC0 - Key Presses<BR>
+ *        0xE0 to 0xFC - App<BR>
+ * @{
+ */
 // GAP - Messages IDs (0xD0 - 0xDF)
 #define GAP_MSG_EVENT                         0xD0 //!< Incoming GAP message
 
@@ -237,37 +241,37 @@ extern "C"
 /** @} End BLE_MSG_IDS */
 
 /*********************************************************************
-    TYPEDEFS
-*/
+ * TYPEDEFS
+ */
 
-//! BLE Generic Status return: @ref BLE_STATUS_VALUES
+  //! BLE Generic Status return: @ref BLE_STATUS_VALUES
 typedef Status_t bStatus_t;
 
 /** @} End GAP_MSG_EVENT_DEFINES */
 
 
 /*********************************************************************
-    System Events
-*/
+ * System Events
+ */
 
 /*********************************************************************
-    Global System Messages
-*/
+ * Global System Messages
+ */
 
 /*********************************************************************
-    MACROS
-*/
+ * MACROS
+ */
 
 #define TI_BASE_UUID_128( uuid )  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xB0, \
-    0x00, 0x40, 0x51, 0x04, LO_UINT16( uuid ), HI_UINT16( uuid ), 0x00, 0xF0
+                                  0x00, 0x40, 0x51, 0x04, LO_UINT16( uuid ), HI_UINT16( uuid ), 0x00, 0xF0
 
 /*********************************************************************
-    GLOBAL VARIABLES
-*/
+ * GLOBAL VARIABLES
+ */
 
 /*********************************************************************
-    FUNCTIONS
-*/
+ * FUNCTIONS
+ */
 
 /*********************************************************************
 *********************************************************************/

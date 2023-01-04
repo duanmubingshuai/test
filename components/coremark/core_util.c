@@ -175,204 +175,6 @@ ee_s32 get_seed_32(int i)
 
 */
 
-
-
-ee_u16 crcu8_1(ee_u8 data, ee_u16 crc )
-{
-    ee_u8 i=0,x16=0,carry=0;
-
-    for (i = 0; i < 8; i++)
-    {
-        x16 = (ee_u8)((data & 1) ^ ((ee_u8)crc & 1));
-        data >>= 1;
-
-        if (x16 == 1)
-        {
-            crc ^= 0x4002;
-            carry = 1;
-        }
-        else
-            carry = 0;
-
-        crc >>= 1;
-
-        if (carry)
-            crc |= 0x8000;
-        else
-            crc &= 0x7fff;
-    }
-
-    return crc;
-}
-
-ee_u16 crcu8_2(ee_u8 data, ee_u16 crc )
-{
-    ee_u8 i=0,x16=0,carry=0;
-
-    for (i = 0; i < 8; i++)
-    {
-        x16 = (ee_u8)((data & 1) ^ ((ee_u8)crc & 1));
-        data >>= 1;
-
-        if (x16 == 1)
-        {
-            crc ^= 0x4002;
-            carry = 1;
-        }
-        else
-            carry = 0;
-
-        crc >>= 1;
-
-        if (carry)
-            crc |= 0x8000;
-        else
-            crc &= 0x7fff;
-    }
-
-    return crc;
-}
-
-ee_u16 crcu8_3(ee_u8 data, ee_u16 crc )
-{
-    ee_u8 i=0,x16=0,carry=0;
-
-    for (i = 0; i < 8; i++)
-    {
-        x16 = (ee_u8)((data & 1) ^ ((ee_u8)crc & 1));
-        data >>= 1;
-
-        if (x16 == 1)
-        {
-            crc ^= 0x4002;
-            carry = 1;
-        }
-        else
-            carry = 0;
-
-        crc >>= 1;
-
-        if (carry)
-            crc |= 0x8000;
-        else
-            crc &= 0x7fff;
-    }
-
-    return crc;
-}
-
-ee_u16 crcu8_4(ee_u8 data, ee_u16 crc )
-{
-    ee_u8 i=0,x16=0,carry=0;
-
-    for (i = 0; i < 8; i++)
-    {
-        x16 = (ee_u8)((data & 1) ^ ((ee_u8)crc & 1));
-        data >>= 1;
-
-        if (x16 == 1)
-        {
-            crc ^= 0x4002;
-            carry = 1;
-        }
-        else
-            carry = 0;
-
-        crc >>= 1;
-
-        if (carry)
-            crc |= 0x8000;
-        else
-            crc &= 0x7fff;
-    }
-
-    return crc;
-}
-
-ee_u16 crcu8_5(ee_u8 data, ee_u16 crc )
-{
-    ee_u8 i=0,x16=0,carry=0;
-
-    for (i = 0; i < 8; i++)
-    {
-        x16 = (ee_u8)((data & 1) ^ ((ee_u8)crc & 1));
-        data >>= 1;
-
-        if (x16 == 1)
-        {
-            crc ^= 0x4002;
-            carry = 1;
-        }
-        else
-            carry = 0;
-
-        crc >>= 1;
-
-        if (carry)
-            crc |= 0x8000;
-        else
-            crc &= 0x7fff;
-    }
-
-    return crc;
-}
-
-ee_u16 crcu8_6(ee_u8 data, ee_u16 crc )
-{
-    ee_u8 i=0,x16=0,carry=0;
-
-    for (i = 0; i < 8; i++)
-    {
-        x16 = (ee_u8)((data & 1) ^ ((ee_u8)crc & 1));
-        data >>= 1;
-
-        if (x16 == 1)
-        {
-            crc ^= 0x4002;
-            carry = 1;
-        }
-        else
-            carry = 0;
-
-        crc >>= 1;
-
-        if (carry)
-            crc |= 0x8000;
-        else
-            crc &= 0x7fff;
-    }
-
-    return crc;
-}
-
-ee_u16 crcu8_7(ee_u8 data, ee_u16 crc )
-{
-    ee_u8 i=0,x16=0,carry=0;
-
-    for (i = 0; i < 8; i++)
-    {
-        x16 = (ee_u8)((data & 1) ^ ((ee_u8)crc & 1));
-        data >>= 1;
-
-        if (x16 == 1)
-        {
-            crc ^= 0x4002;
-            carry = 1;
-        }
-        else
-            carry = 0;
-
-        crc >>= 1;
-
-        if (carry)
-            crc |= 0x8000;
-        else
-            crc &= 0x7fff;
-    }
-
-    return crc;
-}
-
 ee_u16 crcu8_0(ee_u8 data, ee_u16 crc )
 {
     ee_u8 i=0,x16=0,carry=0;
@@ -402,43 +204,42 @@ ee_u16 crcu8_0(ee_u8 data, ee_u16 crc )
 }
 
 extern uint8 g_crc_cnt;
-extern uint8 g_crc_entry[];
+//extern uint8 g_crc_entry[];
 ee_u16 crcu8(ee_u8 data, ee_u16 crc )
 {
-    g_crc_cnt++;
-
-    if(g_crc_entry[0x07&g_crc_cnt]==0)
-    {
-        return (crcu8_0( data,  crc ));
-    }
-    else if(g_crc_entry[0x07&g_crc_cnt]==1)
-    {
-        return (crcu8_1( data,  crc ));
-    }
-    else if(g_crc_entry[0x07&g_crc_cnt]==2)
-    {
-        return (crcu8_2( data,  crc ));
-    }
-    else if(g_crc_entry[0x07&g_crc_cnt]==3)
-    {
-        return (crcu8_3( data,  crc ));
-    }
-    else if(g_crc_entry[0x07&g_crc_cnt]==4)
-    {
-        return (crcu8_4( data,  crc ));
-    }
-    else if(g_crc_entry[0x07&g_crc_cnt]==5)
-    {
-        return (crcu8_5( data,  crc ));
-    }
-    else if(g_crc_entry[0x07&g_crc_cnt]==6)
-    {
-        return (crcu8_6( data,  crc ));
-    }
-    else/* if(g_crc_entry[0x07&g_crc_cnt]==7)*/
-    {
-        return (crcu8_7( data,  crc ));
-    }
+	g_crc_cnt++;
+    if(0==(g_crc_cnt&0x07))
+	{
+		return (crcu8_0( data,  crc ));
+	}
+	else if(1==(g_crc_cnt&0x07))
+	{
+		return (crcu8_1( data,  crc ));
+	}
+ 	else if(2==(g_crc_cnt&0x07))
+	{
+		return (crcu8_2( data,  crc ));
+	}
+	else if(3==(g_crc_cnt&0x07))
+	{
+		return (crcu8_3( data,  crc ));
+	}
+	else if(4==(g_crc_cnt&0x07))
+	{
+		return (crcu8_4( data,  crc ));
+	}
+	else if(5==(g_crc_cnt&0x07))
+	{
+		return (crcu8_5( data,  crc ));
+	}
+	else if(6==(g_crc_cnt&0x07))
+	{
+		return (crcu8_6( data,  crc ));
+	}
+	else if(7==(g_crc_cnt&0x07))
+	{
+		return (crcu8_7( data,  crc ));
+	}
 }
 
 ee_u16 crcu16(ee_u16 newval, ee_u16 crc)

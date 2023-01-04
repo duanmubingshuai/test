@@ -1139,7 +1139,7 @@ enum CORE_STATE core_state_transition_1( ee_u8** instr, ee_u32* transition_count
 }
 
 
-enum CORE_STATE core_state_transition_0( ee_u8** instr, ee_u32* transition_count)
+enum CORE_STATE core_state_transition( ee_u8** instr, ee_u32* transition_count)
 {
     ee_u8* str=*instr;
     ee_u8 NEXT_SYMBOL;
@@ -1283,42 +1283,11 @@ enum CORE_STATE core_state_transition_0( ee_u8** instr, ee_u32* transition_count
     The input pointer is updated to point to the end of the token, and the end state is returned (either specific format determined or invalid).
 */
 
-extern uint8 g_core_state_cnt;
-extern uint8 g_core_state_entry[];
-enum CORE_STATE core_state_transition( ee_u8** instr, ee_u32* transition_count)
-{
-    g_core_state_cnt++;
-
-    if(g_core_state_entry[0x07&g_core_state_cnt]==0)
-    {
-        return (core_state_transition_0( instr, transition_count));
-    }
-    else if(g_core_state_entry[0x07&g_core_state_cnt]==1)
-    {
-        return (core_state_transition_1( instr, transition_count));
-    }
-    else if(g_core_state_entry[0x07&g_core_state_cnt]==2)
-    {
-        return (core_state_transition_2( instr, transition_count));
-    }
-    else if(g_core_state_entry[0x07&g_core_state_cnt]==3)
-    {
-        return (core_state_transition_3( instr, transition_count));
-    }
-    else if(g_core_state_entry[0x07&g_core_state_cnt]==4)
-    {
-        return (core_state_transition_4( instr, transition_count));
-    }
-    else if(g_core_state_entry[0x07&g_core_state_cnt]==5)
-    {
-        return (core_state_transition_5( instr, transition_count));
-    }
-    else if(g_core_state_entry[0x07&g_core_state_cnt]==6)
-    {
-        return (core_state_transition_6( instr, transition_count));
-    }
-    else/* if(g_core_state_entry[0x07&g_core_state_cnt]==7)*/
-    {
-        return (core_state_transition_7( instr, transition_count));
-    }
-}
+//extern uint8 g_core_state_cnt;
+//extern uint8 g_core_state_entry[];
+//enum CORE_STATE core_state_transition( ee_u8** instr, ee_u32* transition_count)
+//{
+//   
+//        return (core_state_transition_0( instr, transition_count));
+//
+//}

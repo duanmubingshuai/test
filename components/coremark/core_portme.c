@@ -36,7 +36,7 @@
     volatile ee_s32 seed3_volatile=0x8;
 #endif
 //#define ITERATIONS 16
-#define ITERATIONS 256
+#define ITERATIONS 128
 volatile ee_s32 seed4_volatile=ITERATIONS;
 volatile ee_s32 seed5_volatile=0;
 /*  Porting : Timing functions
@@ -52,8 +52,23 @@ volatile ee_s32 seed5_volatile=0;
 */
 //#define NSECS_PER_SEC CLOCKS_PER_SEC
 
-uint32_t rtc_get_counter(void);
-char s_tmpstr[2048];
+uint32_t rtc_get_counter(void)
+{
+    uint32_t cnt0,cnt1;
+   
+    while(1)
+    {
+        cnt0 = (AP_AON->RTCCNT);
+        cnt1 = (AP_AON->RTCCNT);
+        
+        if(cnt1==cnt0)
+            break;
+    }
+    return cnt1;   
+}
+
+//char s_tmpstr[2048];
+char s_tmpstr[256];
 #define NSECS_PER_SEC 32768
 #define CORETIMETYPE clock_t
 //#define GETMYTIME(_t) (*_t=clock())
@@ -64,6 +79,7 @@ char s_tmpstr[2048];
 #define EE_TICKS_PER_SEC (NSECS_PER_SEC / TIMER_RES_DIVIDER)
 
 /** Define Host specific (POSIX), or target specific global time variables. */
+//static CORETIMETYPE start_time_val, stop_time_val;
 static CORETIMETYPE start_time_val, stop_time_val;
 
 /*  Function : start_time
@@ -88,7 +104,8 @@ void stop_time(void)
 
     if(stop_time_val  < start_time_val )
     {
-        stop_time_val += 0x1000000;
+        //stop_time_val += 0x1000000;
+		stop_time_val += 0x100000;//20bit rtc counter
     }
 }
 /*  Function : get_time

@@ -7,16 +7,16 @@ import getpass
 import platform
 import git
 import yaml
+import re
 from datetime import datetime
 
+# giturl = 'git@192.168.1.11:gecko/pico_sdk.git'
+# gitreleaseurl = 'git@192.168.1.11:phyplusdev/release_pico_sdk.git'
 #giturl = 'git@192.168.1.11:gecko/bbb_sdk.git'
 #gitreleaseurl = 'git@192.168.1.11:phyplusdev/release_bbb_sdk.git'
 #for test
 giturl = 'git@github.com:duanmubingshuai/test.git'
 gitreleaseurl = 'git@github.com:duanmubingshuai/hello_w.git'
-#for test
-#giturl = 'git@git.phyplusinc.com:yu.zheng/bbb_sdk.git'
-#gitreleaseurl = 'git@git.phyplusinc.com:yu.zheng/hello_w.git'
 #locallocation = '../git_python/clone3'
 
 locallocation = os.path.dirname(os.path.realpath(__file__))
@@ -46,9 +46,9 @@ optioninfo = '--help: help\n' + \
              '--mkbranch=\'branch name\': create a branch in remote, and upload files to this new-created branch\n' + \
              '--mkbranch (format --mkbranch \'branch name\')\n' +\
              '--mktag=\'tag name\': create a tag (format --mktag tagname SHA \'commit message\')\n' + \
-             '--2releaseR= \'TAG name\' \'build name\' \'cfg or None\' \'branch name\n' + \
              '--tag=\'tag name\' \'new branch name\': export a tag to local\n' +\
              '--rls=\'release config yaml\': export a tag to local push release remote repo\n'
+             #'--2releaseR= \'TAG name\' \'build name\' \'cfg or None\' \'branch name\'\n' + \
 helpstr = usage + optioninfo
 #dest = 0
 
@@ -145,6 +145,7 @@ def rls_config(fname):
     c = f.read()
     d = yaml.load(c,Loader=yaml.FullLoader)
     return d
+
 def sdk_rls(args):
     # global dest
     print(args)
@@ -161,22 +162,31 @@ def sdk_rls(args):
     # repo = git.Repo.init(path=releasefolder)
     # new_repo = git.Repo.clone_from(url=giturl, to_path=dest)
     print(locallocation)
+    # new_repo = git.Repo(locallocation)
+    # print('tag is ', cfg['ReleaseTagName'])
+
+    # log_SHA = sha_finder()
+    # tag_args = [log_SHA, 'release tag']
+    # ret=tag_create(cfg['ReleaseTagName'][0], tag_args)
+    if(ret==False):
+        return
+
+    print('build', cfg['BuildConfig'])
+    # choose sdk_build.yaml
+    #os.system('python .\sdk_build.py ' + '-l ' + cfg['BuildConfig'][0] + ' -b ' + cfg['BuildConfig'][1])   # with modified sdk_build.yaml
+    os.system('python .\sdk_build.py ' + '-l ' + cfg['BuildConfig'][0] + ' -b all')   # with modified sdk_build.yaml
+    #os.system('python .\sdk_build.py ' + '-l ' + 'sdk_build.yml' + ' -b all')   # with modified sdk_build.yaml	
+    # find latest log file
+    print('remove protect file')
+    protectfile(cfg['ProtectFile'])
+
     new_repo = git.Repo(locallocation)
     print('tag is ', cfg['ReleaseTagName'])
 
     log_SHA = sha_finder()
     tag_args = [log_SHA, 'release tag']
     ret=tag_create(cfg['ReleaseTagName'][0], tag_args)
-    if(ret==False):
-        return
-    print('remove protect file')
-    protectfile(cfg['ProtectFile'])
-    print('build', cfg['BuildConfig'])
-    # choose sdk_build.yaml
-    #os.system('python .\sdk_build.py ' + '-l ' + cfg['BuildConfig'][0] + ' -b ' + cfg['BuildConfig'][1])   # with modified sdk_build.yaml
-    os.system('python .\sdk_build.py ' + '-l ' + cfg['BuildConfig'][0] + ' -b all')   # with modified sdk_build.yaml
 
-    # find latest log file
     base_dir = locallocation+'\\_bld_script\\'
     filelist = os.listdir(base_dir)
     filelist.sort(key=lambda fn: os.path.getmtime(base_dir + fn) if not os.path.isdir(base_dir + fn) else 0)
@@ -204,7 +214,8 @@ def sdk_rls(args):
 
     #branch_name = args[3]+'_'+ args[0]+ '_'+ datetime.strftime(datetime.now(), '%Y%m%d%H%M%S')
     branch_name = cfg['ReleaseBranchName'][0]
-    new_repo.git.checkout('-b', branch_name) # create local branch.will be pushed to release roposity#branch name with time
+    # new_repo.git.checkout('-b', branch_name) # create local branch.will be pushed to release roposity#branch name with time
+    new_repo.git.checkout('--orphan', branch_name) # create local branch.will be pushed to release roposity#branch name with time
     #new_repo.git.pull('origin', 'master')
     # new_repo.git.fetch(new_origin)
     os.system('git branch --set-upstream-to='+ new_origin+'/'+branch_name)
@@ -234,109 +245,6 @@ def sdk_rls(args):
     '''
     return
 
-
-def sdk_2release(args):
-    # global dest
-    print(args)
-    # releasefolder = '\\release_' + datetime.strftime(datetime.now(), '%Y%m%d%H%M%S')
-    # dest = locallocation + releasefolder
-    # repo = git.Repo.init(path=releasefolder)
-    # new_repo = git.Repo.clone_from(url=giturl, to_path=dest)
-    new_repo = git.Repo(locallocation)
-    print('tag is ', args[0])
-
-    log_SHA = sha_finder()
-    tag_args = [log_SHA, 'release tag']
-    tag_create(args[0], tag_args)
-
-    print('remove protect file')
-    #protectfile()
-    print('build', args[1])
-
-    # choose sdk_build.yaml
-    if (args[2] == 'None'):
-        os.system('python .\sdk_build.py -build .\\ -b '+args[1])    # sdk_build
-    else:
-        os.system('python .\sdk_build.py ' + '-lcfg ' + args[2] + ' -b ' + args[1])   # with modified sdk_build.yaml
-
-    # find latest log file
-    base_dir = locallocation+'\\'
-    filelist = os.listdir(base_dir)
-    filelist.sort(key=lambda fn: os.path.getmtime(base_dir + fn) if not os.path.isdir(base_dir + fn) else 0)
-
-    logfile = filelist[-1]
-    print('latest file is', logfile)
-
-    build_error = build_result(logfile)
-    if(build_error):
-        print('error occurs during building')
-        return
-    remote = new_repo.git.remote('--v')
-    if gitreleaseurl in remote:
-        for i in range(len(remote.split('\n'))):
-            print('i = ', i)
-            print(remote.split('\n')[i])
-            print(remote.split('\n')[i].split('\t')[1].split(' ')[0])
-            if (remote.split('\n')[i].split('\t')[1].split(' ')[0] == gitreleaseurl):
-                new_origin = remote.split('\n')[i].split('\t')[0]  # remote url name already exist, take it
-                print('the release reposity name is ', new_origin)
-                break
-            else:
-                new_origin = 'origin2'
-                if i == (len(remote.split('\n')) - 1):
-                    new_repo.git.remote('add', new_origin, gitreleaseurl)   # origin2 is the name of release reposity
-
-    branch_name = args[3]+'_'+ args[0]+ '_'+ datetime.strftime(datetime.now(), '%Y%m%d%H%M%S')
-    new_repo.git.checkout('-b', branch_name) # create local branch.will be pushed to release roposity#branch name with time
-    new_repo.git.pull('origin', 'master')
-    # new_repo.git.fetch(new_origin)
-    os.system('git branch --set-upstream-to '+ new_origin +'/master')
-    #new_repo.git('branch', '--set-upstream-to', new_origin +'/master')
-    new_repo.git.add('.')
-    new_repo.git.add('-f', 'buildlog_*.txt')
-    new_repo.git.commit('-m', 'commit new-added file')
-    new_repo.git.push(new_origin, branch_name)
-    '''
-    # for add orgin2 tag
-    new_repo.git.remote('rm', 'origin')  #remove remote giturl origin
-    #new_repo.git.tag('|', 'xargs', '-I', '{}', 'git', 'tag', '-d', '{}')#git tag | xargs -I {} git tag -d {} #delete all local tag
-    tag_delete = new_repo.git.tag()
-    tag_delete = tag_delete.split('\n')
-    for i in range(len(tag_delete)):
-        new_repo.git.tag('-d', tag_delete[i])  #delete all local tag
-
-    new_repo.git.fetch('--tags')  #only gitreleaseurl exist
-    new_repo.git.remote('add', 'origin', gitreleaseurl)  #change origin's url for calling of tag_create()
-
-    print('tag is ', args[0])
-
-    log_SHA = sha_finder()
-    tag_args = [log_SHA, 'release tag']
-    tag_create(args[0], tag_args)
-    print('now the origin url is release reposity')
-    '''
-    return
-
-
-def build_result(logfile):
-    f = open(logfile, "r")
-    builderror = 0
-    while (True):
-        logstr = f.readline()
-        if (len(logstr) == 0):
-            break  # read conpleted
-        if (logstr.find('Error(s)') > 0 and logstr.find('Warning(s)') > 0):
-            errnum = int(logstr[logstr.find('-') + 1:logstr.find('Error(s)')])
-            warnum = int(logstr[logstr.find('Error(s)') + 9: logstr.find('Warning(s)')])
-            logstr = ''.join(logstr)
-            prjname = logstr.split('\\')[2].split('.')[0]
-            if (errnum + warnum):
-                print('Error %d, Warning %d' % (errnum, warnum))
-                print('project name', prjname)
-                if (errnum):
-                    print('error in ', prjname)
-                    builderror = builderror + errnum
-    return builderror
 def log_err_check(fname):
     flog=open(fname,"r")
     flog.seek(0,0)
@@ -346,7 +254,7 @@ def log_err_check(fname):
         if(len(logstr) == 0):
             break #read completed
         if(logstr.find('Error(s)')>0 and logstr.find('Warning(s)')>0 ):
-            errnum =errnum+ int(logstr[logstr.find('-')+1:logstr.find('Error(s)')])
+            errnum = errnum+ int(logstr[logstr.find('-')+1:logstr.find('Error(s)')])
             warnum = warnum+int(logstr[logstr.find('Error(s)')+9: logstr.find('Warning(s)')])
         if(logstr.find('prj build fail check _bld.txt')>0):
             failnum = failnum+1
@@ -379,8 +287,13 @@ def sdk_merge():
 
 def get_bld_path(bld):
     bldList=[]
-    for p in bld:
-        bldList.append(os.path.split(bld[p][0])[0])
+    list = rls_config(bld)
+    for p in list:
+        lists = list[p][0]
+        filename = re.split('ck802_proj', lists)
+        # print('lists:', lists)
+        # print('filename:', filename[0])
+        bldList.append(filename[0])
     return bldList
 
 def get_dir_path(path,depth=None):
@@ -402,26 +315,33 @@ def find_del_fold(bld,cur):
         flg=1
         for c in bld:
             if(a.find(c)>0):
-                if(a.split('\\')[-1]==c.split('\\')[-1]):
+                if(a.split('\\')[-2]==c.split('\\')[-2]):
+                    # print('a split:', c.split('\\')[-2])
                     flg=0
                 break
         if(flg):
-            delPath.append(a)
+            filename = re.split('ck802_proj', a)
+            delPath.append(filename[0])
+    
+    # print('delPath:', delPath)
     return delPath
 
 def protectfile(cfg):
     print('protect code')
     print(cfg)
-    bld = get_bld_path(rls_config(cfg[0]['rls_example'][0]))
-    print(bld)
-    cur=get_dir_path(os.path.join(locallocation,'example'),2)
+
+    bld = get_bld_path(cfg[0]['rls_example'][0])
+    print('bld:', bld)
+
+    cur=get_dir_path(os.path.join(locallocation,'example'),3)
+    # print('cur:', cur)
     remove_example=find_del_fold(bld,cur)
-    
+    # print('remove_example:', remove_example)
     for del_path in remove_example:
-        # print(del_path)
+        print('del_path', del_path)
         f_path = 'aliGenie_bleMesh'
         if f_path in del_path :
-            print(del_path)
+            print('del_path:', del_path)
         else:
             cmd = 'rd /s /q ' + del_path
             print(cmd)
@@ -535,7 +455,8 @@ def main(argv):
         print(helpstr)
         return
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'h?', ['branch', 'merge', 'release=', '2releaseR', 'rls','mkbranch=', 'mktag=', 'tag=','trunk', 'help', 'dummy'])
+        #opts, args = getopt.getopt(sys.argv[1:], 'h?', ['branch', 'merge', 'release=', '2releaseR', 'rls','mkbranch=', 'mktag=', 'tag=','trunk', 'help', 'dummy'])
+        opts, args = getopt.getopt(sys.argv[1:], 'h?', ['branch', 'merge', 'release=', 'rls','mkbranch=', 'mktag=', 'tag=','trunk', 'help', 'dummy'])
         #if (len(opts) + len(args) != len(argv) - 1):
             #print('args after =')
             #print(helpstr)
@@ -580,15 +501,7 @@ def main(argv):
             sdk_merge()
             print('merged')
             break
-
-        elif opt == '--2releaseR':
-            if (len(args) != 4):
-                print('4 arguments:\n1.TAG name\n2.which project to build or all')
-                print('3.configuration file(sdk_build) or default(None)\n4.branch created in destination reposity\n')
-                break
-            sdk_2release(args)
-            print('uploaded')
-            break
+            
         elif opt == '--rls':
             if(len(args)!=1):
                 print('input release yaml file')
