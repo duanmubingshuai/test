@@ -1,0 +1,32 @@
+*.i
+*.d
+*.o
+*.asm
+*.htm
+*.map
+*.bin
+*.elf
+*.ihex
+*.hexo
+*.hex
+*.hexf
+*.txt
+*.bat
+*.session
+*.mk
+*.db
+*.cdkws.*
+*.tags
+!_bld_script/format.bat
+*.session
+*.log
+
+#ignor folder
+**/.cdk
+**/Obj
+**/Lst
+
+#VS Coder
+.vscode
+*.code-workspace
+

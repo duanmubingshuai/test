@@ -1,0 +1,13 @@
+---
+
+cdk0:
+- C:\C-Sky\CDK\cdk-make.exe
+
+cdk1:
+- C:\CDK\cdk-make.exe
+
+cdk2: 
+- D:\C-Sky\CDK\cdk-make.exe
+
+cdk3:
+- D:\CDK\cdk-make.exe
