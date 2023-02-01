@@ -17,6 +17,7 @@
 *.db
 *.cdkws.*
 *.tags
+
 !_bld_script/format.bat
 !_bld_script_keil_cdk/format.bat
 *.session
@@ -24,7 +25,7 @@
 
 
 #ignor folder
-_bld_script_keil_cdk
+
 **/.cdk
 **/Obj
 **/Lst
