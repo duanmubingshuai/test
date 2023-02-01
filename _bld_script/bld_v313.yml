@@ -1,19 +1,19 @@
 ---
-efuse_lib: 
-- 'lib\generate_efuse_lib\lib_efuse3.uvprojx'
-- [Objects\lib_efuse3.lib, ..\lib_efuse3.lib]
+# efuse_lib: 
+# - 'lib\generate_efuse_lib\lib_efuse3.uvprojx'
+# - [Objects\lib_efuse3.lib, ..\lib_efuse3.lib]
 
 rf: 
 - 'lib\generate_lib\rf.uvprojx'
 - [Objects\rf.lib, ..\rf.lib]
 
-snrf:
-- example\PhyPlusPhy\smart_nrf\smart_nrf.uvprojx
+# snrf:
+# - example\PhyPlusPhy\smart_nrf\smart_nrf.uvprojx
 
-sbp:
-- example\ble_peripheral\simpleBlePeripheral\simpleBlePeripheral.uvprojx
-- {'_BUILD_FOR_DTM_':'0'}
-- [Objects\simpleBlePeripheral.hex, bin\sbp.hex,sbp.asm]
+# sbp:
+# - example\ble_peripheral\simpleBlePeripheral\simpleBlePeripheral.uvprojx
+# - {'_BUILD_FOR_DTM_':'0'}
+# - [Objects\simpleBlePeripheral.hex, bin\sbp.hex,sbp.asm]
 
 sbpmc:
 - example\ble_peripheral\sbpMultiConn\sbpMultiConn.uvprojx
@@ -24,14 +24,14 @@ sbc:
 - example\ble_central\simpleBleCentral\simpleBleCentral.uvprojx
 - [Objects\simpleBleCentral.hex, bin\simpleBleCentral.hex,sbc.asm]
 
-sbm:
-- example\ble_multi\simpleBleMultiConnection\simpleBleMulti.uvprojx
+# sbm:
+# - example\ble_multi\simpleBleMultiConnection\simpleBleMulti.uvprojx
 
 spiflash:
 - example\peripheral\spiflash\spiflash.uvprojx
 
-slb:
-- example\OTA\slboot\slboot.uvprojx
+# slb:
+# - example\OTA\slboot\slboot.uvprojx
 
 mesh_switch:
 - example\ble_mesh\mesh_switch\mesh_switch.uvprojx
