@@ -448,20 +448,20 @@ def protectfile(cfg):
 		else:
 			cmd = 'rd /s /q ' + del_path
 			print(cmd)
-			# validcmd(cmd)
+			validcmd(cmd)
 
 	for del_path in cfg[2]['remove_folder']:
 		#libsrcpath = 'clonefile'+ '\\' + del_path[1]  #clone file cannot have a space inside
 		libsrcpath = locallocation.split('/')[-1] + '\\' + del_path  # clone file cannot have a space inside
 		cmd = 'rd /s /q ' + libsrcpath  # rd means delete, s means project and subproject, q means no notification(quiet) then is the address
 		print(cmd)
-		# validcmd(cmd)   #os.system(cmd)
+		validcmd(cmd)   #os.system(cmd)
 	
 	for del_path in cfg[1]['remove_file']:
 		libsrcpath = locallocation.split('/')[-1] + '\\' + del_path  # clone file cannot have a space inside
 		cmd = 'del /f /q ' + libsrcpath  # part of files will be deleted
 		print(cmd)
-		# validcmd(cmd)   #os.system(cmd)
+		validcmd(cmd)   #os.system(cmd)
 	
 	return 0
 
