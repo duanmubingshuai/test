@@ -27,5 +27,6 @@ ProtectFile:
   - lib\otpbin_sbpusb\
   - lib\otpbin_usb\
   - lib\src_ble\
+  - example\fpga_app\
   - components\libraries\dwc\
   - components\libraries\libc\
