@@ -15,6 +15,6 @@ cdk3:
 #urladdr
 GitUrl:
 - git_url:
-  - git@github.com:duanmubingshuai/project.git
+  - git@github.com:duanmubingshuai/test.git
 - git_releaseurl:
   - git@github.com:duanmubingshuai/hello_w.git
