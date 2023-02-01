@@ -246,8 +246,8 @@ def sdk_rls(args):
 	if((err+warn)>0 or fail>4):
 		print('!!! release build check fail !!! Err %d Warning %d Fail %d\n'%(err,warn,fail))
 		return
-	return
-'''
+	# return
+
 	remote = new_repo.git.remote('--v')
 	if gitreleaseurl in remote:
 		for i in range(len(remote.split('\n'))):
@@ -281,7 +281,7 @@ def sdk_rls(args):
 	ret=tag_create(cfg['ReleaseTagName'][0], tag_args)
 	if(ret==False):
 		return
-'''
+	return
 '''
 	# for add orgin2 tag
 	new_repo.git.remote('rm', 'origin')  #remove remote giturl origin
