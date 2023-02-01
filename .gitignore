@@ -25,7 +25,7 @@
 
 
 #ignor folder
-
+__bld_cmd
 **/.cdk
 **/Obj
 **/Lst
