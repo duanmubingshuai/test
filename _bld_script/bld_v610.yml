@@ -3,3 +3,15 @@
 rf: 
 - lib\generate_lib\ck802_proj\rf.cdkws
 - [Obj\rf.a, ..\..\librf.a]
+
+light:
+- example\ble_peripheral\simple_ble_light\ck802_proj\pwm_light.cdkws
+
+snrf:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+
+adc:
+- example\peripheral\adc\ck802_proj\adc.cdkws
+
+
+

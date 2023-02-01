@@ -20,7 +20,7 @@
 !_bld_script/format.bat
 *.session
 *.log
-_bld_script_keil_cdk
+/_bld_script_keil_cdk
 
 #ignor folder
 **/.cdk
