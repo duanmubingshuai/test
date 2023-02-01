@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDK_Workspace Name="simple_private_central" Database="simple_private_central.tags" DoubleClick="Yes">
+  <DefaultPackPath>$(CDKWS)\__workspace_pack__</DefaultPackPath>
+  <Project Name="spc" Path="simple_private_central.cdkproj" RootPath="" Active="Yes"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Environment/>
+      <Project Name="spc" ConfigName="BuildSet"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CDK_Workspace>
