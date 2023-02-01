@@ -1,0 +1,10 @@
+
+# Build Root ...
+ROOT = ..
+
+# Objects Directory
+OBJDIR = $(ROOT)/build/obj
+
+# Library Directory
+LIBDIR = $(ROOT)/lib/$(TARGET)/$(TARGET_OS)/$(TOOL_CHAIN)
+

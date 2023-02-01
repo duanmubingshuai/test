@@ -43,7 +43,6 @@
 /*********************************************************************
     INCLUDES
 */
-#include "rom_sym_def.h"
 #include "rf_phy_driver.h"
 #include "global_config.h"
 #include "OSAL.h"
@@ -55,8 +54,8 @@
 #include "ll_hw_drv.h"
 #include "clock.h"
 #include "gpio.h"
+#include "flash.h"
 #include "rf_phy_nrf.h"
-//#include "pwm_light.h"
 
 /*********************************************************************
     MACROS
@@ -82,18 +81,17 @@
 #define PHYPLUS_RFPHY_TRX_PENDING               (0x12)
 #define PHYPLUS_RFPHY_RX_TXACK_PENDING          (0x13)
 
+#define PHYPLUS_RFPHY_IDLE                      (0xFF)
+
 #define RFPHY_STATUS_SET_PENDING(x)             (0x10 |(x))
 #define RFPHY_STATUS_CLR_PENDING(x)             (0x0F &(x))
-
-
-#define PHYPLUS_RFPHY_IDLE                      (0xFF)
 
 #define PHYPLUS_AUTOACK_ENABLE                  (1)
 #define PHYPLUS_AUTOACK_DISABLE                 (0)
 #define PHYPLUS_NRF_DISABLE                     (0)
 #define PHYPLUS_NRF_ENABLE                      (1)
-#define PHYPLUS_MESH_DISABLE                    (0)
-#define PHYPLUS_MESH_ENABLE                     (1)
+#define PHYPLUS_MESH_DISABLE                     (0)
+#define PHYPLUS_MESH_ENABLE                      (1)
 #define LL_HW_MODE_STX                          (0x00)
 #define LL_HW_MODE_SRX                          (0x01)
 #define LL_HW_MODE_TRX                          (0x02)
@@ -137,7 +135,6 @@
 #endif
 #define PHYPLUS_RF_MAX_LENGTH                   (PHYPLUS_DATA_MAX_LENGTH+12)
 
-#define PHYPLUS_DBG_INTV                        (10) //unit: second
 
 
 
@@ -167,9 +164,6 @@
 
 extern uint8 ll_hw_get_tr_mode(void);
 extern volatile uint32 llWaitingIrq;
-extern volatile uint8_t g_same_rf_channel_flag;
-extern uint32_t g_t_llhwgo;
-
 /*********************************************************************
     TYPE Define
 */
@@ -203,7 +197,8 @@ typedef struct phyCtx_s
     uint8_t     enAutoAck;
     uint8_t     phyMode;
 } phyCtx_t;
-typedef struct phySch_s         //defined, but not used here
+
+typedef struct phySch_s
 {
     uint32_t    txMargin;
     uint32_t    rxMargin;
@@ -236,8 +231,10 @@ uint8 PhyPlusPhy_TaskID; // Task ID for internal task/event processing
 //volatile uint32 phyWaitingIrq = FALSE;
 uint32 PHY_ISR_entry_time = 0;
 
-uint8_t  phyBufRx[PHYPLUS_RF_MAX_LENGTH] __attribute__ ((aligned(4)));;
-uint8_t  phyBufTx[PHYPLUS_RF_MAX_LENGTH] __attribute__ ((aligned(4)));;
+__align(4) uint8_t  phyBufRx[256];
+__align(4) uint8_t  phyBufTx[256];
+//static uint8_t s_pubAddr[6];
+uint8_t adv_buffer[32];
 
 uint8_t s_pubAddr[6];
 static uint8_t advHead[2];
@@ -252,7 +249,7 @@ uint16_t s_rf_netid=0x0a01;
 uint16_t s_rf_target_netid=0x0103;
 #endif
 
-static uint8_t adv_buffer[PHYPLUS_DATA_MAX_LENGTH];
+static uint8_t adv_buffer[32];
 #if(DEF_PHYPLUS_MESH_SUPPORT != PHYPLUS_MESH_ENABLE && DEF_PHYPLUS_NRF_SUPPORT == PHYPLUS_NRF_DISABLE)
 static uint8_t peer_addr[6]= {0x4,0x3,0x2,0x1,0x6,0x5};
 #endif
@@ -284,17 +281,16 @@ phy_comm_cb_t phy_opcode_cbfunc = NULL;
 /*********************************************************************
     LOCAL FUNCTIONS
 */
-void phy_rf_process_tsmt(void);
 extern void PLUSPHY_IRQHandler(void);
 uint32 BLE_IRQHandler_Restore = NULL;
 void PhyPlusPhy_Set_BLE_IRQHandler(void)
 {
     if(BLE_IRQHandler_Restore)
     {
-        JUMP_FUNCTION_SET(V4_IRQ_HANDLER,BLE_IRQHandler_Restore);
+        JUMP_FUNCTION(V4_IRQ_HANDLER)                   =   BLE_IRQHandler_Restore;
         ll_hw_set_crc_fmt(LL_HW_CRC_BLE_FMT,LL_HW_CRC_BLE_FMT);
         subWriteReg(0x40030040, 4, 4, 0);
-//        subWriteReg(0x40030008,8,8,1);
+        subWriteReg(0x40030008,8,8,1);
     }
 }
 uint8_t rf_rxdata_check(uint8_t *din)
@@ -307,28 +303,20 @@ uint8_t rf_rxdata_check(uint8_t *din)
         if((PHYPLUS_GET_ACK_BIT(pData[0])) || !(PHYPLUS_GET_NEEDACK_BIT(pData[0])) || ((PHYPLUS_GET_PID(pData[0])) == s_rf_lastpid) || (s_rf_crc == s_rf_lastcrc))   //check ACK, NEEDACK, PID, CRC 
         {
             ret = PPlus_ERR_INVALID_FLAGS;
-            // LOG("wrong flags: ACK:%d  NEEDACK:%d  PID:%d  CRCcode:%d\n",pData[0]&0x08,pData[0]&0x04,pData[0]&0x03,s_rf_crc);
-            // if(((pData[0]&0x03) == s_rf_lastpid) || (s_rf_crc == s_rf_lastcrc))
-            // {
-            //     LOG("repeated message\n");
-            // }
+            LOG("wrong flags: ACK:%d  NEEDACK:%d  PID:%d  CRCcode:%d\n",pData[0]&0x08,pData[0]&0x04,pData[0]&0x03,s_rf_crc);
+            if(((pData[0]&0x03) == s_rf_lastpid) || (s_rf_crc == s_rf_lastcrc))
+            {
+                LOG("repeated message\n");
+            }
             //gpio_write(P9,1);gpio_write(P9,0);gpio_write(P9,1);gpio_write(P9,0);
             //LOG_DEBUG(":%02x:%02x:%02x\n",pData[0],s_rf_crc,s_rf_lastpid);
             return ret;
         }
-        // if(!osal_memcmp(peer_addr,pData+2,6))    //20221020 ZONG: move addr check outside
-        // {
-        //     ret = PPlus_ERR_INVALID_ADDR;
-        //     LOG("wrong addr:");
-        //     //my_dump_byte(&pData[2], 6);
-
-        //     return ret;
-        // }
         #else       //20221020 ZONG:remove PID&Addr check when in mesh
         if(s_rf_crc == s_rf_lastcrc)   
         {
             ret = PPlus_ERR_INVALID_FLAGS;
-            // LOG("repeated message\n");
+            LOG("repeated message\n");
             //gpio_write(P9,1);gpio_write(P9,0);gpio_write(P9,1);gpio_write(P9,0);
             //LOG_DEBUG(":%02x:%02x:%02x\n",pData[0],s_rf_crc,s_rf_lastpid);
             return ret;
@@ -345,7 +333,6 @@ uint8_t rf_txack_check(uint8_t *din)
 {
     uint8_t ret = PPlus_ERR_FATAL;
     uint8_t *pData = din;
-
     if(!(PHYPLUS_GET_ACK_BIT(pData[0])) || (PHYPLUS_GET_NEEDACK_BIT(pData[0])) || (PHYPLUS_GET_PID(pData[0])!=s_rf_pid))   //check the bits of ACK, NEEDACK, PID
     {
         ret = PPlus_ERR_INVALID_DATA;
@@ -356,18 +343,24 @@ uint8_t rf_txack_check(uint8_t *din)
         // }
         return ret;
     }
-    // if(!osal_memcmp(s_pubAddr,pData+2,6))
-    // {
-    //     ret = PPlus_ERR_INVALID_ADDR;
-    //     // LOG("wrong addr:");
-    //     // my_dump_byte(&pData[2], 6);
-    //     return ret;
-    // }
     
     return PPlus_SUCCESS;
 }
 
 #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_TX)
+
+static uint32  read_ble_remainder_time(void)
+{
+    uint32 currentCount;
+    uint32 g_tim1_pass = read_current_fine_time();
+    currentCount = AP_TIM1->CurrentCount;
+
+    if((currentCount < 6) || NVIC_GetPendingIRQ(TIM1_IRQn))
+        return 0;
+    else
+        return (currentCount >> 2);
+}
+
 static uint8 phy_allow_tx(void)
 {
     uint32 advTime, margin;
@@ -390,7 +383,6 @@ static uint8 phy_allow_tx(void)
     }
 
     // Hold off interrupts.
-    _HAL_CS_ALLOC_();
     HAL_ENTER_CRITICAL_SECTION( );
 
     // read global config to get advTime and margin
@@ -402,7 +394,8 @@ static uint8 phy_allow_tx(void)
 
     margin = s_phySch.txMargin;
     // remain time before trigger LL HW
-    remainTime = (AP_TIM1->ControlReg) ?read_LL_remainder_time() :0xffff;
+    remainTime = (AP_TIM1->ControlReg) ? read_ble_remainder_time() : 0xffff;
+    // remainTime = (AP_TIM1->ControlReg) ?read_LL_remainder_time() :0xffff;
 
     if ((remainTime > advTime + margin)
             && !llWaitingIrq)
@@ -412,8 +405,7 @@ static uint8 phy_allow_tx(void)
 
     if(ret==FALSE)
     {
-        //warning: sbpsmart BLE disconnect while this LOG is enable, just available for debug
-        //  LOG("[DIS TX] s%d r%d a%d m%d  ret%d\n",llWaitingIrq,remainTime,advTime,margin,ret);  
+        //LOG("[DIS TX] s%d r%d a%d m%d\n",llWaitingIrq,remainTime,advTime,margin);
     }
 
     return ret;
@@ -428,12 +420,12 @@ static uint8 phy_allow_rx(uint32_t* scanTimeAllow)
     uint8 ret = FALSE;
     uint32_t t0=read_current_fine_time();
     // Hold off interrupts.
-    _HAL_CS_ALLOC_();
     HAL_ENTER_CRITICAL_SECTION( );
     // read global config to get advTime and margin
     margin = s_phySch.rxMargin;
     // remain time before trigger LL HW
-    remainTime = (AP_TIM1->ControlReg) ?read_LL_remainder_time() :0xffff;
+    remainTime = (AP_TIM1->ControlReg) ? read_ble_remainder_time() : 0xffff;
+    // remainTime = (AP_TIM1->ControlReg) ?read_LL_remainder_time() :0xffff;
     remainTime = remainTime>margin ?
                  remainTime - margin : 0;
     scanTime = (TIME_DELTA(t0, s_phy.rxScanT0)<s_phy.rxOnlyTO) ?
@@ -451,10 +443,9 @@ static uint8 phy_allow_rx(uint32_t* scanTimeAllow)
     *scanTimeAllow = scanTime;
     HAL_EXIT_CRITICAL_SECTION();
 
-   if(ret==FALSE)
+    if(ret==FALSE)
     {
-        //warning: sbpsmart BLE disconnect while this LOG is enable, just available for debug
-        // LOG("[DIS RX] s%d r%d a%d m%d  ret%d\n",llWaitingIrq,remainTime,scanTime,margin,ret);
+        //LOG("[DIS RX] s%d r%d a%d m%d\n",llWaitingIrq,remainTime,scanTime,margin);
     }
 
     return ret;
@@ -464,13 +455,12 @@ static uint8 phy_allow_rx(uint32_t* scanTimeAllow)
 static uint8_t phy_rx_data_check(void)
 {
     uint8_t ret=PPlus_SUCCESS;
+
     if(s_phy.Status==PHYPLUS_RFPHY_RX_ONLY || s_phy.Status==PHYPLUS_RFPHY_RX_TXACK)
     {
 #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
-            //check the peer addr, crc, PID
-        //if(s_pktCfg.crcFmt==LL_HW_CRC_NULL)
         {
-            ret = nrf_rxdata_check(phyBufRx);
+        ret = nrf_rxdata_check(phyBufRx);
         }
         //else
 #else
@@ -494,9 +484,7 @@ static uint8_t phy_rx_data_check(void)
     {
 #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
         //process data check
-        //if(s_pktCfg.crcFmt  ==   LL_HW_CRC_NULL)
-        {
-            ret = nrf_txack_check(phyBufRx);//check from the addr[0]
+        ret = nrf_txack_check(phyBufRx);//check from the addr[0]
         }
 #else
         {
@@ -508,8 +496,8 @@ static uint8_t phy_rx_data_check(void)
             s_phy.txAck=1;
             s_phyDbg.rx_txack_cnt++;
         }
+
         return ret;
-        
     }
 
     return ret;
@@ -518,19 +506,13 @@ static uint8_t phy_rx_data_check(void)
 void phy_set_channel(uint8 rfChnIdx)
 {
     if(g_rfPhyFreqOffSet>=0)
-    {
         PHY_REG_WT(0x400300b4, (g_rfPhyFreqOffSet<<16)+(g_rfPhyFreqOffSet<<8)+rfChnIdx);
-    }
     else
-    {
         PHY_REG_WT(0x400300b4, ((255+g_rfPhyFreqOffSet)<<16)+((255+g_rfPhyFreqOffSet)<<8)+(rfChnIdx-1) );
-    }
-    
 }
 
 void phy_hw_go(void)
 {
-#if 0
     //20190115 ZQ recorded ll re-trigger
     if(llWaitingIrq==TRUE)
     {
@@ -552,25 +534,15 @@ void phy_hw_go(void)
     }
 
     if(s_pktCfg.pktFmt==PKT_FMT_BLE2M)
-    {
         subWriteReg(0x40030094,7,0,RF_PHY_TPCAL_CALC(g_rfPhyTpCal0_2Mbps,g_rfPhyTpCal1_2Mbps,(rfChnIdx-2)>>1));
-    }
     else
-    {
         subWriteReg(0x40030094,7,0,RF_PHY_TPCAL_CALC(g_rfPhyTpCal0,g_rfPhyTpCal1,(rfChnIdx-2)>>1));
-    }
 
+    #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
     //change to diff demod for nrf2.4G
     subWriteReg(0x40030004,14,8,60);
     subWriteReg(0x40030008,8,8,0);
-#else
-    g_same_rf_channel_flag = TRUE;
-    uint32_t tmp = g_t_llhwgo;
-    ll_hw_go0();
-    g_t_llhwgo = tmp;
-    g_same_rf_channel_flag = FALSE;
-#endif
-    
+    #endif
 }
 
 
@@ -659,10 +631,10 @@ uint8_t phy_rf_tx(void)
     }
     else
     {
-        JUMP_FUNCTION_SET(V4_IRQ_HANDLER,(uint32_t)&PLUSPHY_IRQHandler);
+        JUMP_FUNCTION(V4_IRQ_HANDLER)                   =   (uint32_t)&PLUSPHY_IRQHandler;
     }
+
     phy_hw_stop();
-    _HAL_CS_ALLOC_();
     HAL_ENTER_CRITICAL_SECTION();
     phy_hw_pktFmt_Config(s_pktCfg);
     phy_hw_timing_setting();
@@ -682,8 +654,8 @@ uint8_t phy_rf_tx(void)
     }
 #else
     {
-        set_max_length(PHYPLUS_RF_MAX_LENGTH); 
-        //need updata phyBufTx    
+        set_max_length(0xff);
+        //need updata phyBufTx
         ll_hw_write_tfifo(s_pktCfg.p_txBuf,s_pktCfg.p_txBuf[1]+2);
     }
 #endif
@@ -706,10 +678,10 @@ uint8_t phy_rf_rx(void)
     }
     else
     {
-        JUMP_FUNCTION_SET(V4_IRQ_HANDLER,(uint32_t)&PLUSPHY_IRQHandler);
+        JUMP_FUNCTION(V4_IRQ_HANDLER)                   =   (uint32_t)&PLUSPHY_IRQHandler;
     }
+
     phy_hw_stop();
-    _HAL_CS_ALLOC_();
     HAL_ENTER_CRITICAL_SECTION();
     phy_hw_pktFmt_Config(s_pktCfg);
     phy_hw_timing_setting();
@@ -724,7 +696,7 @@ uint8_t phy_rf_rx(void)
     }
 #else
     {
-        set_max_length(PHYPLUS_RF_MAX_LENGTH);
+        set_max_length(0xff);
     }
 #endif
 
@@ -774,7 +746,7 @@ void phy_rf_txack(void)
     #if(DEF_PHYPLUS_MESH_SUPPORT==PHYPLUS_MESH_DISABLE)
     {
         uint8_t rfRxPID;
-        uint8_t rfTxAckBuf[PHYPLUS_RF_MAX_LENGTH];
+        uint8_t rfTxAckBuf[40];
         //setup RF AutoAck Pkt
         rfRxPID = PHYPLUS_GET_PID(s_pktCfg.p_rxBuf[0]); //get PID
         rfTxAckBuf[0]= 0x08 | rfRxPID;    //pack type-flag and PID into 1st byte
@@ -793,13 +765,13 @@ void phy_rf_txack(void)
             }
         }
         dLen=rfTxAckBuf[1];
-        set_max_length(PHYPLUS_RF_MAX_LENGTH);
+        set_max_length(44);
         ll_hw_write_tfifo(rfTxAckBuf,dLen+2);
     }
     #else
     {
         uint8_t rfRxPID;
-        uint8_t rfTxAckBuf[PHYPLUS_RF_MAX_LENGTH];
+        uint8_t rfTxAckBuf[40];
         //setup RF AutoAck Pkt
         rfRxPID = PHYPLUS_GET_PID(s_pktCfg.p_rxBuf[0]); //get PID
         rfTxAckBuf[0]= 0x08 | rfRxPID;    //pack type-flag and PID into 1st byte
@@ -822,7 +794,7 @@ void phy_rf_txack(void)
             }
         }
         dLen=rfTxAckBuf[1];
-        set_max_length(PHYPLUS_RF_MAX_LENGTH);
+        set_max_length(44);
         ll_hw_write_tfifo(rfTxAckBuf,dLen+2);
     }
     #endif
@@ -835,13 +807,13 @@ void phy_rf_txack(void)
     s_phy.Status = PHYPLUS_RFPHY_RX_TXACK;
     s_phyDbg.rx_txack_t0 = TIME_DELTA(t0,PHY_ISR_entry_time);       //time from IRQ to Set_STX
     s_phyDbg.rx_txack_t1 = TIME_DELTA(t1,t0);                       //time from Set_STX to TX_Ready
+    LOG_DEBUG("Delay: %d, Spent Time: %d\n",delay, s_phyDbg.rx_txack_t1);
     s_phyDbg.tx_ack_cnt++;
 
 }
 
 void phy_rx_data_process(void)
 {
-    _HAL_CS_ALLOC_();
     HAL_ENTER_CRITICAL_SECTION();
 
 #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
@@ -863,7 +835,7 @@ void phy_rx_data_process(void)
         if(phy_data_cbfunc == NULL)
         {
             LOG("-------------------------\n");
-            LOG_DEBUG("[PHY RX] [-%03ddbm %4dKHz %02d CH] ",pRssi,phyFoff-512,s_phy.rfChn);
+            LOG("[PHY RX] [-%03ddbm %4dKHz %02d CH] ",pRssi,phyFoff-512,s_phy.rfChn);
             LOG("PCF: L%2x pid %2x no_ack %2x ",pData.pldLen,pData.pid,pData.noAckBit);
             LOG("ADDR:");
             my_dump_byte(&pData.addr[0], 5);
@@ -917,7 +889,6 @@ void phy_rx_data_process(void)
         }
     }
 #endif
-    
 }
 
 void phy_tx_buf_updata(uint8_t* adva,uint8_t* txHead,uint8_t* txPayload,uint8_t dlen)
@@ -952,27 +923,11 @@ void phy_tx_buf_updata(uint8_t* adva,uint8_t* txHead,uint8_t* txPayload,uint8_t 
     LOG("\n-----------------------------------------------\n");
 }
 #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)
-uint32_t last_rx_data_cnt = 0;
-void phy_rx_dbg(void)
-{
-    uint32_t delta;
-    if(s_phyDbg.rx_data_cnt > last_rx_data_cnt)
-    {
-        delta = s_phyDbg.rx_data_cnt - last_rx_data_cnt;
-    }
-    else
-    {
-        delta = 0xFFFFFFFF - last_rx_data_cnt + s_phyDbg.rx_data_cnt;
-    }
-    LOG("rx_data_cnt in %d s: %d\n",PHYPLUS_DBG_INTV, delta);
-    last_rx_data_cnt = s_phyDbg.rx_data_cnt;
-}
-
 void phy_rf_process_recv(void)
 {
     if(s_phy.Status == PHYPLUS_RFPHY_IDLE)
         return;
-    _HAL_CS_ALLOC_();
+
     HAL_ENTER_CRITICAL_SECTION();
     s_phy.Status = RFPHY_STATUS_CLR_PENDING(s_phy.Status);
     uint8_t ret= phy_rf_rx();
@@ -990,7 +945,7 @@ void phy_rf_process_tsmt(void)
 {
     if(s_phy.Status == PHYPLUS_RFPHY_IDLE)
         return;
-    _HAL_CS_ALLOC_();
+
     HAL_ENTER_CRITICAL_SECTION();
     s_phy.Status = RFPHY_STATUS_CLR_PENDING(s_phy.Status);
     uint8_t ret= phy_rf_tx();
@@ -1008,7 +963,7 @@ void phy_rf_channel_hop(void)
     s_chanHop.curIdx++;
     if(s_chanHop.curIdx==PHYPLUS_CHAN_MAP_NUM)
         s_chanHop.curIdx = 0;
-        
+
     s_phy.rfChn         = s_chanHop.chan_map[s_chanHop.curIdx];
 #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_DISABLE)
     s_pktCfg.wtSeed     = s_chanHop.wt_map[s_chanHop.curIdx]; 
@@ -1029,9 +984,9 @@ void phy_rf_schedule(void)
             {
                 if(TIME_DELTA(t0,s_txT0)>s_phy.txDuration)
                 {
-                    s_phy.Status = PHYPLUS_RFPHY_IDLE;
-                    osal_set_event(PhyPlusPhy_TaskID,PPP_TX_DONE_EVT);
-                }
+        s_phy.Status = PHYPLUS_RFPHY_IDLE;
+        osal_set_event(PhyPlusPhy_TaskID,PPP_TX_DONE_EVT);
+    }
                 else
                 {
                     osal_set_event(PhyPlusPhy_TaskID,PPP_TX_PENDING_PROCESS_EVT);
@@ -1110,10 +1065,18 @@ void phy_rf_schedule(void)
         {
             txdone = 0;
             s_chanHop.curIdx = 0;       //reset chmap
+            if(s_phy.txAck)
+            {
+                LOG_DEBUG("[TX OK]\n");
+            }
+            else
+            {
+                LOG_DEBUG("[TX FAIL]\n");
+            }
             osal_set_event(PhyPlusPhy_TaskID,PPP_TRX_DONE_EVT);
             if(s_phy.txIntv==0)
-            {
-                s_phy.Status = PHYPLUS_RFPHY_IDLE;
+        {
+            s_phy.Status = PHYPLUS_RFPHY_IDLE;
             }
             else
             {
@@ -1122,10 +1085,10 @@ void phy_rf_schedule(void)
         }
         else
         {
-                if(s_phy.reTxDly>s_phy.rxAckTO)
-                    WaitUs(s_phy.reTxDly-s_phy.rxAckTO);
+            if(s_phy.reTxDly>s_phy.rxAckTO)
+                WaitUs(s_phy.reTxDly-s_phy.rxAckTO);
 
-                phy_rf_process_tsmt();
+            phy_rf_process_tsmt();
         }
     }
     #endif
@@ -1161,7 +1124,6 @@ void PLUSPHY_IRQHandler(void)
     }
 
     llWaitingIrq = FALSE;
-    _HAL_CS_ALLOC_();
     HAL_ENTER_CRITICAL_SECTION();
     mode = ll_hw_get_tr_mode();
 
@@ -1188,20 +1150,20 @@ void PLUSPHY_IRQHandler(void)
                 ll_hw_read_rfifo_pplus(s_pktCfg.p_rxBuf, &pktLen,&pktFoot0,&pktFoot1);
                 rf_phy_get_pktFoot_fromPkt(pktFoot0,pktFoot1,
                                            &phyRssi,&phyFoff,&phyCarrSens);
-
                 //do crc check
                 if(nrf_pkt_crc_check(phyBufRx))
                 {
-                    #if(DEF_PHYPLUS_AUTOACK_SUPPORT == PHYPLUS_AUTOACK_ENABLE)       //SRX:RX->TXACK
                     {
-                        phy_rf_txack();
+                        #if(DEF_PHYPLUS_AUTOACK_SUPPORT == PHYPLUS_AUTOACK_ENABLE)       //SRX:RX->TXACK
+                        {
+                            phy_rf_txack();
                     }
-                    #endif
+                        #endif
                     phy_rx_data_check();
+                }
                 }
                 else
                     s_phyDbg.rx_crc_err++;
-              
             }
         }
 
@@ -1209,7 +1171,6 @@ void PLUSPHY_IRQHandler(void)
         {
             if(irq_status & LIRQ_COK)
             {
-                
                 uint16_t pktLen;
                 uint32_t pktFoot0, pktFoot1;
                 ll_hw_read_rfifo(s_pktCfg.p_rxBuf, &pktLen,&pktFoot0,&pktFoot1);
@@ -1227,12 +1188,12 @@ void PLUSPHY_IRQHandler(void)
                         s_rf_crc=0;
                         osal_memcpy((uint8_t*)(&s_rf_crc),(uint8_t*)(&s_pktCfg.p_rxBuf[pktLen]),3);
                         phy_rf_txack();
-                        // LOG("%08x\n",s_rf_crc);
+                        LOG("%08x\n",s_rf_crc);
                         
                     }
                     #endif
                 phy_rx_data_check();
-                }
+            }
                 #if(DEF_PHYPLUS_MESH_SUPPORT == PHYPLUS_MESH_ENABLE)
                 else if((s_rf_netid != 0) && (s_pktCfg.p_rxBuf[10] == 0) && (s_pktCfg.p_rxBuf[11] == PHYPLUS_GET_GROUPID(s_rf_netid)))          //PHYPLUS_IS_GROUP_ADV((s_pktCfg.p_rxBuf+10),s_rf_netid)     
                 {
@@ -1241,15 +1202,18 @@ void PLUSPHY_IRQHandler(void)
                     if(s_rf_crc != s_rf_lastcrc)
                     {
                         osal_set_event(PhyPlusPhy_TaskID,PPP_RX_DATA_PROCESS_EVT);
-                    }
+        }
                     s_rf_lastcrc =  s_rf_crc;
                     s_phyDbg.rx_data_cnt++;
                 }                    //20221020 ZONG: add NET_ID check for mesh mode
                 #endif
                 else
                 {
-                    //wrong device, ignore
-                    s_phyDbg.rx_data_ign++;
+
+                    // LOG("wrong device:\n");
+                    // my_dump_byte((uint8_t*)s_pktCfg.p_rxBuf+10, 2);
+                    // dbg_printf("%02x %02x\n",s_rf_netid>>8,s_rf_netid&0xFF);
+                    //my_dump_byte(&pData[2], 6);
                 }
             }
         }
@@ -1292,12 +1256,15 @@ void PLUSPHY_IRQHandler(void)
                 #endif
                 {
                 phy_rx_data_check();
-                }
+            }
                 else
                 {
-                    //wrong device, ignore
-                    s_phyDbg.rx_data_ign++;
-                }
+                    LOG("wrong device:\n");
+                #if(DEF_PHYPLUS_MESH_SUPPORT == PHYPLUS_MESH_ENABLE)
+                    my_dump_byte((uint8_t*)s_pktCfg.p_rxBuf+10, 2);
+                    dbg_printf("%02x %02x\n",s_rf_netid>>8,s_rf_netid&0xFF);
+				#endif
+        }
             }
         }
         #endif
@@ -1310,9 +1277,8 @@ void PLUSPHY_IRQHandler(void)
         ll_hw_clr_irq();
         PhyPlusPhy_Set_BLE_IRQHandler();
     }
-    
+
     HAL_EXIT_CRITICAL_SECTION();
-    
     phy_rf_schedule();
 }
 
@@ -1333,12 +1299,11 @@ void PLUSPHY_IRQHandler(void)
 void PhyPlusPhy_Init(uint8 task_id)
 {
     PhyPlusPhy_TaskID = task_id;
-
-    BLE_IRQHandler_Restore = JUMP_FUNCTION_GET(V4_IRQ_HANDLER);
-    
     //set phy irq handeler
-    //JUMP_FUNCTION_SET(V4_IRQ_HANDLER,(uint32_t)&PLUSPHY_IRQHandler);
-    osal_memset(adv_buffer,0,PHYPLUS_DATA_MAX_LENGTH);   
+    //JUMP_FUNCTION(V4_IRQ_HANDLER)                   =   (uint32_t)&PLUSPHY_IRQHandler;
+    BLE_IRQHandler_Restore = JUMP_FUNCTION(V4_IRQ_HANDLER) ;
+
+    osal_memset(adv_buffer,0,32);   
 
     //phy pktfmt config
     s_phy.enAutoAck     =   DEF_PHYPLUS_AUTOACK_SUPPORT; // for NRF_MODE_ENHANCE_SHOCKBURST need enable autoack
@@ -1346,8 +1311,8 @@ void PhyPlusPhy_Init(uint8 task_id)
     s_chanHop.curIdx    =   0;
     #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
     uint8_t nrf_addr[5] = {0xc7,0x34,0x89,0x71,0xd6};//NRF ADDR Format
-    uint8_t nrf_addrLen = NRF_ADDR_LEN_5BYTE;
-    uint8_t nrf_pudLen  = PHYPLUS_DATA_MAX_LENGTH;
+    uint8_t nrf_addrLen = NRF_ADDR_LEN_3BYTE;
+    uint8_t nrf_pudLen  = 32;
     uint8_t nrf_mode;
     if(s_phy.enAutoAck  ==   PHYPLUS_AUTOACK_ENABLE)
     {
@@ -1376,7 +1341,7 @@ void PhyPlusPhy_Init(uint8 task_id)
     s_pubAddr[5] = p[4];
     s_pubAddr[4] = p[5];
     s_pktCfg.syncWord   =   DEFAULT_SYNCWORD;
-    s_pktCfg.pduLen     =   PHYPLUS_DATA_MAX_LENGTH+6;// (1+2+2+1);
+    s_pktCfg.pduLen     =   31+6;// (1+2+2+1);
     #if(DEF_PHYPLUS_AUTOACK_SUPPORT == PHYPLUS_AUTOACK_DISABLE)
         advHead[0]= 0x02;
     #else
@@ -1392,37 +1357,31 @@ void PhyPlusPhy_Init(uint8 task_id)
 
     s_phySch.txMargin   =   1500;//us
     s_phySch.rxMargin   =   2000;//us
-    
-    s_phy.rxOnlyTO      =   10*1000;//us    valid range: 2000 --- 65535
-    
-    // #if(PHYPLUS_ADV_CH_HOPPING == 1)
-    // s_phy.rfChn         =   BLE_ADV_CHN37;// RF Freq  = 2400 + rfchn    //BLE_ADV_CHN37
-    // #else
+    s_phy.rxOnlyTO      =   1000*1000;//us
+
     s_phy.rfChn         =   s_chanHop.chan_map[0];// RF Freq  = 2400 + rfchn    //BLE_ADV_CHN37
-    // #endif
 
     #if(DEF_PHYPLUS_AUTOACK_SUPPORT == PHYPLUS_AUTOACK_DISABLE)
     {
         s_phy.rxAckTO       =   0;//us, Set to 0 switch to STX instead of TRX mode for send data
         s_phy.reTxMax       =   0;//tx retry count Max, Set to 0 to turn off Auto-ReTx
-        s_phy.reTxDly       =   0;//auto retry delay    
+        s_phy.reTxDly       =   0;//auto retry delay
     }
     #else
     {
         s_phy.rxAckTO       =   500;//us, Set to 0 switch to STX instead of TRX mode for send data
-        s_phy.reTxMax       =   5;//tx retry count Max, Set to 0 to turn off Auto-ReTx
-        s_phy.reTxDly       =   500;//auto retry delay     
+        s_phy.reTxMax       =   5;//tx retry count Max
+        s_phy.reTxDly       =   500;//auto retry delay
     }
     #endif
-    
+
 
     #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
     s_pktCfg.p_txBuf    =   &(phyBufTx[4]);
     s_pktCfg.p_rxBuf    =   &(phyBufRx[4]);
-
     LOG("[NRF_CFG] :v%08x  Mode %d  pdu len %d CRCB %d addrLen %d Addr:",
-    nrfConfig.version,nrfConfig.mode,nrfTxBuf.pldLen,nrfConfig.crcByte,nrfConfig.addrLen);
-    // my_dump_byte(nrfTxBuf.addr,nrfConfig.addrLen);
+        nrfConfig.version,nrfConfig.mode,nrfTxBuf.pldLen,nrfConfig.crcByte,nrfConfig.addrLen);
+    my_dump_byte(nrfTxBuf.addr,nrfConfig.addrLen);
     #else
     s_pktCfg.p_txBuf    =   &(phyBufTx[0]);
     s_pktCfg.p_rxBuf    =   &(phyBufRx[0]);
@@ -1433,36 +1392,33 @@ void PhyPlusPhy_Init(uint8 task_id)
 //    gpio_pull_set(P11, GPIO_PULL_UP);
 //    if(0==gpio_read(P11))
 //    {
-//        LOG_DEBUG("TX\n");
+//        LOG("START PPP_PERIODIC_TX_EVT\n");
 //        VOID osal_start_timerEx(PhyPlusPhy_TaskID, PPP_PERIODIC_TX_EVT, 1000);
-//
 //    }
 //    else
 //    {
-//        LOG_DEBUG("RX\n");
+//        LOG("START PPP_PERIODIC_RX_EVT\n");
 //        VOID osal_start_timerEx(PhyPlusPhy_TaskID, PPP_PERIODIC_RX_EVT, 100);
 //    }
-    
     LOG("[PHY] init done %d rfchn%d AutoAck %d SW[%8x] CRC[%d %8x] WT[%2x]\n"\
         ,s_phy.Status,s_phy.rfChn,s_phy.enAutoAck,s_pktCfg.syncWord,s_pktCfg.crcFmt, s_pktCfg.crcSeed,s_pktCfg.wtSeed);
-
 }
 static void show_phy_debug_info(void)
 {
     LOG("[PHY DBG]st %02x [TX]dat %d ack %d rty %d [ackT]%d %d [RX]dat %d ack%d crc %d ign %d \n"
-    ,s_phy.Status,s_phyDbg.tx_data_cnt,s_phyDbg.tx_ack_cnt,s_phyDbg.tx_retry_cnt
-    ,s_phyDbg.rx_txack_t0,s_phyDbg.rx_txack_t1
-    ,s_phyDbg.rx_data_cnt,s_phyDbg.rx_txack_cnt,s_phyDbg.rx_crc_err,s_phyDbg.rx_data_ign);
+        ,s_phy.Status,s_phyDbg.tx_data_cnt,s_phyDbg.tx_ack_cnt,s_phyDbg.tx_retry_cnt
+        ,s_phyDbg.rx_txack_t0,s_phyDbg.rx_txack_t1
+        ,s_phyDbg.rx_data_cnt,s_phyDbg.rx_txack_cnt,s_phyDbg.rx_crc_err,s_phyDbg.rx_data_ign);
 }
 
 #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)
 static void process_rx_done_evt(void)
 {
     //LOG("rx done evt\n");
-    
+
 //    osal_set_event(PhyPlusPhy_TaskID,PPP_PERIODIC_RX_EVT);
-    
-    show_phy_debug_info();
+
+    //show_phy_debug_info();
 }
 #endif
 
@@ -1520,7 +1476,7 @@ static void process_trx_done_evt(void)
         }
         //osal_start_timerEx(PhyPlusPhy_TaskID,PPP_PERIODIC_TX_EVT,10);
     }
-    // LOG_DEBUG("trx done evt reTry %d reMax %d\n",s_phy.reTxCnt,s_phy.reTxMax);
+    LOG_DEBUG("trx done evt reTry %d reMax %d\n",s_phy.reTxCnt,s_phy.reTxMax);
     s_phy.reTxCnt = 0;
     s_phy.txAck   = 0;
     show_phy_debug_info();
@@ -1560,7 +1516,6 @@ uint8_t phy_rf_stop_tx(void)
     {
         s_phy.txIntv = 0;
                 s_phy.Status = PHYPLUS_RFPHY_IDLE;
-    
         osal_stop_timerEx(PhyPlusPhy_TaskID,PPP_TX_PENDING_PROCESS_EVT);
         return PPlus_SUCCESS;
     }
@@ -1577,7 +1532,7 @@ uint8_t phy_rf_start_tx(uint8_t* din, uint8_t dLen, uint32_t txintv, uint16_t ta
     s_rf_target_netid = targetnetid;
     #endif
     // osal_set_event(PhyPlusPhy_TaskID,PPP_PERIODIC_TX_EVT);
-        phy_nrf_send_data(din, dLen);
+    phy_nrf_send_data(din, dLen);
     return PPlus_SUCCESS;
 }
 #endif
@@ -1596,7 +1551,7 @@ uint8_t phy_rf_stop_rx(void)
             s_phy.Status = PHYPLUS_RFPHY_IDLE;
             osal_set_event(PhyPlusPhy_TaskID,PPP_RX_DONE_EVT);
         }
-        osal_stop_timerEx(PhyPlusPhy_TaskID,PPP_RX_DBG_EVT);
+
         return PPlus_SUCCESS;
     }
     else
@@ -1611,7 +1566,6 @@ uint8_t phy_rf_start_rx(uint32 rxTimeOut)
     s_phy.rxOnlyTO = rxTimeOut;
     s_phy.Status = PHYPLUS_RFPHY_RX_ONLY;
     s_phy.rxScanT0 = read_current_fine_time();
-    osal_start_timerEx(PhyPlusPhy_TaskID,PPP_RX_DBG_EVT,10000);
     phy_rf_process_recv();
     return PPlus_SUCCESS;
 }
@@ -1620,6 +1574,7 @@ uint8_t phy_rf_get_current_status(void)
 {
     return s_phy.Status;
 }
+
 /*********************************************************************
     @fn      PhyPlusPhy_ProcessEvent
 
@@ -1648,27 +1603,20 @@ uint16 PhyPlusPhy_ProcessEvent(uint8 task_id, uint16 events)
         process_rx_done_evt();
         return(events ^ PPP_RX_DONE_EVT);
     }
-
-    if(events & PPP_RX_DBG_EVT)
-    {
-        phy_rx_dbg();
-        osal_start_timerEx(PhyPlusPhy_TaskID,PPP_RX_DBG_EVT,10000);
-        return(events ^ PPP_RX_DBG_EVT);
-    }
 #endif
 
 #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_TX)
     if(events & PPP_TX_PENDING_PROCESS_EVT)
-    {
+        {
         phy_rf_process_tsmt();
         return(events ^ PPP_TX_PENDING_PROCESS_EVT);
-    }
+        }
 
     if(events & PPP_TX_DONE_EVT)
-    {
+        {
         process_tx_done_evt();
         return(events ^ PPP_TX_DONE_EVT);
-    }
+        }
 
     if(events & PPP_TRX_DONE_EVT)
     {
@@ -1687,14 +1635,26 @@ uint16 PhyPlusPhy_ProcessEvent(uint8 task_id, uint16 events)
     return 0;
 }
 uint8_t phy_adv_data_update(uint8_t* din, uint8_t dLen)
-{
-#if(DEF_PHYPLUS_MESH_SUPPORT==PHYPLUS_MESH_ENABLE && DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_DISABLE)
-    if((dLen+4)> PHYPLUS_DATA_MAX_LENGTH)
     {
-        LOG("Invalid DataLength!\n");
-        return PPlus_ERR_INVALID_LENGTH;
+#if(DEF_PHYPLUS_MESH_SUPPORT==PHYPLUS_MESH_ENABLE && DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_DISABLE)
+    #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
+        {
+        if(dLen > 28)
+        {
+            LOG("Invalid DataLength!\n");
+            return PPlus_ERR_INVALID_LENGTH;
+        }
     }
-    osal_memset(adv_buffer,0,PHYPLUS_DATA_MAX_LENGTH);           //reset adv_buffer
+    #else
+        {
+        if(dLen > 27)
+        {
+            LOG("Invalid DataLength!\n");
+            return PPlus_ERR_INVALID_LENGTH;
+        }
+    }
+	#endif
+    osal_memset(adv_buffer,0,32);           //reset adv_buffer
     adv_buffer[0] = (uint8_t)(s_rf_netid & 0x00FF);
     adv_buffer[1] = (uint8_t)((s_rf_netid & 0xFF00) >> 8);
     adv_buffer[2] = (uint8_t)(s_rf_target_netid & 0x00FF);
@@ -1713,12 +1673,24 @@ uint8_t phy_adv_data_update(uint8_t* din, uint8_t dLen)
     return PPlus_SUCCESS;
 
 #else
-        if(dLen > PHYPLUS_DATA_MAX_LENGTH)
+    #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
+    {
+        if(dLen > 32)
+        {
+            LOG("Invalid DataLength!\n");
+            return PPlus_ERR_INVALID_LENGTH;
+    }
+    }
+    #else
+    {
+        if(dLen > 31)
         {
             LOG("Invalid DataLength!\n");
             return PPlus_ERR_INVALID_LENGTH;
         }
-    osal_memset(adv_buffer,0,PHYPLUS_DATA_MAX_LENGTH);           //reset adv_buffer
+    }
+	#endif
+    osal_memset(adv_buffer,0,32);           //reset adv_buffer
     osal_memcpy(adv_buffer,din,dLen);      //copy payload
 
     #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
@@ -1732,16 +1704,16 @@ uint8_t phy_adv_data_update(uint8_t* din, uint8_t dLen)
 	#endif
     return PPlus_SUCCESS;
 #endif
-}
+    }
 
 void phy_adv_opcode_update(uint8_t opcode)
-{
+    {
     advHead[0] = (advHead[0] & 0x0F) | (opcode << 4);
-}
+    }
 
 
 uint8_t phy_cbfunc_regist(int8_t cbfunc_type, uint8_t (*phy_comm_cb_t)(phy_comm_evt_t *pev))
-{
+    {
     if(cbfunc_type == PHY_DATA_CB)
     {
         phy_data_cbfunc = phy_comm_cb_t;
@@ -1755,16 +1727,16 @@ uint8_t phy_cbfunc_regist(int8_t cbfunc_type, uint8_t (*phy_comm_cb_t)(phy_comm_
         return PPlus_ERR_INVALID_PARAM;
     }
     return PPlus_SUCCESS;
-}
+    }
 
 uint8_t phy_update_syncword(uint32_t syncword)
-{
+    {
     s_pktCfg.syncWord = syncword;
     return PPlus_SUCCESS;
-}
+    }
 
 uint8_t phy_update_chmap(uint8_t chnum, uint8_t *chmap, uint8_t *wtmap)
-{
+    {
     if(chnum != PHYPLUS_CHAN_MAP_NUM)
     {
         return PPlus_ERR_INVALID_PARAM;
@@ -1772,12 +1744,12 @@ uint8_t phy_update_chmap(uint8_t chnum, uint8_t *chmap, uint8_t *wtmap)
     osal_memcpy(s_chanHop.chan_map, chmap, chnum);
     osal_memcpy(s_chanHop.wt_map, wtmap, chnum); 
     return PPlus_SUCCESS;
-}
+    }
 
 void phy_set_tx_maxtime(uint32_t txdura)
 {
     s_phy.txDuration = txdura; //μs
 }
+
 /*********************************************************************
 *********************************************************************/
-

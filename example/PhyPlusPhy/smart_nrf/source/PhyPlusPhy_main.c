@@ -50,9 +50,8 @@
 #include "log.h"
 #include "timer.h"
 #include "phy_plus_phy.h"
-#if (PHYPLUS_LIGHT_CONTROL == 1)
-#include "pwm_light.h"
-#endif
+//#include "pwm_light.h"
+
 
 #define SNRF_START_TX_EVT           0x0001
 #define SNRF_START_RX_EVT           0x0002
@@ -60,17 +59,15 @@
 #define SNRF_SEND_DATA_EVT          0x0008
 #define SNRF_STOP_RX_EVT            0x0020
 #define SNRF_SEARCH_HIGH_IO_EVT     0x0040
-#if (PHYPLUS_LIGHT_CONTROL == 1)
-#define SNRF_PWMLIGHT_ONOFF_EVT     0x0010
-#endif
 
 #define SNRF_PREPARED_ACKPDU_NUM    8
 
 uint8_t Smart_nRF_data_process(phy_comm_evt_t *pdata);
+
 uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t *packbuf);
 
-// phy_comm_evt_t s_prepared_ackpdu[SNRF_PREPARED_ACKPDU_NUM];
-// uint8_t test_prepared_ackpdu[32] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
+phy_comm_evt_t s_prepared_ackpdu[SNRF_PREPARED_ACKPDU_NUM];
+uint8_t test_prepared_ackpdu[32] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
 #if(DEF_PHYPLUS_MESH_SUPPORT == PHYPLUS_MESH_ENABLE && DEF_PHYPLUS_NRF_SUPPORT == PHYPLUS_NRF_DISABLE)
 extern uint16_t s_rf_netid;
 #endif
@@ -91,84 +88,69 @@ int app_main(void)
     osal_pwrmgr_device(PWRMGR_BATTERY);
     /* Start OSAL */
     osal_start_system(); // No Return from here
-    return 0;
+	return 0;
 }
 uint8_t Smart_nRF_TaskID;
+// static bool key_debounce = false;
 static uint8_t key_pin;
+// void key_hdl1(gpio_pin_e pin,gpio_polarity_e type)
+// {
+//  if(key_debounce == false)
+//  {
+//    key_pin = pin;
+//    phy_rf_stop_tx();
+//    osal_stop_timerEx(Smart_nRF_TaskID,SNRF_START_TX_EVT);
+//    phy_rf_stop_rx();
+//    osal_stop_timerEx(Smart_nRF_TaskID,SNRF_START_RX_EVT);
+//    osal_stop_timerEx(Smart_nRF_TaskID,SNRF_STOP_RX_EVT);
+//    osal_set_event(Smart_nRF_TaskID,SNRF_SEND_DATA_EVT);  
+//  }
+//  key_debounce = true;
+//  osal_start_timerEx(Smart_nRF_TaskID, IO_EVT_MASK_200MS, 200);
+ 
+// }
 
-#if (PHYPLUS_LIGHT_CONTROL == 1)
-static bool key_debounce = false;
-void key_hdl1(gpio_pin_e pin,gpio_polarity_e type)
-{
-  #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_TX)    
-  if(key_debounce == false)
-  {
-    key_pin = pin;
-    phy_rf_stop_tx();
-    osal_stop_timerEx(Smart_nRF_TaskID,SNRF_START_TX_EVT);
-    osal_set_event(Smart_nRF_TaskID,SNRF_PWMLIGHT_ONOFF_EVT);  
-  }
-  key_debounce = true;
-  #endif
-  osal_start_timerEx(Smart_nRF_TaskID, PWMLIGHT_EVT_200MS, 200);
-  
-}
-
-gpioin_t s_gpio_in[3];
-#endif
 void Smart_nRF_Init(uint8 task_id)
 {
-    int ret;
     Smart_nRF_TaskID = task_id;
     #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_DISABLE)
     phy_cbfunc_regist(PHY_DATA_CB,Smart_nRF_data_process);
     #endif
 	#if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)    
-    // phy_cbfunc_regist(PHY_OPCODE_CB,Smart_nRF_generate_ackpdu);
-	
-	// phy_comm_evt_t a =
-	// {
-	// 	.type = 1,
-	// 	.len = 31,
-	// 	.data = test_prepared_ackpdu,
-	// 	.rssi = 0,
-	// };
-	// s_prepared_ackpdu[0] = a;
-    #endif
+    //phy_cbfunc_regist(PHY_OPCODE_CB,Smart_nRF_generate_ackpdu);
+	#endif
+	phy_comm_evt_t a =
+	{
+		.type = 1,
+		.len = 31,
+		.data = test_prepared_ackpdu,
+		.rssi = 0,
+	};
+	s_prepared_ackpdu[0] = a;
     #if(DEF_PHYPLUS_TRX_SUPPORT == PHYPLUS_CONFIG_TRX_ALL)
     {
-       if(gpio_read(P8) == 1)
-        {
-            LOG_DEBUG("SMART_nRF: Start Tx\n");
-            osal_set_event(Smart_nRF_TaskID, SNRF_START_TX_EVT);
-        }
-        else
-        {
-            LOG_DEBUG("SMART_nRF: Start Rx\n");
-            osal_set_event(Smart_nRF_TaskID, SNRF_START_RX_EVT);
-        }
+       if(gpio_read(P0) == 1)
+       {
+           LOG_DEBUG("SMART_nRF: Start Tx\n");
+           osal_set_event(Smart_nRF_TaskID, SNRF_START_TX_EVT);
+       }
+       else
+       {
+           LOG_DEBUG("SMART_nRF: Start Rx\n");
+           osal_set_event(Smart_nRF_TaskID, SNRF_START_RX_EVT);
+       }
         osal_start_timerEx(Smart_nRF_TaskID,SNRF_SEARCH_HIGH_IO_EVT,1000);
     #if(DEF_PHYPLUS_MESH_SUPPORT == PHYPLUS_MESH_ENABLE && DEF_PHYPLUS_NRF_SUPPORT == PHYPLUS_NRF_DISABLE)
     LOG_DEBUG("s_rf_netid = %x\n",s_rf_netid);
     #endif
     }
     #elif(DEF_PHYPLUS_TRX_SUPPORT == PHYPLUS_CONFIG_TX)
+	LOG_DEBUG("SMART_nRF: Start Tx\n");
     osal_set_event(Smart_nRF_TaskID,SNRF_START_TX_EVT);
-    #elif(DEF_PHYPLUS_TRX_SUPPORT == PHYPLUS_CONFIG_RX)
+    #else
     osal_set_event(Smart_nRF_TaskID,SNRF_START_RX_EVT);
+	LOG_DEBUG("SMART_nRF: Start Rx\n");
     #endif
-#if (PHYPLUS_LIGHT_CONTROL == 1)
-    //iniitial GPIO for TX triggle
-    gpioin_init(s_gpio_in, 3);
-    gpio_pull_set(P15, GPIO_PULL_UP);
-    gpio_pull_set(P17, GPIO_PULL_UP);
-    gpio_pull_set(P2, GPIO_PULL_UP);
-    ret = gpioin_register(P15, key_hdl1, NULL);
-    ret = gpioin_register(P17, key_hdl1, NULL);
-    ret = gpioin_register(P2, key_hdl1, NULL);
-
-    LOG("g :%d\n", ret);
-#endif
 }
 #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_TX)
 static uint16_t advCnt=1;
@@ -204,11 +186,10 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
         
         advertData[dlen-2]=advCnt>>8;
         advertData[dlen-1]=advCnt&0xff;
-        uint8_t ret=0;
         if(advCnt&0x01)
         {
             // phy_adv_opcode_update(advCnt % 9);
-            ret=phy_rf_start_tx(advertData,dlen , 0,0);
+            ret=phy_rf_start_tx(advertData,dlen , 0, 0);
         }
         else
         {
@@ -222,40 +203,6 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
         osal_start_timerEx(Smart_nRF_TaskID,SNRF_START_TX_EVT,1000);
         return(events ^ SNRF_START_TX_EVT);
     }
-    #if (PHYPLUS_LIGHT_CONTROL == 1)
-    if ( events & SNRF_PWMLIGHT_ONOFF_EVT)
-    {
-            uint8_t lightcmd[] = {0xff,0xf1,0x05};
-        switch (key_pin)
-        {
-        case P15:
-            lightcmd[2] = 5;
-            break;
-
-        case P17:
-            lightcmd[2] = 0;
-            break;
-
-        case P2:
-            lightcmd[2] = 2;
-            break;
-        default:
-            break;
-        }
-            phy_rf_start_tx( lightcmd, 3 , 0,0);
-            return ( events ^ SNRF_PWMLIGHT_ONOFF_EVT);
-    }
-
-    if ( events & PWMLIGHT_EVT_200MS)
-    {
-            key_debounce = false;
-            return ( events ^ PWMLIGHT_EVT_200MS);
-    }
-
-    
-    #endif
-
-
 
 #endif
 
@@ -265,7 +212,7 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
         ret=phy_rf_start_rx(10000);
         if(ret == PPlus_SUCCESS)
         {
-           LOG_DEBUG("start rx\n");
+//            LOG_DEBUG("start rx\n");
         }
         // osal_start_timerEx(Smart_nRF_TaskID,SNRF_STOP_RX_EVT,5);
         return(events ^ SNRF_START_RX_EVT);
@@ -281,9 +228,13 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
         osal_start_timerEx(Smart_nRF_TaskID,SNRF_START_RX_EVT,195);
         return ( events ^ SNRF_STOP_RX_EVT);
     }
-    
 #endif
-#if (PHYPLUS_LIGHT_CONTROL == 0)
+//  if ( events & IO_EVT_MASK_200MS)
+//  {
+//        key_debounce = false;
+//        return ( events ^ IO_EVT_MASK_200MS);
+//  }
+
   if ( events & SNRF_SEND_DATA_EVT)
   {
     uint8_t pdata[32];
@@ -292,19 +243,19 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
     uint16_t target_netid=0;
     switch (key_pin)
     {
-    case P13:
+    case P7:
         target_netid = (s_rf_netid & 0xFF00) | 0x0001;
         break;
 
-    case P14:
+    case P11:
         target_netid = (s_rf_netid & 0xFF00) | 0x0002;
         break;
 
-    case P15:
+    case P14:
         target_netid = (s_rf_netid & 0xFF00) | 0x0003;
         break;
 
-    case P17:
+    case P20:
         target_netid = (s_rf_netid & 0xFF00) | 0x0004;
         break;
 
@@ -334,21 +285,21 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
 
   if(events & SNRF_SEARCH_HIGH_IO_EVT)
   {
-    if(gpio_read(P13) == 1)
+    if(gpio_read(P7) == 1)
     {
-        key_pin = P13;
+        key_pin = P7;
+    }
+    else if(gpio_read(P11) == 1)
+    {
+        key_pin = P11;
     }
     else if(gpio_read(P14) == 1)
     {
         key_pin = P14;
     }
-    else if(gpio_read(P15) == 1)
+    else if(gpio_read(P20) == 1)
     {
-        key_pin = P15;
-    }
-    else if(gpio_read(P17) == 1)
-    {
-        key_pin = P17;
+        key_pin = P20;
     }
     else
     {
@@ -362,8 +313,6 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
     osal_start_timerEx(Smart_nRF_TaskID,SNRF_SEARCH_HIGH_IO_EVT,1000);
     return(events ^ SNRF_SEARCH_HIGH_IO_EVT);
   }
-#endif
-
 
 
     return 0;
@@ -371,7 +320,7 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
 
 uint8_t Smart_nRF_data_process(phy_comm_evt_t *pdata)
 {
-#if(DEF_PHYPLUS_AUTOACK_SUPPORT==1)
+    #if(DEF_PHYPLUS_AUTOACK_SUPPORT==1)
     LOG_DEBUG("OPCODE=%x  datalen=%d\n",pdata->type,pdata->len);
 
     #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
@@ -388,14 +337,13 @@ uint8_t Smart_nRF_data_process(phy_comm_evt_t *pdata)
     }
 
     #else
-        #if (PHYPLUS_LIGHT_CONTROL == 1)
-        if(pdata->len==3+6   &&
-           pdata->data[6]==0xff &&
-           pdata->data[7]==0xf1)
-        {
-            pwmlight_phy_control(pdata->data[8]);
-        }
-        #endif
+
+//        if(pdata->len==3+6   &&
+//            pdata->data[6]==0xff &&
+//            pdata->data[7]==0xf1)
+//            {
+//                pwmlight_phy_control(pdata->data[8]);
+//            }
     if(pdata->type == PHYPLUS_STX_DONE_TYPE)
     {
         LOG_DEBUG("STX Done Reporting\n");
@@ -429,34 +377,34 @@ uint8_t Smart_nRF_data_process(phy_comm_evt_t *pdata)
     }
     #endif
 
-#else
+    #else
     {
         LOG_DEBUG("It's noack broadcast data:");
         my_dump_byte(pdata->data,pdata->len);
     }
-#endif
+    #endif
 	return PPlus_SUCCESS;
 }
 
 #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)    
-// uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t *packbuf)
-// {
-//     uint8_t opcode = PHYPLUS_GET_OPCODE(packbuf->type);
-//     if((opcode > SNRF_PREPARED_ACKPDU_NUM) || (s_prepared_ackpdu[opcode-1].len > PHYPLUS_ACK_DATA_MAX_NUM))
-//     {
-//         return PPlus_ERR_INVALID_PARAM;
-//     }
-//     else if(s_prepared_ackpdu[opcode-1].type == NULL)
-//     {
-//         return PPlus_ERR_NULL;
-//     }
-//     else
-//     {
-//         packbuf->len = s_prepared_ackpdu[opcode-1].len;
-//         osal_memcpy(packbuf->data, s_prepared_ackpdu[opcode-1].data, s_prepared_ackpdu[opcode-1].len);
-//     }
-// 		return PPlus_SUCCESS;
-// }
+uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t *packbuf)
+{
+    uint8_t opcode = PHYPLUS_GET_OPCODE(packbuf->type);
+    if((opcode > SNRF_PREPARED_ACKPDU_NUM) || (s_prepared_ackpdu[opcode-1].len > PHYPLUS_ACK_DATA_MAX_NUM))
+    {
+        return PPlus_ERR_INVALID_PARAM;
+    }
+    else if(s_prepared_ackpdu[opcode-1].type == NULL)
+    {
+        return PPlus_ERR_NULL;
+    }
+    else
+    {
+        packbuf->len = s_prepared_ackpdu[opcode-1].len;
+        osal_memcpy(packbuf->data, s_prepared_ackpdu[opcode-1].data, s_prepared_ackpdu[opcode-1].len);
+    }
+	return PPlus_SUCCESS;
+}
 #endif
 
 /*********************************************************************

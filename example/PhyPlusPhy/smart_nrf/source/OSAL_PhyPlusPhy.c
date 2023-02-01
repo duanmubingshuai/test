@@ -44,7 +44,6 @@
 /**************************************************************************************************
                                               INCLUDES
  **************************************************************************************************/
-#include "rom_sym_def.h"
 #include "types.h"
 #include "OSAL.h"
 #include "OSAL_Tasks.h"
@@ -55,24 +54,22 @@
 
 extern uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events);
 extern void Smart_nRF_Init(uint8 task_id);
-extern void pwmlight_Init( uint8 task_id );
-extern uint16 pwmlight_ProcessEvent( uint8 task_id, uint16 events );
+// extern void pwmlight_Init( uint8 task_id );
+// extern uint16 pwmlight_ProcessEvent( uint8 task_id, uint16 events );
 /*********************************************************************
     GLOBAL VARIABLES
 */
 
 // The order in this table must be identical to the task initialization calls below in osalInitTask.
-pTaskEventHandlerFn tasksArr[] =
+__ATTR_SECTION_SRAM__ const pTaskEventHandlerFn tasksArr[] =
 {
     PhyPlusPhy_ProcessEvent,                                  // task
     Smart_nRF_ProcessEvent,                                  // task
-#if (PHYPLUS_LIGHT_CONTROL == 1)
-    pwmlight_ProcessEvent,                                  //task
-#endif
+    // pwmlight_ProcessEvent,                                  //task
 };
 
-uint16 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
-uint16 *tasksEvents;
+__ATTR_SECTION_SRAM__ const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
+uint16* tasksEvents;
 
 /*********************************************************************
     FUNCTIONS
@@ -95,9 +92,7 @@ void osalInitTasks( void )
     /* Application */
     PhyPlusPhy_Init( taskID++ );
     Smart_nRF_Init(taskID++);
-#if (PHYPLUS_LIGHT_CONTROL == 1)
-    pwmlight_Init( taskID++ );
-#endif
+    // pwmlight_Init( taskID++ );
 }
 
 /*********************************************************************

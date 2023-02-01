@@ -21,6 +21,25 @@
 */
 #include "coremark.h"
 
+uint8 g_crc_cnt = 0;
+uint8 g_core_state_cnt= 0;
+uint8 g_calc_func_cnt=0;
+uint8 g_core_bench_list_cnt = 0;
+uint8 g_core_list_mergesort_cnt=0;
+uint8 g_core_list_find_cnt = 0;
+uint8 g_matrix_sum_cnt=0;
+uint8 g_matrix_mul_matrix_cnt=0;
+
+
+uint8 g_crc_entry[8]                  = { 0, 1, 2, 3, 4, 5, 6, 7};
+uint8 g_core_state_entry[8]           = { 0, 1, 2, 3, 4, 5, 6, 7};
+uint8 g_calc_func_entry[8]            = { 0, 1, 2, 3, 4, 5, 6, 7};
+uint8 g_core_bench_list_entry[8]      = { 0, 1, 2, 3, 4, 5, 6, 7};
+uint8 g_core_list_mergesort_entry[8]  = { 0, 1, 2, 3, 4, 5, 6, 7};
+uint8 g_core_list_find_entry[8]       = { 0, 1, 2, 3, 4, 5, 6, 7};
+uint8 g_matrix_sum_entry[8]           = { 0, 1, 2, 3, 4, 5, 6, 7};
+uint8 g_matrix_mul_matrix_entry[8]    = { 0, 1, 2, 3, 4, 5, 6, 7};
+
 //-----------------------------------------------------------------
 //core mark in cache 6K
 //uint8 g_crc_entry[8]                  = { 0, 1, 2, 0, 1, 2, 0, 1};
@@ -31,12 +50,6 @@
 //uint8 g_core_list_find_entry[8]       = { 0, 1, 2, 0, 1, 2, 0, 1};
 //uint8 g_matrix_sum_entry[8]           = { 0, 1, 2, 0, 1, 2, 0, 1};
 //uint8 g_matrix_mul_matrix_entry[8]    = { 0, 1, 2, 0, 1, 2, 0, 1};
-uint8 g_crc_cnt=0;
-uint8 g_matrix_sum_cnt=0;
-uint8 g_matrix_mul_matrix_cnt=0;
-uint8 g_matrix_add_const_cnt=0;
-uint8 g_matrix_mul_vect_cnt=0;
-uint8 g_calc_func_cnt=0;
 /*  Function: iterate
     Run the benchmark for a specified number of iterations.
 
@@ -374,11 +387,9 @@ MAIN_RETURN_TYPE main(int argc, char* argv[])
     ee_printf("Total ticks      : %lu\n", (long unsigned) total_time);
     #if HAS_FLOAT
     ee_printf("Total time (secs): %f\n",time_in_secs(total_time));
-	//ee_printf("Total time (secs): %d\n",int(1000*time_in_secs(total_time));
 
     if (time_in_secs(total_time) > 0)
         ee_printf("Iterations/Sec   : %f\n",default_num_contexts*results[0].iterations/time_in_secs(total_time));
-		//ee_printf("Iterations/Sec   : %d\n",int(1000*default_num_contexts*results[0].iterations/time_in_secs(total_time));
 
     #else
     ee_printf("Total time (secs): %d\n",time_in_secs(total_time));

@@ -64,7 +64,7 @@
 
 #define NRF_ADDR_LEN_3BYTE                           (3)
 #define NRF_ADDR_LEN_4BYTE                           (4)
-#define NRF_ADDR_LEN_5BYTE                           (5)   
+#define NRF_ADDR_LEN_5BYTE                           (5)
 
 #define CRC_ITU_8_LEN_1BYTE                          (1)
 #define CRC_ITU_16_LEN_2BYTE                         (2)
@@ -113,11 +113,11 @@ extern nrfPhy_t nrfConfig;
 */
 uint8_t bit_rev_8(uint8_t b);
 uint32_t nrf_pkt_init(uint8_t* addr,uint8_t addrLen,uint8_t pduLen,uint8_t crcByte,uint8_t nrfMode);
-uint8_t nrf_pkt_gen(uint8_t *din, uint8_t dLen,uint8_t *dout);
-uint8_t nrf_pkt_enc(nrfPkt_t * p_pkt,uint8_t *dOut, uint8_t* doLen);
-uint8_t nrf_pkt_dec(uint8_t* din, uint8_t diLen, uint8_t pduLen,nrfPkt_t *p_pkt);
-uint8_t nrf_txack_check(uint8_t *din);
-uint8_t nrf_rxdata_check(uint8_t *din);
+uint8_t nrf_pkt_gen(uint8_t* din, uint8_t dLen,uint8_t* dout);
+uint8_t nrf_pkt_enc(nrfPkt_t* p_pkt,uint8_t* dOut, uint8_t* doLen);
+uint8_t nrf_pkt_dec(uint8_t* din, uint8_t diLen, uint8_t pduLen,nrfPkt_t* p_pkt);
+uint8_t nrf_txack_check(uint8_t* din);
+uint8_t nrf_rxdata_check(uint8_t* din);
 uint8_t nrf_pkt_crc_check(uint8_t* din);
 /*********************************************************************
 *********************************************************************/

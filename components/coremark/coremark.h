@@ -34,9 +34,8 @@
 #define MEM_STATIC 0
 #define MEM_MALLOC 1
 #define MEM_STACK 2
-#include "rom_sym_def.h"
+
 #include "core_portme.h"
-#include "uart.h"
 #include "log.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,8 +44,7 @@ extern char s_tmpstr[];
     #include <stdio.h>
 #endif
 #if HAS_PRINTF
-    //#define ee_printf(...) { sprintf(s_tmpstr, ##__VA_ARGS__);PRINT(s_tmpstr);}
-	#define ee_printf(...) PRINT(__VA_ARGS__)
+    #define ee_printf(...) { sprintf(s_tmpstr, ##__VA_ARGS__);LOG(s_tmpstr);}
 #endif
 
 /* Actual benchmark execution in iterate */

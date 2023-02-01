@@ -221,6 +221,217 @@ ee_u32 core_init_matrix(ee_u32 blksize, void* memblk, ee_s32 seed, mat_params* p
 }
 
 
+ee_s16 matrix_sum_7(ee_u32 N, MATRES* C, MATDAT clipval)
+{
+    MATRES tmp=0,prev=0,cur=0;
+    ee_s16 ret=0;
+    ee_u32 i,j;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            cur=C[i*N+j];
+            tmp+=cur;
+
+            if (tmp>clipval)
+            {
+                ret+=10;
+                tmp=0;
+            }
+            else
+            {
+                ret += (cur>prev) ? 1 : 0;
+            }
+
+            prev=cur;
+        }
+    }
+
+    return ret;
+}
+
+ee_s16 matrix_sum_6(ee_u32 N, MATRES* C, MATDAT clipval)
+{
+    MATRES tmp=0,prev=0,cur=0;
+    ee_s16 ret=0;
+    ee_u32 i,j;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            cur=C[i*N+j];
+            tmp+=cur;
+
+            if (tmp>clipval)
+            {
+                ret+=10;
+                tmp=0;
+            }
+            else
+            {
+                ret += (cur>prev) ? 1 : 0;
+            }
+
+            prev=cur;
+        }
+    }
+
+    return ret;
+}
+
+ee_s16 matrix_sum_5(ee_u32 N, MATRES* C, MATDAT clipval)
+{
+    MATRES tmp=0,prev=0,cur=0;
+    ee_s16 ret=0;
+    ee_u32 i,j;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            cur=C[i*N+j];
+            tmp+=cur;
+
+            if (tmp>clipval)
+            {
+                ret+=10;
+                tmp=0;
+            }
+            else
+            {
+                ret += (cur>prev) ? 1 : 0;
+            }
+
+            prev=cur;
+        }
+    }
+
+    return ret;
+}
+
+ee_s16 matrix_sum_4(ee_u32 N, MATRES* C, MATDAT clipval)
+{
+    MATRES tmp=0,prev=0,cur=0;
+    ee_s16 ret=0;
+    ee_u32 i,j;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            cur=C[i*N+j];
+            tmp+=cur;
+
+            if (tmp>clipval)
+            {
+                ret+=10;
+                tmp=0;
+            }
+            else
+            {
+                ret += (cur>prev) ? 1 : 0;
+            }
+
+            prev=cur;
+        }
+    }
+
+    return ret;
+}
+
+ee_s16 matrix_sum_3(ee_u32 N, MATRES* C, MATDAT clipval)
+{
+    MATRES tmp=0,prev=0,cur=0;
+    ee_s16 ret=0;
+    ee_u32 i,j;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            cur=C[i*N+j];
+            tmp+=cur;
+
+            if (tmp>clipval)
+            {
+                ret+=10;
+                tmp=0;
+            }
+            else
+            {
+                ret += (cur>prev) ? 1 : 0;
+            }
+
+            prev=cur;
+        }
+    }
+
+    return ret;
+}
+
+ee_s16 matrix_sum_2(ee_u32 N, MATRES* C, MATDAT clipval)
+{
+    MATRES tmp=0,prev=0,cur=0;
+    ee_s16 ret=0;
+    ee_u32 i,j;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            cur=C[i*N+j];
+            tmp+=cur;
+
+            if (tmp>clipval)
+            {
+                ret+=10;
+                tmp=0;
+            }
+            else
+            {
+                ret += (cur>prev) ? 1 : 0;
+            }
+
+            prev=cur;
+        }
+    }
+
+    return ret;
+}
+
+ee_s16 matrix_sum_1(ee_u32 N, MATRES* C, MATDAT clipval)
+{
+    MATRES tmp=0,prev=0,cur=0;
+    ee_s16 ret=0;
+    ee_u32 i,j;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            cur=C[i*N+j];
+            tmp+=cur;
+
+            if (tmp>clipval)
+            {
+                ret+=10;
+                tmp=0;
+            }
+            else
+            {
+                ret += (cur>prev) ? 1 : 0;
+            }
+
+            prev=cur;
+        }
+    }
+
+    return ret;
+}
+
+
 ee_s16 matrix_sum_0(ee_u32 N, MATRES* C, MATDAT clipval)
 {
     MATRES tmp=0,prev=0,cur=0;
@@ -264,42 +475,43 @@ ee_s16 matrix_sum_0(ee_u32 N, MATRES* C, MATDAT clipval)
 */
 
 extern uint8 g_matrix_sum_cnt;
-//extern uint8 g_matrix_sum_entry[];
+extern uint8 g_matrix_sum_entry[];
 ee_s16 matrix_sum(ee_u32 N, MATRES* C, MATDAT clipval)
 {
-   	g_matrix_sum_cnt++;
-    if(0==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_0(N, C,  clipval));
-	}
-	else if(1==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_0(N, C,  clipval));
-	}
-	else if(2==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_2(N, C,  clipval));
-	}
-	else if(3==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_3(N, C,  clipval));
-	}
-	else if(4==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_4(N, C,  clipval));
-	}
-	else if(5==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_5(N, C,  clipval));
-	}	
-	else if(6==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_6(N, C,  clipval));
-	}
-	else if(7==(g_matrix_sum_cnt&0x07))
-	{
-		return (matrix_sum_7(N, C,  clipval));
-	}	
+    g_matrix_sum_cnt++;
+
+    if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==0)
+    {
+        return (matrix_sum_0(N, C,  clipval));
+    }
+    else if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==1)
+    {
+        return (matrix_sum_1(N, C,  clipval));
+    }
+    else if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==2)
+    {
+        return (matrix_sum_2(N, C,  clipval));
+    }
+    else if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==3)
+    {
+        return (matrix_sum_3(N, C,  clipval));
+    }
+    else if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==4)
+    {
+        return (matrix_sum_4(N, C,  clipval));
+    }
+    else if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==5)
+    {
+        return (matrix_sum_5(N, C,  clipval));
+    }
+    else if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==6)
+    {
+        return (matrix_sum_6(N, C,  clipval));
+    }
+    else/* if(g_matrix_sum_entry[0x07&g_matrix_sum_cnt]==7)*/
+    {
+        return (matrix_sum_7(N, C,  clipval));
+    }
 }
 
 /*  Function: matrix_mul_const
@@ -322,7 +534,7 @@ void matrix_mul_const(ee_u32 N, MATRES* C, MATDAT* A, MATDAT val)
 /*  Function: matrix_add_const
     Add a constant value to all elements of a matrix.
 */
-void matrix_add_const_0(ee_u32 N, MATDAT* A, MATDAT val)
+void matrix_add_const(ee_u32 N, MATDAT* A, MATDAT val)
 {
     ee_u32 i,j;
 
@@ -334,50 +546,12 @@ void matrix_add_const_0(ee_u32 N, MATDAT* A, MATDAT val)
         }
     }
 }
-extern uint8 g_matrix_add_const_cnt;
-void matrix_add_const(ee_u32 N, MATDAT* A, MATDAT val)
-{
-	g_matrix_add_const_cnt++;
-	if(0==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_0(N, A, val);
-	}
-	else if(1==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_1(N, A, val);
-	}
-	else if(2==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_2(N, A, val);
-	}
-	else if(3==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_3(N, A, val);
-	}
-	else if(4==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_4(N, A, val);
-	}
-	else if(5==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_5(N, A, val);
-	}
-	else if(6==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_6(N, A, val);
-	}
-	else if(7==(g_matrix_add_const_cnt&0x07))
-	{
-		matrix_add_const_7(N, A, val);
-	}
-}
 
 /*  Function: matrix_mul_vect
     Multiply a matrix by a vector.
     This is common in many simple filters (e.g. fir where a vector of coefficients is applied to the matrix.)
 */
-extern uint8 g_matrix_mul_vect_cnt;
-void matrix_mul_vect_0(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+void matrix_mul_vect(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
 {
     ee_u32 i,j;
 
@@ -391,41 +565,131 @@ void matrix_mul_vect_0(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
         }
     }
 }
-void matrix_mul_vect(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+
+void matrix_mul_matrix_7(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
 {
-	g_matrix_mul_vect_cnt++;
-	if(0==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_0( N, C,A, B);
-	}
-	else if(1==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_1( N, C,A, B);
-	}
-	else if(2==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_2( N, C,A, B);
-	}
-	else if(3==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_3( N, C,A, B);
-	}
-	else if(4==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_4( N, C,A, B);
-	}
-	else if(5==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_5( N, C,A, B);
-	}
-	else if(6==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_6( N, C,A, B);
-	}
-	else if(7==(g_matrix_mul_vect_cnt&0x07))
-	{
-		matrix_mul_vect_7( N, C,A, B);
-	}
+    ee_u32 i,j,k;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            C[i*N+j]=0;
+
+            for(k=0; k<N; k++)
+            {
+                C[i*N+j]+=(MATRES)A[i*N+k] * (MATRES)B[k*N+j];
+            }
+        }
+    }
+}
+
+void matrix_mul_matrix_6(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+{
+    ee_u32 i,j,k;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            C[i*N+j]=0;
+
+            for(k=0; k<N; k++)
+            {
+                C[i*N+j]+=(MATRES)A[i*N+k] * (MATRES)B[k*N+j];
+            }
+        }
+    }
+}
+
+void matrix_mul_matrix_5(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+{
+    ee_u32 i,j,k;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            C[i*N+j]=0;
+
+            for(k=0; k<N; k++)
+            {
+                C[i*N+j]+=(MATRES)A[i*N+k] * (MATRES)B[k*N+j];
+            }
+        }
+    }
+}
+
+void matrix_mul_matrix_4(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+{
+    ee_u32 i,j,k;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            C[i*N+j]=0;
+
+            for(k=0; k<N; k++)
+            {
+                C[i*N+j]+=(MATRES)A[i*N+k] * (MATRES)B[k*N+j];
+            }
+        }
+    }
+}
+
+void matrix_mul_matrix_3(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+{
+    ee_u32 i,j,k;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            C[i*N+j]=0;
+
+            for(k=0; k<N; k++)
+            {
+                C[i*N+j]+=(MATRES)A[i*N+k] * (MATRES)B[k*N+j];
+            }
+        }
+    }
+}
+
+void matrix_mul_matrix_2(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+{
+    ee_u32 i,j,k;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            C[i*N+j]=0;
+
+            for(k=0; k<N; k++)
+            {
+                C[i*N+j]+=(MATRES)A[i*N+k] * (MATRES)B[k*N+j];
+            }
+        }
+    }
+}
+
+void matrix_mul_matrix_1(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
+{
+    ee_u32 i,j,k;
+
+    for (i=0; i<N; i++)
+    {
+        for (j=0; j<N; j++)
+        {
+            C[i*N+j]=0;
+
+            for(k=0; k<N; k++)
+            {
+                C[i*N+j]+=(MATRES)A[i*N+k] * (MATRES)B[k*N+j];
+            }
+        }
+    }
 }
 
 void matrix_mul_matrix_0(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
@@ -452,43 +716,43 @@ void matrix_mul_matrix_0(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
 */
 
 extern uint8 g_matrix_mul_matrix_cnt;
-//extern uint8 g_matrix_mul_matrix_entry[];
+extern uint8 g_matrix_mul_matrix_entry[];
 void matrix_mul_matrix(ee_u32 N, MATRES* C, MATDAT* A, MATDAT* B)
 {
-   g_matrix_mul_matrix_cnt++;
-   
-   if(0==(g_matrix_mul_matrix_cnt&0x07))
-   {
-		(matrix_mul_matrix_0(N, C, A, B) );
-   }
-   else if(1==(g_matrix_mul_matrix_cnt&0x07))
-   {
-	   (matrix_mul_matrix_1(N, C, A, B) );
-   }
-   else if(2==(g_matrix_mul_matrix_cnt&0x07))
-   {
-	   (matrix_mul_matrix_2(N, C, A, B) );
-   }
-   else if(3==(g_matrix_mul_matrix_cnt&0x07))
-   {
-	   (matrix_mul_matrix_3(N, C, A, B) );
-   }
-   else if(4==(g_matrix_mul_matrix_cnt&0x07))
-   {
-	   (matrix_mul_matrix_4(N, C, A, B) );
-   }
-   else if(5==(g_matrix_mul_matrix_cnt&0x07))
-   {
-	   (matrix_mul_matrix_5(N, C, A, B) );
-   }
-   else if(6==(g_matrix_mul_matrix_cnt&0x07))
-   {
-	   (matrix_mul_matrix_6(N, C, A, B) );
-   }
-   else if(7==(g_matrix_mul_matrix_cnt&0x07))
-   {
-	   (matrix_mul_matrix_7(N, C, A, B) );
-   }   
+    g_matrix_mul_matrix_cnt++;
+
+    if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==0)
+    {
+        (matrix_mul_matrix_0(N, C, A, B) );
+    }
+    else if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==1)
+    {
+        (matrix_mul_matrix_1(N, C, A, B) );
+    }
+    else if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==2)
+    {
+        (matrix_mul_matrix_2(N, C, A, B) );
+    }
+    else if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==3)
+    {
+        (matrix_mul_matrix_3(N, C, A, B) );
+    }
+    else if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==4)
+    {
+        (matrix_mul_matrix_4(N, C, A, B) );
+    }
+    else if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==5)
+    {
+        (matrix_mul_matrix_5(N, C, A, B) );
+    }
+    else if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==6)
+    {
+        (matrix_mul_matrix_6(N, C, A, B) );
+    }
+    else if(g_matrix_mul_matrix_entry[0x07&g_matrix_mul_matrix_cnt]==7)
+    {
+        (matrix_mul_matrix_7(N, C, A, B) );
+    }
 }
 
 /*  Function: matrix_mul_matrix_bitextract

@@ -98,10 +98,6 @@ extern "C"
 #define PHYPLUS_SMART_NRF_TYPE                  0xFF
 #define PHYPLUS_STX_DONE_TYPE                   0xFC
 
-#ifndef PHYPLUS_LIGHT_CONTROL
-#define PHYPLUS_LIGHT_CONTROL   (0)
-#endif
-
 
 /*********************************************************************
     MACROS

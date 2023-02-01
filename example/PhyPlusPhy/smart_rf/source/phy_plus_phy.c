@@ -43,7 +43,6 @@
 /*********************************************************************
     INCLUDES
 */
-#include "rom_sym_def.h"
 #include "rf_phy_driver.h"
 #include "global_config.h"
 #include "OSAL.h"
@@ -55,8 +54,7 @@
 #include "ll_hw_drv.h"
 #include "clock.h"
 #include "gpio.h"
-#include "otp.h"
-
+#include "flash.h"
 
 
 /*********************************************************************
@@ -103,7 +101,8 @@
 
 #define PHYPLUS_PKT_FMT_1M                      (0x01)
 #define PHYPLUS_PKT_FMT_2M                      (0x02)
-
+#define PHYPLUS_PKT_FMT_500K                    (0x05)
+#define PHYPLUS_PKT_FMT_100K                    (0x06)
 
 #define PHYPLUS_HW_MAX_RX_TO                    (20000)
 
@@ -141,8 +140,8 @@ uint8 PhyPlusPhy_TaskID; // Task ID for internal task/event processing
 //volatile uint32 phyWaitingIrq = FALSE;
 uint32 PHY_ISR_entry_time = 0;
 
-uint8_t  phyBufRx[44]__attribute__ ((aligned(4))) ;
-uint8_t  phyBufTx[44]__attribute__ ((aligned(4))) ;
+__align(4) uint8_t  phyBufRx[256];
+__align(4) uint8_t  phyBufTx[256];
 static uint8_t s_pubAddr[6];
 uint8_t adv_buffer[32];
 
@@ -171,13 +170,9 @@ static uint8_t phy_rx_data_check(void)
 void phy_set_channel(uint8 rfChnIdx)
 {
     if(g_rfPhyFreqOffSet>=0)
-	{
         PHY_REG_WT(0x400300b4, (g_rfPhyFreqOffSet<<16)+(g_rfPhyFreqOffSet<<8)+rfChnIdx);
-	}
     else
-	{
         PHY_REG_WT(0x400300b4, ((255+g_rfPhyFreqOffSet)<<16)+((255+g_rfPhyFreqOffSet)<<8)+(rfChnIdx-1) );
-	}
 }
 
 void phy_hw_go(void)
@@ -203,16 +198,9 @@ void phy_hw_go(void)
     }
 
     if(s_pktCfg.pktFmt==PKT_FMT_BLE2M)
-	{
         subWriteReg(0x40030094,7,0,RF_PHY_TPCAL_CALC(g_rfPhyTpCal0_2Mbps,g_rfPhyTpCal1_2Mbps,(rfChnIdx-2)>>1));
-		
-	}
     else
-	{
         subWriteReg(0x40030094,7,0,RF_PHY_TPCAL_CALC(g_rfPhyTpCal0,g_rfPhyTpCal1,(rfChnIdx-2)>>1));
-		
-	}
-
 }
 
 
@@ -233,7 +221,7 @@ void phy_hw_stop(void)
         }
     };
 }
-
+//set LL_HW_Mode
 void phy_hw_set_srx(uint16 rxTimeOutUs)
 {
     ll_hw_set_rx_timeout(rxTimeOutUs);
@@ -263,8 +251,8 @@ void phy_hw_set_trx(uint16 rxTimeOutUs)
 void phy_hw_timing_setting(void)
 {
     ll_hw_set_tx_rx_release (10,     1);
-    ll_hw_set_rx_tx_interval(       60);        //T_IFS=150us for BLE 1M
-    ll_hw_set_tx_rx_interval(       66);        //T_IFS=150us for BLE 1M
+    ll_hw_set_rx_tx_interval(       60);        //to adjust T_IFS=150us for BLE 1M(Zong Thinks so)
+    ll_hw_set_tx_rx_interval(       66);        //to adjust T_IFS=150us for BLE 1M(Zong Thinks so)
     ll_hw_set_trx_settle    (57, 8, 52);        //TxBB,RxAFE,PL
 }
 
@@ -297,7 +285,7 @@ void phy_hw_pktFmt_Config(pktCfg_t cfg)
 void phy_rf_tx(void)
 {
     phy_hw_stop();
-    _HAL_CS_ALLOC_();HAL_ENTER_CRITICAL_SECTION();
+    HAL_ENTER_CRITICAL_SECTION();
     phy_hw_pktFmt_Config(s_pktCfg);
     phy_hw_timing_setting();
     phy_set_channel(s_phy.rfChn);
@@ -319,7 +307,7 @@ void phy_rf_tx(void)
 void phy_rf_rx(void)
 {
     phy_hw_stop();
-    _HAL_CS_ALLOC_();HAL_ENTER_CRITICAL_SECTION();
+    HAL_ENTER_CRITICAL_SECTION();
     phy_hw_pktFmt_Config(s_pktCfg);
     phy_hw_timing_setting();
     phy_set_channel(s_phy.rfChn);
@@ -331,7 +319,7 @@ void phy_rf_rx(void)
     llWaitingIrq=TRUE;
     HAL_EXIT_CRITICAL_SECTION();
 }
-void phy_rx_data_process(void)
+void phy_rx_data_process(void)      //just print rx buffer
 {
     uint8_t pduLen=0;
 
@@ -344,11 +332,14 @@ void phy_rx_data_process(void)
         pduLen=phyBufRx[1];
     }
 
+    uint8_t peer_addr[6]= {0xEF,0xEE,0xEE,0xEE,0xEE,0xFE};
+
+    if(osal_memcmp(peer_addr,phyBufRx+2,6))     //20220707 fix bug:len 5->6
     {
         LOG("-------------------------\n");
         LOG("[PHY RX] [-%03ddbm %4dKHz %02d CH] ",phyRssi,phyFoff-512,s_phy.rfChn);
 
-        for(uint8_t i=0; i<pduLen; i++)
+        for(uint8_t i=0; i<(pduLen+2); i++)     //20220707 fix bug: pduLen+2 to include pdu-header
             LOG("%02x ",phyBufRx[i]);
 
         LOG("\n");
@@ -400,7 +391,7 @@ void PLUSPHY_IRQHandler(void)
     }
 
     llWaitingIrq = FALSE;
-    _HAL_CS_ALLOC_();HAL_ENTER_CRITICAL_SECTION();
+    HAL_ENTER_CRITICAL_SECTION();
     mode = ll_hw_get_tr_mode();
 
     // ===================   mode TRX process 1
@@ -500,9 +491,10 @@ void PhyPlusPhy_Init(uint8 task_id)
 {
     PhyPlusPhy_TaskID = task_id;
     //set phy irq handeler
-    JUMP_FUNCTION_SET(V4_IRQ_HANDLER,(uint32_t)&PLUSPHY_IRQHandler);
-
-    uint8_t p[6]={0x01,0x2,3,4,5,6};
+    JUMP_FUNCTION(V4_IRQ_HANDLER)                   =   (uint32_t)&PLUSPHY_IRQHandler;
+    // read flash driectly becasue HW has do the address mapping for read Flash operation
+    uint8_t p[6];
+    hal_flash_read(0x11004000,p,6);
     s_pubAddr[3] = p[0];
     s_pubAddr[2] = p[1];
     s_pubAddr[1] = p[2];
@@ -511,7 +503,7 @@ void PhyPlusPhy_Init(uint8 task_id)
     s_pubAddr[4] = p[5];
 
     //init tx buf
-    for(uint8_t i=0; i<44; i++)
+    for(uint8_t i=0; i<255; i++)
         phyBufTx[i]=0;
 
     // config tx buf
@@ -555,9 +547,9 @@ void PhyPlusPhy_Init(uint8 task_id)
     //phy pktfmt config
     s_phy.Status        =   PHYPLUS_RFPHY_IDLE;
     s_phy.txIntv        =   100;//ms
-    s_phy.rxIntv        =   200;//ms
+    s_phy.rxIntv        =   65;//ms
     s_phy.rxAckTO       =   500;//us
-    s_phy.rxOnlyTO      =   10*1000;//us
+    s_phy.rxOnlyTO      =   20*1000;//us
     s_phy.rfChn         =   BLE_ADV_CHN37;//26;//
     s_pktCfg.pktFmt     =   PHYPLUS_PKT_FMT_1M;
     s_pktCfg.pduLen     =   31+6;
@@ -565,10 +557,8 @@ void PhyPlusPhy_Init(uint8 task_id)
     s_pktCfg.crcSeed    =   DEFAULT_CRC_SEED;
     s_pktCfg.wtSeed     =   WHITEN_SEED_CH37;//DEFAULT_WHITEN_SEED;
     s_pktCfg.syncWord   =   DEFAULT_SYNCWORD;
-	if(gpio_read(P8) == 1)
-		VOID osal_start_timerEx(PhyPlusPhy_TaskID, PPP_PERIODIC_TX_EVT, 1000);
-	else
-		VOID osal_start_timerEx(PhyPlusPhy_TaskID, PPP_PERIODIC_RX_EVT, 2500);
+    //VOID osal_start_timerEx(PhyPlusPhy_TaskID, PPP_PERIODIC_TX_EVT, 1000);
+    VOID osal_start_timerEx(PhyPlusPhy_TaskID, PPP_PERIODIC_RX_EVT, 2500);
     LOG("[PHY] init done %d rfchn%d SW[%8x] CRC[%d %8x] WT[%2x]\n"\
         ,s_phy.Status,s_phy.rfChn,s_pktCfg.syncWord,s_pktCfg.crcFmt, s_pktCfg.crcSeed,s_pktCfg.wtSeed);
 }
@@ -663,7 +653,7 @@ uint16 PhyPlusPhy_ProcessEvent(uint8 task_id, uint16 events)
         }
         else
         {
-            LOG("SKIP TX_EVT Current Stats %d\n",s_phy.Status);
+            //LOG("SKIP TX_EVT Current Stats %d\n",s_phy.Status);
             osal_start_timerEx(PhyPlusPhy_TaskID,PPP_PERIODIC_TX_EVT,20);
         }
 
@@ -683,8 +673,8 @@ uint16 PhyPlusPhy_ProcessEvent(uint8 task_id, uint16 events)
         }
         else
         {
-            LOG("SKIP RX_EVT Current Stats %d\n",s_phy.Status);
-            osal_start_timerEx(PhyPlusPhy_TaskID,PPP_PERIODIC_RX_EVT,20);
+            //LOG("SKIP RX_EVT Current Stats %d\n",s_phy.Status);
+            osal_start_timerEx(PhyPlusPhy_TaskID,PPP_PERIODIC_RX_EVT,5);
         }
 
         return(events ^ PPP_PERIODIC_RX_EVT);
@@ -731,9 +721,7 @@ int app_main(void)
 {
     /* Initialize the operating system */
     osal_init_system();
-
     osal_pwrmgr_device(PWRMGR_BATTERY);
-
     /* Start OSAL */
     osal_start_system(); // No Return from here
     return 0;

@@ -1,0 +1,29 @@
+
+# Copyright (C) 2013. Mindtree Ltd.
+# All rights reserved.
+
+# Toolchain Configurations are maintained in this file.
+TOOL = C:\Keil_v5\ARM\ARMCC\bin
+CC = arm-none-eabi-gcc
+AR = arm-none-eabi-ar
+LD = arm-none-eabi-ar
+OBJ_EXTENSION = o
+LIB_EXTENSION = a
+BIN_EXTENSION = elf
+SIZE = echo
+LINKER = $(CC)
+WARNING_FLAG =
+OPTIMIZATION_FLAG = -Os
+
+TOOLCHAIN_CFLAGS =  -c -fno-builtin -Wall -Wstrict-prototypes -Wshadow -Wundef -g -Os -fno-strict-aliasing -fno-strength-reduce -fomit-frame-pointer -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -isystem
+TOOLCHAIN_CFLAGS += -ffunction-sections
+TOOLCHAIN_CFLAGS += -DUSE_ROMSYM_ALIAS
+
+TOOLCHAIN_ADDL_CFLAGS = -c
+
+LD_FLAGS = rcs
+LD_OUTPUT = -o 
+
+LINKER_FLAGS =
+LINKER_OUTPUT = -o
+

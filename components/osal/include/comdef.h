@@ -1,12 +1,12 @@
 /**************************************************************************************************
-  Filename:       comdef.h
-  Revised:         
-  Revision:        
+    Filename:       comdef.h
+    Revised:
+    Revision:
 
-  Description:    Type definitions and macros.
+    Description:    Type definitions and macros.
 
 
-  
+
 **************************************************************************************************/
 
 #ifndef COMDEF_H
@@ -20,17 +20,17 @@ extern "C"
 
 
 /*********************************************************************
- * INCLUDES
- */
-	
-/* HAL */
-	
-#include "types.h"	
+    INCLUDES
+*/
 
-	
+/* HAL */
+
+#include "types.h"
+
+
 /*********************************************************************
- * Lint Keywords
- */
+    Lint Keywords
+*/
 #define VOID (void)
 
 #define NULL_OK
@@ -47,23 +47,23 @@ extern "C"
 
 
 /*********************************************************************
- * CONSTANTS
- */
+    CONSTANTS
+*/
 
 #ifndef false
-  #define false 0
+#define false 0
 #endif
 
 #ifndef true
-  #define true 1
+#define true 1
 #endif
 
 #ifndef CONST
-  #define CONST const
+#define CONST const
 #endif
 
 #ifndef GENERIC
-  #define GENERIC
+#define GENERIC
 #endif
 
 /*** Generic Status Return Values ***/
@@ -82,8 +82,8 @@ extern "C"
 #define NV_BAD_ITEM_LEN           0x0C
 
 /*********************************************************************
- * TYPEDEFS
- */
+    TYPEDEFS
+*/
 
 // Generic Status return
 typedef uint8 Status_t;
@@ -93,14 +93,14 @@ typedef int32   int24;
 typedef uint32  uint24;
 
 /*********************************************************************
- * Global System Events
- */
+    Global System Events
+*/
 
 #define SYS_EVENT_MSG               0x8000  // A message is waiting event
 
 /*********************************************************************
- * Global Generic System Messages
- */
+    Global Generic System Messages
+*/
 
 #define KEY_CHANGE                0xC0    // Key Events
 
@@ -108,16 +108,16 @@ typedef uint32  uint24;
 // 0xE0 – 0xFC
 
 /*********************************************************************
- * MACROS
- */
+    MACROS
+*/
 
 /*********************************************************************
- * GLOBAL VARIABLES
- */
+    GLOBAL VARIABLES
+*/
 
 /*********************************************************************
- * FUNCTIONS
- */
+    FUNCTIONS
+*/
 
 /*********************************************************************
 *********************************************************************/

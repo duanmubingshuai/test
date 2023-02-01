@@ -6,7 +6,7 @@
 
 
 #ifndef CFG_OTA_MESH
-  #error "unsupported OTA_mesh config, please check micro:CFG_OTA_MESH!"
+#error "unsupported OTA_mesh config, please check micro:CFG_OTA_MESH!"
 #else
 
 
@@ -29,20 +29,21 @@
 #define OTAFM_DEV_FLG_FAILED    0xec
 
 
-  typedef struct{
+typedef struct
+{
     uint16_t dev_type;
     uint16_t index;
     uint8_t  dev_addr[6];
-  }otafmesh_dev_t;
+} otafmesh_dev_t;
 
-  int otafm_write_partition(uint32 addr, uint32_t* p_sect, uint32_t size);
-  int otafm_write_boot_sector(uint32_t* p_sect, uint32_t size, uint32_t offset);
-  int otafm_dev_add(otafmesh_dev_t* pdev);
-  int otafm_dev_pull(otafmesh_dev_t* pdev);
-  int otafm_dev_clear(otafmesh_dev_t* pdev);
-  int otafm_fw_load(ota_fw_t* pfw);
-  int otafm_fw_execute(void);
-  int otafm_format(void);
+int otafm_write_partition(uint32 addr, uint32_t* p_sect, uint32_t size);
+int otafm_write_boot_sector(uint32_t* p_sect, uint32_t size, uint32_t offset);
+int otafm_dev_add(otafmesh_dev_t* pdev);
+int otafm_dev_pull(otafmesh_dev_t* pdev);
+int otafm_dev_clear(otafmesh_dev_t* pdev);
+int otafm_fw_load(ota_fw_t* pfw);
+int otafm_fw_execute(void);
+int otafm_format(void);
 #endif //CFG_FLASH
 #endif //__OTA_MESH_FLASH_
 

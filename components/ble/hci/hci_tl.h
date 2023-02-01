@@ -1,41 +1,41 @@
 /**************************************************************************************************
- 
-  Phyplus Microelectronics Limited confidential and proprietary. 
-  All rights reserved.
 
-  IMPORTANT: All rights of this software belong to Phyplus Microelectronics 
-  Limited ("Phyplus"). Your use of this Software is limited to those 
-  specific rights granted under  the terms of the business contract, the 
-  confidential agreement, the non-disclosure agreement and any other forms 
-  of agreements as a customer or a partner of Phyplus. You may not use this 
-  Software unless you agree to abide by the terms of these agreements. 
-  You acknowledge that the Software may not be modified, copied, 
-  distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy 
-  (BLE) integrated circuit, either as a product or is integrated into your 
-  products.  Other than for the aforementioned purposes, you may not use, 
-  reproduce, copy, prepare derivative works of, modify, distribute, perform, 
-  display or sell this Software and/or its documentation for any purposes.
+    Phyplus Microelectronics Limited confidential and proprietary.
+    All rights reserved.
 
-  YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
-  INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
-  NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
-  PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
-  NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
-  LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
-  INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
-  OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
-  OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
-  (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
-  
+    IMPORTANT: All rights of this software belong to Phyplus Microelectronics
+    Limited ("Phyplus"). Your use of this Software is limited to those
+    specific rights granted under  the terms of the business contract, the
+    confidential agreement, the non-disclosure agreement and any other forms
+    of agreements as a customer or a partner of Phyplus. You may not use this
+    Software unless you agree to abide by the terms of these agreements.
+    You acknowledge that the Software may not be modified, copied,
+    distributed or disclosed unless embedded on a Phyplus Bluetooth Low Energy
+    (BLE) integrated circuit, either as a product or is integrated into your
+    products.  Other than for the aforementioned purposes, you may not use,
+    reproduce, copy, prepare derivative works of, modify, distribute, perform,
+    display or sell this Software and/or its documentation for any purposes.
+
+    YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
+    PROVIDED AS IS WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+    INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
+    NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
+    PHYPLUS OR ITS SUBSIDIARIES BE LIABLE OR OBLIGATED UNDER CONTRACT,
+    NEGLIGENCE, STRICT LIABILITY, CONTRIBUTION, BREACH OF WARRANTY, OR OTHER
+    LEGAL EQUITABLE THEORY ANY DIRECT OR INDIRECT DAMAGES OR EXPENSES
+    INCLUDING BUT NOT LIMITED TO ANY INCIDENTAL, SPECIAL, INDIRECT, PUNITIVE
+    OR CONSEQUENTIAL DAMAGES, LOST PROFITS OR LOST DATA, COST OF PROCUREMENT
+    OF SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
+    (INCLUDING BUT NOT LIMITED TO ANY DEFENSE THEREOF), OR OTHER SIMILAR COSTS.
+
 **************************************************************************************************/
 
 /*******************************************************************************
-  Filename:       hci_tl.h
-  Revised:        $Date: 2012-04-20 15:24:45 -0700 (Fri, 20 Apr 2012) $
-  Revision:       $Revision: 30292 $
+    Filename:       hci_tl.h
+    Revised:        $Date: 2012-04-20 15:24:45 -0700 (Fri, 20 Apr 2012) $
+    Revision:       $Revision: 30292 $
 
-  Description:    This file contains the types, contants, external functions
+    Description:    This file contains the types, contants, external functions
                   etc. for the BLE HCI Transport Layer.
 
 *******************************************************************************/
@@ -49,8 +49,8 @@ extern "C"
 #endif
 
 /*******************************************************************************
- * INCLUDES
- */
+    INCLUDES
+*/
 
 #include "hci.h"
 #include "OSAL.h"
@@ -66,14 +66,14 @@ extern uint8 hciL2capTaskID;
 extern uint8 hciSmpTaskID;
 
 /*******************************************************************************
- * MACROS
- */
+    MACROS
+*/
 
 #define HCI_ASSERT(condition)  HAL_ASSERT(condition)
 
 /*******************************************************************************
- * CONSTANTS
- */
+    CONSTANTS
+*/
 
 // OSAL Task Events
 #define HCI_TX_PROCESS_EVENT           0x0001
@@ -236,21 +236,18 @@ extern uint8 hciSmpTaskID;
 #define     HCI_LE_WRITE_RF_PATH_COMPENSATION          0x204D
 
 /* privacy mode */
-#define HCI_LE_SET_PRIVACY_MODE                        0x204E                
+#define HCI_LE_SET_PRIVACY_MODE                        0x204E
 
 
 /* CTE */
-#define HCI_LE_SET_CONNLESS_CTE_TRANS_PARAMETER		   0x2051
-#define HCI_LE_SET_CONNLESS_CTE_TRANS_ENABLE		   0x2052
-#define HCI_LE_SET_CONNLESS_IQ_SAMPLE_ENABLE		   0x2053
-#define HCI_LE_SET_CONNCTE_RECV_PARAMETER			   0x2054
-#define HCI_LE_SET_CONN_CTE_TRANSMIT_PARAMETER		   0x2055
-#define HCI_LE_CONN_CTE_REQUEST_ENABLE				   0x2056
-#define HCI_LE_CONN_CTE_RESPONSE_ENABLE				   0x2057
-#define HCI_LE_READ_ANTENNA_INFO					   0x2058
-
-/* periodic adv report  */
-#define HCI_LE_SET_PERIODIC_ADV_RECV_ENABLE  		   0x2059
+#define HCI_LE_SET_CONNLESS_CTE_TRANS_PARAMETER        0x2051
+#define HCI_LE_SET_CONNLESS_CTE_TRANS_ENABLE           0x2052
+#define HCI_LE_SET_CONNLESS_IQ_SAMPLE_ENABLE           0x2053
+#define HCI_LE_SET_CONNCTE_RECV_PARAMETER              0x2054
+#define HCI_LE_SET_CONN_CTE_TRANSMIT_PARAMETER         0x2055
+#define HCI_LE_CONN_CTE_REQUEST_ENABLE                 0x2056
+#define HCI_LE_CONN_CTE_RESPONSE_ENABLE                0x2057
+#define HCI_LE_READ_ANTENNA_INFO                       0x2058
 
 // LE Vendor Specific LL Extension Commands
 #define HCI_EXT_SET_RX_GAIN                            0xFC00
@@ -330,9 +327,9 @@ extern uint8 hciSmpTaskID;
 #define HCI_LE_CHANNEL_SELECTION_ALGORITHM_EVENT       0x14
 
 //2020-01-14 AOA/AOD Report event
-#define HCI_LE_CONNECTIONLESS_IQ_REPORT_EVENT			0x15
-#define HCI_LE_CONNECTION_IQ_REPORT_EVENT				0x16
-#define HCI_LE_CTE_REQUEST_FAILED_REPORT				0x17
+#define HCI_LE_CONNECTIONLESS_IQ_REPORT_EVENT           0x15
+#define HCI_LE_CONNECTION_IQ_REPORT_EVENT               0x16
+#define HCI_LE_CTE_REQUEST_FAILED_REPORT                0x17
 
 
 // Vendor Specific Event Code
@@ -373,55 +370,55 @@ extern uint8 hciSmpTaskID;
 #define HCI_EXT_NUM_COMPLETED_PKTS_LIMIT_EVENT         0x041F
 
 /*******************************************************************************
- * TYPEDEFS
- */
+    TYPEDEFS
+*/
 
 /*******************************************************************************
- * LOCAL VARIABLES
- */
+    LOCAL VARIABLES
+*/
 
 /*******************************************************************************
- * GLOBAL VARIABLES
- */
+    GLOBAL VARIABLES
+*/
 
 /*
 ** HCI OSAL API
 */
 
 /*******************************************************************************
- * @fn          HCI_Init
- *
- * @brief       This is the HCI OSAL task initialization routine.
- *
- * input parameters
- *
- * @param       taskID - The HCI OSAL task identifer.
- *
- * output parameters
- *
- * @param       None.
- *
- * @return      None.
- */
+    @fn          HCI_Init
+
+    @brief       This is the HCI OSAL task initialization routine.
+
+    input parameters
+
+    @param       taskID - The HCI OSAL task identifer.
+
+    output parameters
+
+    @param       None.
+
+    @return      None.
+*/
 extern void HCI_Init( uint8 taskID );
 
 
 /*******************************************************************************
- * @fn          HCI_ProcessEvent
- *
- * @brief       This is the HCI OSAL task process event handler.
- *
- * input parameters
- *
- * @param       taskID - The HCI OSAL task identifer.
- * @param       events - HCI OSAL task events.
- *
- * output parameters
- *
- * @param       None.
- *
- * @return      Unprocessed events.
- */
+    @fn          HCI_ProcessEvent
+
+    @brief       This is the HCI OSAL task process event handler.
+
+    input parameters
+
+    @param       taskID - The HCI OSAL task identifer.
+    @param       events - HCI OSAL task events.
+
+    output parameters
+
+    @param       None.
+
+    @return      Unprocessed events.
+*/
 extern uint16 HCI_ProcessEvent( uint8  task_id,
                                 uint16 events );
 

@@ -59,6 +59,336 @@ list_head* core_list_insert_new(list_head* insert_point
 typedef ee_s32(*list_cmp)(list_data* a, list_data* b, core_results* res);
 list_head* core_list_mergesort(list_head* list, list_cmp cmp, core_results* res);
 
+
+ee_s16 calc_func_7(ee_s16* pdata, core_results* res)
+{
+    ee_s16 data=*pdata;
+    ee_s16 retval;
+    ee_u8 optype=(data>>7) & 1; /* bit 7 indicates if the function result has been cached */
+
+    if (optype) /* if cached, use cache */
+        return (data & 0x007f);
+    else   /* otherwise calculate and cache the result */
+    {
+        ee_s16 flag=data & 0x7; /* bits 0-2 is type of function to perform */
+        ee_s16 dtype=((data>>3) & 0xf); /* bits 3-6 is specific data for the operation */
+        dtype |= dtype << 4; /* replicate the lower 4 bits to get an 8b value */
+
+        switch (flag)
+        {
+        case 0:
+            if (dtype<0x22) /* set min period for bit corruption */
+                dtype=0x22;
+
+            retval=core_bench_state(res->size,res->memblock[3],res->seed1,res->seed2,dtype,res->crc);
+
+            if (res->crcstate==0)
+                res->crcstate=retval;
+
+            break;
+
+        case 1:
+            retval=core_bench_matrix(&(res->mat),dtype,res->crc);
+
+            if (res->crcmatrix==0)
+                res->crcmatrix=retval;
+
+            break;
+
+        default:
+            retval=data;
+            break;
+        }
+
+        res->crc=crcu16(retval,res->crc);
+        retval &= 0x007f;
+        *pdata = (data & 0xff00) | 0x0080 | retval; /* cache the result */
+        return retval;
+    }
+}
+
+ee_s16 calc_func_6(ee_s16* pdata, core_results* res)
+{
+    ee_s16 data=*pdata;
+    ee_s16 retval;
+    ee_u8 optype=(data>>7) & 1; /* bit 7 indicates if the function result has been cached */
+
+    if (optype) /* if cached, use cache */
+        return (data & 0x007f);
+    else   /* otherwise calculate and cache the result */
+    {
+        ee_s16 flag=data & 0x7; /* bits 0-2 is type of function to perform */
+        ee_s16 dtype=((data>>3) & 0xf); /* bits 3-6 is specific data for the operation */
+        dtype |= dtype << 4; /* replicate the lower 4 bits to get an 8b value */
+
+        switch (flag)
+        {
+        case 0:
+            if (dtype<0x22) /* set min period for bit corruption */
+                dtype=0x22;
+
+            retval=core_bench_state(res->size,res->memblock[3],res->seed1,res->seed2,dtype,res->crc);
+
+            if (res->crcstate==0)
+                res->crcstate=retval;
+
+            break;
+
+        case 1:
+            retval=core_bench_matrix(&(res->mat),dtype,res->crc);
+
+            if (res->crcmatrix==0)
+                res->crcmatrix=retval;
+
+            break;
+
+        default:
+            retval=data;
+            break;
+        }
+
+        res->crc=crcu16(retval,res->crc);
+        retval &= 0x007f;
+        *pdata = (data & 0xff00) | 0x0080 | retval; /* cache the result */
+        return retval;
+    }
+}
+
+ee_s16 calc_func_5(ee_s16* pdata, core_results* res)
+{
+    ee_s16 data=*pdata;
+    ee_s16 retval;
+    ee_u8 optype=(data>>7) & 1; /* bit 7 indicates if the function result has been cached */
+
+    if (optype) /* if cached, use cache */
+        return (data & 0x007f);
+    else   /* otherwise calculate and cache the result */
+    {
+        ee_s16 flag=data & 0x7; /* bits 0-2 is type of function to perform */
+        ee_s16 dtype=((data>>3) & 0xf); /* bits 3-6 is specific data for the operation */
+        dtype |= dtype << 4; /* replicate the lower 4 bits to get an 8b value */
+
+        switch (flag)
+        {
+        case 0:
+            if (dtype<0x22) /* set min period for bit corruption */
+                dtype=0x22;
+
+            retval=core_bench_state(res->size,res->memblock[3],res->seed1,res->seed2,dtype,res->crc);
+
+            if (res->crcstate==0)
+                res->crcstate=retval;
+
+            break;
+
+        case 1:
+            retval=core_bench_matrix(&(res->mat),dtype,res->crc);
+
+            if (res->crcmatrix==0)
+                res->crcmatrix=retval;
+
+            break;
+
+        default:
+            retval=data;
+            break;
+        }
+
+        res->crc=crcu16(retval,res->crc);
+        retval &= 0x007f;
+        *pdata = (data & 0xff00) | 0x0080 | retval; /* cache the result */
+        return retval;
+    }
+}
+
+ee_s16 calc_func_4(ee_s16* pdata, core_results* res)
+{
+    ee_s16 data=*pdata;
+    ee_s16 retval;
+    ee_u8 optype=(data>>7) & 1; /* bit 7 indicates if the function result has been cached */
+
+    if (optype) /* if cached, use cache */
+        return (data & 0x007f);
+    else   /* otherwise calculate and cache the result */
+    {
+        ee_s16 flag=data & 0x7; /* bits 0-2 is type of function to perform */
+        ee_s16 dtype=((data>>3) & 0xf); /* bits 3-6 is specific data for the operation */
+        dtype |= dtype << 4; /* replicate the lower 4 bits to get an 8b value */
+
+        switch (flag)
+        {
+        case 0:
+            if (dtype<0x22) /* set min period for bit corruption */
+                dtype=0x22;
+
+            retval=core_bench_state(res->size,res->memblock[3],res->seed1,res->seed2,dtype,res->crc);
+
+            if (res->crcstate==0)
+                res->crcstate=retval;
+
+            break;
+
+        case 1:
+            retval=core_bench_matrix(&(res->mat),dtype,res->crc);
+
+            if (res->crcmatrix==0)
+                res->crcmatrix=retval;
+
+            break;
+
+        default:
+            retval=data;
+            break;
+        }
+
+        res->crc=crcu16(retval,res->crc);
+        retval &= 0x007f;
+        *pdata = (data & 0xff00) | 0x0080 | retval; /* cache the result */
+        return retval;
+    }
+}
+
+ee_s16 calc_func_3(ee_s16* pdata, core_results* res)
+{
+    ee_s16 data=*pdata;
+    ee_s16 retval;
+    ee_u8 optype=(data>>7) & 1; /* bit 7 indicates if the function result has been cached */
+
+    if (optype) /* if cached, use cache */
+        return (data & 0x007f);
+    else   /* otherwise calculate and cache the result */
+    {
+        ee_s16 flag=data & 0x7; /* bits 0-2 is type of function to perform */
+        ee_s16 dtype=((data>>3) & 0xf); /* bits 3-6 is specific data for the operation */
+        dtype |= dtype << 4; /* replicate the lower 4 bits to get an 8b value */
+
+        switch (flag)
+        {
+        case 0:
+            if (dtype<0x22) /* set min period for bit corruption */
+                dtype=0x22;
+
+            retval=core_bench_state(res->size,res->memblock[3],res->seed1,res->seed2,dtype,res->crc);
+
+            if (res->crcstate==0)
+                res->crcstate=retval;
+
+            break;
+
+        case 1:
+            retval=core_bench_matrix(&(res->mat),dtype,res->crc);
+
+            if (res->crcmatrix==0)
+                res->crcmatrix=retval;
+
+            break;
+
+        default:
+            retval=data;
+            break;
+        }
+
+        res->crc=crcu16(retval,res->crc);
+        retval &= 0x007f;
+        *pdata = (data & 0xff00) | 0x0080 | retval; /* cache the result */
+        return retval;
+    }
+}
+
+ee_s16 calc_func_2(ee_s16* pdata, core_results* res)
+{
+    ee_s16 data=*pdata;
+    ee_s16 retval;
+    ee_u8 optype=(data>>7) & 1; /* bit 7 indicates if the function result has been cached */
+
+    if (optype) /* if cached, use cache */
+        return (data & 0x007f);
+    else   /* otherwise calculate and cache the result */
+    {
+        ee_s16 flag=data & 0x7; /* bits 0-2 is type of function to perform */
+        ee_s16 dtype=((data>>3) & 0xf); /* bits 3-6 is specific data for the operation */
+        dtype |= dtype << 4; /* replicate the lower 4 bits to get an 8b value */
+
+        switch (flag)
+        {
+        case 0:
+            if (dtype<0x22) /* set min period for bit corruption */
+                dtype=0x22;
+
+            retval=core_bench_state(res->size,res->memblock[3],res->seed1,res->seed2,dtype,res->crc);
+
+            if (res->crcstate==0)
+                res->crcstate=retval;
+
+            break;
+
+        case 1:
+            retval=core_bench_matrix(&(res->mat),dtype,res->crc);
+
+            if (res->crcmatrix==0)
+                res->crcmatrix=retval;
+
+            break;
+
+        default:
+            retval=data;
+            break;
+        }
+
+        res->crc=crcu16(retval,res->crc);
+        retval &= 0x007f;
+        *pdata = (data & 0xff00) | 0x0080 | retval; /* cache the result */
+        return retval;
+    }
+}
+
+ee_s16 calc_func_1(ee_s16* pdata, core_results* res)
+{
+    ee_s16 data=*pdata;
+    ee_s16 retval;
+    ee_u8 optype=(data>>7) & 1; /* bit 7 indicates if the function result has been cached */
+
+    if (optype) /* if cached, use cache */
+        return (data & 0x007f);
+    else   /* otherwise calculate and cache the result */
+    {
+        ee_s16 flag=data & 0x7; /* bits 0-2 is type of function to perform */
+        ee_s16 dtype=((data>>3) & 0xf); /* bits 3-6 is specific data for the operation */
+        dtype |= dtype << 4; /* replicate the lower 4 bits to get an 8b value */
+
+        switch (flag)
+        {
+        case 0:
+            if (dtype<0x22) /* set min period for bit corruption */
+                dtype=0x22;
+
+            retval=core_bench_state(res->size,res->memblock[3],res->seed1,res->seed2,dtype,res->crc);
+
+            if (res->crcstate==0)
+                res->crcstate=retval;
+
+            break;
+
+        case 1:
+            retval=core_bench_matrix(&(res->mat),dtype,res->crc);
+
+            if (res->crcmatrix==0)
+                res->crcmatrix=retval;
+
+            break;
+
+        default:
+            retval=data;
+            break;
+        }
+
+        res->crc=crcu16(retval,res->crc);
+        retval &= 0x007f;
+        *pdata = (data & 0xff00) | 0x0080 | retval; /* cache the result */
+        return retval;
+    }
+}
+
 ee_s16 calc_func_0(ee_s16* pdata, core_results* res)
 {
     ee_s16 data=*pdata;
@@ -112,43 +442,43 @@ ee_s16 calc_func_0(ee_s16* pdata, core_results* res)
 
 
 extern uint8 g_calc_func_cnt;
-//extern uint8 g_calc_func_entry[];
+extern uint8 g_calc_func_entry[];
 ee_s16 calc_func(ee_s16* pdata, core_results* res)
 {
-   g_calc_func_cnt++;
-   if(0==(g_calc_func_cnt&0x07))
-   {
-		return ( calc_func_0(pdata, res));
-   }
-   else if(1==(g_calc_func_cnt&0x07))
-   {
-	   return ( calc_func_1(pdata, res));
-   }
-   else if(2==(g_calc_func_cnt&0x07))
-   {
-	   return ( calc_func_2(pdata, res));
-   }
-   else if(3==(g_calc_func_cnt&0x07))
-   {
-	   return ( calc_func_3(pdata, res));
-   }
-   else if(4==(g_calc_func_cnt&0x07))
-   {
-	   return ( calc_func_4(pdata, res));
-   }
-   else if(5==(g_calc_func_cnt&0x07))
-   {
-	   return ( calc_func_5(pdata, res));
-   }
-   else if(6==(g_calc_func_cnt&0x07))
-   {
-	   return ( calc_func_6(pdata, res));
-   }
-   else if(7==(g_calc_func_cnt&0x07))
-   {
-	   return ( calc_func_7(pdata, res));
-   }
+    g_calc_func_cnt++;
 
+    if(g_calc_func_entry[0x07&g_calc_func_cnt]==0)
+    {
+        return ( calc_func_0(pdata, res));
+    }
+    else if(g_calc_func_entry[0x07&g_calc_func_cnt]==1)
+    {
+        return ( calc_func_1(pdata, res));
+    }
+    else if(g_calc_func_entry[0x07&g_calc_func_cnt]==2)
+    {
+        return ( calc_func_2(pdata, res));
+    }
+    else if(g_calc_func_entry[0x07&g_calc_func_cnt]==3)
+    {
+        return ( calc_func_3(pdata, res));
+    }
+    else if(g_calc_func_entry[0x07&g_calc_func_cnt]==4)
+    {
+        return ( calc_func_4(pdata, res));
+    }
+    else if(g_calc_func_entry[0x07&g_calc_func_cnt]==5)
+    {
+        return ( calc_func_5(pdata, res));
+    }
+    else if(g_calc_func_entry[0x07&g_calc_func_cnt]==6)
+    {
+        return ( calc_func_6(pdata, res));
+    }
+    else/* if(g_calc_func_entry[0x07&g_calc_func_cnt]==7)*/
+    {
+        return ( calc_func_7(pdata, res));
+    }
 }
 /*  Function: cmp_complex
     Compare the data item in a list cell.
@@ -807,7 +1137,7 @@ ee_u16 core_bench_list_1(core_results* res, ee_s16 finder_idx)
     #endif
     return retval;
 }
-ee_u16 core_bench_list(core_results* res, ee_s16 finder_idx)
+ee_u16 core_bench_list_0(core_results* res, ee_s16 finder_idx)
 {
     ee_u16 retval=0;
     ee_u16 found=0,missed=0;
@@ -903,14 +1233,45 @@ ee_u16 core_bench_list(core_results* res, ee_s16 finder_idx)
     - Single remove/reinsert
       At the end of this function, the list is back to original state
 */
-//extern uint8 g_core_bench_list_cnt;
-//extern uint8 g_core_bench_list_entry[];
-//ee_u16 core_bench_list(core_results* res, ee_s16 finder_idx)
-//{
-//   
-//	return ( core_bench_list_0(res, finder_idx));
-//
-//}
+extern uint8 g_core_bench_list_cnt;
+extern uint8 g_core_bench_list_entry[];
+ee_u16 core_bench_list(core_results* res, ee_s16 finder_idx)
+{
+    g_core_bench_list_cnt++;
+
+    if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==0)
+    {
+        return ( core_bench_list_0(res, finder_idx));
+    }
+    else if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==1)
+    {
+        return ( core_bench_list_1(res, finder_idx));
+    }
+    else if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==2)
+    {
+        return ( core_bench_list_2(res, finder_idx));
+    }
+    else if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==3)
+    {
+        return ( core_bench_list_3(res, finder_idx));
+    }
+    else if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==4)
+    {
+        return ( core_bench_list_4(res, finder_idx));
+    }
+    else if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==5)
+    {
+        return ( core_bench_list_5(res, finder_idx));
+    }
+    else if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==6)
+    {
+        return ( core_bench_list_6(res, finder_idx));
+    }
+    else/* if(g_core_bench_list_entry[0x07&g_core_bench_list_cnt]==7)*/
+    {
+        return ( core_bench_list_7(res, finder_idx));
+    }
+}
 /*  Function: core_list_init
     Initialize list with data.
 
@@ -1207,7 +1568,7 @@ list_head* core_list_find_1(list_head* list,list_data* info)
 }
 
 
-list_head* core_list_find(list_head* list,list_data* info)
+list_head* core_list_find_0(list_head* list,list_data* info)
 {
     if (info->idx>=0)
     {
@@ -1238,15 +1599,45 @@ list_head* core_list_find(list_head* list,list_data* info)
     Returns:
     Found item, or NULL if not found.
 */
-//extern uint8 g_core_list_find_cnt;
-//extern uint8 g_core_list_find_entry[];
-//list_head* core_list_find(list_head* list,list_data* info)
-//{
-//   
-//	return ( core_list_find_0(list,info) );
-//
-//    
-//}
+extern uint8 g_core_list_find_cnt;
+extern uint8 g_core_list_find_entry[];
+list_head* core_list_find(list_head* list,list_data* info)
+{
+    g_core_list_find_cnt++;
+
+    if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==0)
+    {
+        return ( core_list_find_0(list,info) );
+    }
+    else if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==1)
+    {
+        return ( core_list_find_1(list,info) );
+    }
+    else if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==2)
+    {
+        return ( core_list_find_2(list,info) );
+    }
+    else if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==3)
+    {
+        return ( core_list_find_3(list,info) );
+    }
+    else if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==4)
+    {
+        return ( core_list_find_4(list,info) );
+    }
+    else if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==5)
+    {
+        return ( core_list_find_5(list,info) );
+    }
+    else if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==6)
+    {
+        return ( core_list_find_6(list,info) );
+    }
+    else/* if(g_core_list_find_entry[0x07&g_core_list_find_cnt]==7)*/
+    {
+        return ( core_list_find_7(list,info) );
+    }
+}
 /*  Function: core_list_reverse
     Reverse a list
 
@@ -1955,7 +2346,7 @@ list_head* core_list_mergesort_1(list_head* list, list_cmp cmp, core_results* re
 }
 
 
-list_head* core_list_mergesort(list_head* list, list_cmp cmp, core_results* res)
+list_head* core_list_mergesort_0(list_head* list, list_cmp cmp, core_results* res)
 {
     list_head* p, *q, *e, *tail;
     ee_s32 insize, nmerges, psize, qsize, i;
@@ -2074,11 +2465,42 @@ list_head* core_list_mergesort(list_head* list, list_cmp cmp, core_results* res)
 
 */
 
-//extern uint8 g_core_list_mergesort_cnt;
-//extern uint8 g_core_list_mergesort_entry[];
-//list_head* core_list_mergesort(list_head* list, list_cmp cmp, core_results* res)
-//{
-//   
-//	return ( core_list_mergesort_0(list,  cmp, res));
-//
-//}
+extern uint8 g_core_list_mergesort_cnt;
+extern uint8 g_core_list_mergesort_entry[];
+list_head* core_list_mergesort(list_head* list, list_cmp cmp, core_results* res)
+{
+    g_core_list_mergesort_cnt++;
+
+    if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==0)
+    {
+        return ( core_list_mergesort_0(list,  cmp, res));
+    }
+    else if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==1)
+    {
+        return ( core_list_mergesort_1(list,  cmp, res));
+    }
+    else if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==2)
+    {
+        return ( core_list_mergesort_2(list,  cmp, res));
+    }
+    else if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==3)
+    {
+        return ( core_list_mergesort_3(list,  cmp, res));
+    }
+    else if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==4)
+    {
+        return ( core_list_mergesort_4(list,  cmp, res));
+    }
+    else if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==5)
+    {
+        return ( core_list_mergesort_5(list,  cmp, res));
+    }
+    else if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==6)
+    {
+        return ( core_list_mergesort_6(list,  cmp, res));
+    }
+    else/* if(g_core_list_mergesort_entry[0x07&g_core_list_mergesort_cnt]==7)*/
+    {
+        return ( core_list_mergesort_7(list,  cmp, res));
+    }
+}
