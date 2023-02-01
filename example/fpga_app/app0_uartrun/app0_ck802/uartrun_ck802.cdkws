@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDK_Workspace Name="uartrun_ck802" Database="" DoubleClick="Yes">
+  <Project Name="uartrun_ck802" Path="uartrun_ck802.cdkproj" Active="Yes"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Environment/>
+      <Project Name="uartrun_ck802" ConfigName="BuildSet"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CDK_Workspace>

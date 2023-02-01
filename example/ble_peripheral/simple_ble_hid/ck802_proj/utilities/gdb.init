@@ -1,0 +1,3 @@
+
+set *(unsigned int)0x4000f0cc = 0x1fff4001
+set var $pc=0x20a4

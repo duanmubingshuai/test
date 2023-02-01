@@ -44,6 +44,7 @@
 /**************************************************************************************************
                                               INCLUDES
  **************************************************************************************************/
+#include "rom_sym_def.h"
 #include "types.h"
 #include "OSAL.h"
 #include "OSAL_Tasks.h"
@@ -56,12 +57,12 @@
 */
 
 // The order in this table must be identical to the task initialization calls below in osalInitTask.
-const pTaskEventHandlerFn tasksArr[] =
+pTaskEventHandlerFn tasksArr[] =
 {
     PhyPlusPhy_ProcessEvent,                                  // task
 };
 
-const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
+uint16 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
 uint16* tasksEvents;
 
 /*********************************************************************

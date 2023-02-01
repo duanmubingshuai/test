@@ -1,11 +1,11 @@
 /**************************************************************************************************
-    Filename:       OSAL_Tasks.h
-    Revised:
-    Revision:
+  Filename:       OSAL_Tasks.h
+  Revised:         
+  Revision:        
 
-    Description:    This file contains the OSAL Task definition and manipulation functions.
+  Description:    This file contains the OSAL Task definition and manipulation functions.
 
-
+ 
 **************************************************************************************************/
 
 #ifndef OSAL_TASKS_H
@@ -17,42 +17,42 @@ extern "C"
 #endif
 
 /*********************************************************************
-    INCLUDES
-*/
+ * INCLUDES
+ */
 
 /*********************************************************************
-    MACROS
-*/
+ * MACROS
+ */
 
 /*********************************************************************
-    CONSTANTS
-*/
+ * CONSTANTS
+ */
 #define TASK_NO_TASK      0xFF
 
 /*********************************************************************
-    TYPEDEFS
-*/
+ * TYPEDEFS
+ */
 
 /*
-    Event handler function prototype
-*/
+ * Event handler function prototype
+ */
 typedef unsigned short (*pTaskEventHandlerFn)( unsigned char task_id, unsigned short event );
 
 /*********************************************************************
-    GLOBAL VARIABLES
-*/
+ * GLOBAL VARIABLES
+ */
 
-extern  const pTaskEventHandlerFn tasksArr[];
-extern  const uint8 tasksCnt;
-extern uint16* tasksEvents;
+extern  pTaskEventHandlerFn tasksArr[];
+extern   uint16 tasksCnt;
+extern uint16 *tasksEvents;
 
 /*********************************************************************
-    FUNCTIONS
-*/
+ * FUNCTIONS
+ */
 
 /*
-    Call each of the tasks initailization functions.
-*/
+ * Call each of the tasks initailization functions.
+ */
 extern void osalInitTasks( void );
 
 /*********************************************************************

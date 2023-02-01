@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDK_Workspace Name="app_stage1" Database="" DoubleClick="Yes">
+  <Project Name="app_1" Path="app_stage1.cdkproj" Active="Yes"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Environment/>
+      <Project Name="app_1" ConfigName="BuildSet"/>
+      <Project Name="app_1" ConfigName="BuildSet"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CDK_Workspace>

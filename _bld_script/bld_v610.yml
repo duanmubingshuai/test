@@ -1,0 +1,5 @@
+---
+
+rf: 
+- lib\generate_lib\ck802_proj\rf.cdkws
+- [Obj\rf.a, ..\..\librf.a]
