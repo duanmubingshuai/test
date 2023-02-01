@@ -1,0 +1,6 @@
+---
+
+pwm_light:
+- example\peripheral\pwm_light\ck802_proj\pwm_light.cdkws
+
+
