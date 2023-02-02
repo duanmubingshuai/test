@@ -14,7 +14,7 @@ BuildConfig:
 #Protect file config
 ProtectFile:
 - rls_example:
-  - bld_v312
+  - bld_v313
 - remove_file:
   - misc\*.asm 
   - misc\*.map 
