@@ -128,7 +128,7 @@ static void master_send_read_cmd(uint8_t len)
 	
 	for(i=0;i<len;i++)
 	{
-		WaitUs(1);                     //The transmitter response speed is not fast enough, so need to wait for 1us
+//		WaitUs(1);                     //The transmitter response speed is not fast enough, so need to wait for 1us
 		i2c0_ic_data_cmd_set(0x100);
 	}
 }
@@ -280,10 +280,10 @@ int i2c_addr_update(uint8_t addr)
 	AP_I2C_TypeDef * pi2cdev = AP_I2C0;
 
 	i2c0_ic_enable_enable_setf(0);
-	WaitUs(1);
+//	WaitUs(1);
 	i2c0_ic_tar_ic_tar_setf(addr);
 
-	i2c0_ic_enable_enable_setf(0);
+	i2c0_ic_enable_enable_setf(1);
 	return PPlus_SUCCESS;
 }
 
@@ -305,6 +305,7 @@ int i2c_read(
 		cnt = (size >8) ? 8 : size;
 		size -= cnt;
 		cnt2 = cnt;
+		
 		i2c_addr_update(slave_addr);
 		_HAL_CS_ALLOC_(); HAL_ENTER_CRITICAL_SECTION();
 		i2c_tx_start();
@@ -355,6 +356,7 @@ int i2c_write(
 	{
 		cnt = (size >8) ? 8 : size;
 		size -= cnt;
+		cnt2 = cnt;
 
 		i2c_addr_update(slave_addr);
 		_HAL_CS_ALLOC_(); HAL_ENTER_CRITICAL_SECTION();

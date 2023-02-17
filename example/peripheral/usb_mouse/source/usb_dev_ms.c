@@ -233,7 +233,7 @@ ALIGN(4) const struct uhid_config_descriptor config_desc =
 		0x01,
 		0x01,
 		0x04,
-		0xA0,
+		0xA0,//remote wakeup
 		0x31
 	},
     /* Interface Descriptor */
@@ -270,6 +270,7 @@ ALIGN(4) const struct uhid_config_descriptor config_desc =
     }
 };
 
+
 static int32_t get_dev_desc(uint8_t desc_idx, uint8_t str_idx, uint8_t  **buf , uint16_t *len)
 {
 	switch(desc_idx)
@@ -292,9 +293,9 @@ static int32_t get_dev_desc(uint8_t desc_idx, uint8_t str_idx, uint8_t  **buf , 
 			*buf = (uint8_t *)hid_mouse_report_desc;
 			*len = sizeof(hid_mouse_report_desc);
 			break;
-        case USB_DESC_TYPE_DEVICEQUALIFIER:
-			*buf = (uint8_t *)&dev_qualifier_desc;
-			*len = sizeof(dev_qualifier_desc);
+        case USB_DESC_TYPE_HID:
+            *buf = (uint8_t *)&(config_desc.mouse_hid_desc);
+            *len = sizeof(struct uhid_descriptor);
             break;
 			
 		default:
@@ -313,7 +314,7 @@ int32_t usb_get_desc_req_proc(usb_hal_pcd_t *hpcd, ureq_t req)
     uint16_t len = 0;
 	uint8_t desc_idx = (uint8_t)((req->wValue >> 8) & 0xff);
 	
-    if(desc_idx == USB_DESC_TYPE_DEVICE || desc_idx == USB_DESC_TYPE_CONFIGURATION){
+    if(desc_idx == USB_DESC_TYPE_DEVICE || desc_idx == USB_DESC_TYPE_CONFIGURATION ||desc_idx == USB_DESC_TYPE_HID){
 //        LOG_DEBUG("Get Device Desc\n");
         get_dev_desc(desc_idx, 0, (uint8_t **)&hpcd->ep[0].xfer_buf, (uint16_t *)&hpcd->ep[0].xfer_length);
 
@@ -331,8 +332,8 @@ int32_t usb_get_desc_req_proc(usb_hal_pcd_t *hpcd, ureq_t req)
 	}
     else if(desc_idx == USB_DESC_TYPE_DEVICEQUALIFIER){
         index = req->wIndex & 0xff;
-        get_dev_desc(USB_DESC_TYPE_DEVICEQUALIFIER, index, (uint8_t **)&hpcd->ep[0].xfer_buf, (uint16_t *)&hpcd->ep[0].xfer_length);
-        //hal_pcd_in_ep_fifo_stall_set(hpcd, 0);
+        //get_dev_desc(USB_DESC_TYPE_DEVICEQUALIFIER, index, (uint8_t **)&hpcd->ep[0].xfer_buf, (uint16_t *)&hpcd->ep[0].xfer_length);
+        hal_pcd_in_ep_fifo_stall_set(hpcd, 0);
 
 	}
     else if(desc_idx == USB_DESC_TYPE_STRING){
@@ -393,6 +394,7 @@ void usb_pcd_std_req_proc(usb_hal_pcd_t *hpcd, ureq_t req)
     }
     
 }
+uint8_t report[8];
 
 void usb_pcd_class_req_proc(usb_hal_pcd_t *hpcd, ureq_t req)
 
@@ -404,9 +406,29 @@ void usb_pcd_class_req_proc(usb_hal_pcd_t *hpcd, ureq_t req)
     {
 
         hid_remote_wakeup_rdy = HID_REMOTE_WAKEUP_IDLE;
-		mouse_idle_rate = (req->wValue >> 8);
+        if(req->bRequest == HID_SET_IDLE)
+    		mouse_idle_rate = (req->wValue >> 8);
+    	if(req->bRequest == HID_SET_PROTOCOL)
+    	    mouse_protocol = (req->wValue & 0xff);
+    	    
 		hid_mouse_ready = 1;
 
+	}
+	else if(req->bRequest == HID_GET_PROTOCOL)
+	{
+	    report[0] = mouse_protocol;
+        hpcd->ep[0].xfer_tmpcnt = 0;
+        hpcd->ep[0].xfer_cnt = 0;
+        hpcd->ep[0].xfer_buf = (uint8_t *)&report;
+        hpcd->ep[0].xfer_length = req->wLength;
+	}
+	else if(req->bRequest == HID_GET_IDLE)
+	{
+	    report[0] = mouse_idle_rate;
+        hpcd->ep[0].xfer_tmpcnt = 0;
+        hpcd->ep[0].xfer_cnt = 0;
+        hpcd->ep[0].xfer_buf = (uint8_t *)&report;
+        hpcd->ep[0].xfer_length = req->wLength;
 	}
 	/*
     else if(req->bRequest == HID_SET_REPORT){

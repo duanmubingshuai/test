@@ -66,7 +66,6 @@ uint8 application_TaskID;
 //#define USB_DEMO_ONCE_TIMER 2
  static void usb_irq_evt(void)
 {
-	WaitUs(10);
     osal_set_event(application_TaskID, usbDeviceTx_EVT);
 }
 

@@ -82,6 +82,9 @@
 #define RF_PHY_TIME_BASE                                TIME_BASE
 #define RF_PHY_TIME_DELTA(x,y)                          TIME_DELTA(x,y)
 
+#define RF_PHY_SPRD_DBG                                 0
+#define SPRD_DBG_LOG(...)                               //dbg_printf
+#define SPRD_DATA_DUMP(...)                             //my_dump_byte
 /*******************************************************************************
     Global Var
 */
@@ -896,3 +899,139 @@ void rf_phy_init1(void)
     rf_phy_change_cfg1(g_rfPhyPktFmt);
     rf_phy_agc_table();
 }
+// uint16_t crc_table_rev[16] ={
+// 0x0000,0x1081,0x2102,0x3183,0x4204,0x5285,0x6306,0x7387,
+// 0x8408,0x9489,0xa50a,0xb58b,0xc60c,0xd68d,0xe70e,0xf78f
+// };
+// void cic16_itu_table(uint16_t seed,uint8_t *data, int len,uint8_t* crcCode)
+// {
+//     uint16_t crc16 = seed;
+//     uint16_t crc_4, crc_12;
+//     while( len-- ) {
+//         crc_4  = (uint16)(crc16 &0x0f);
+//         crc_12 = (uint16)((crc16>>4) &0x0fff);
+        
+//         crc16 = (uint16)(crc_12 ^ crc_table_rev[crc_4 ^ (*data & 0x0f)]);
+
+//         crc_4  = (uint16)(crc16 &0x0f);
+//         crc_12 = (uint16)((crc16>>4) &0x0fff);
+       
+//         crc16 = (uint16)(crc_12 ^ crc_table_rev[crc_4 ^ (*data >> 4)]);
+
+//         data++;
+//     }
+
+//     crcCode[0]= (crc16&0xff);
+//     crcCode[1]= (crc16>>8)&0xff;
+// }
+extern void cic16_itu_table(uint16_t seed,uint8_t *data, int len,uint8_t* crcCode);
+uint8_t sprd_pkt_enc(uint8_t* din, uint8_t diLen, uint8_t* dOut)
+{
+    uint8_t ret = 0;
+    uint8_t crcOut[2];
+    cic16_itu_table(/*seed*/0xFFFF,din,diLen,(uint8_t*)(&crcOut));
+    /*spread : 1->11110000, 0-> 00001111*/
+    //sprd for data
+    for(int i=0;i<diLen;i++)
+    {
+        for (int j=0;j<8;j++)
+        {
+            dOut[i*8+j]= ((din[i]>>j)&0x01) ? 0xF0:0x0F;
+        }
+    }
+    //sprd for crc
+    for(int i=0;i<2;i++)
+    {
+        for (int j=0;j<8;j++)
+        {
+            dOut[(diLen+i)*8+j]= ((crcOut[i]>>j)&0x01) ? 0xF0:0x0F;
+        }
+    }
+    SPRD_DBG_LOG("[sprd enc] di:");
+    SPRD_DATA_DUMP(din,diLen);
+    SPRD_DBG_LOG("[sprd enc] do:");
+    SPRD_DATA_DUMP(dOut,(diLen+2)*8);
+    
+    return ret;
+    
+}
+static uint8_t despread_byte(uint8_t* di)
+{
+    uint8_t k,m,n=0;
+    for(int i=0;i<8;i++)
+    {
+        k = di[i]^0x0F;
+        m=0;
+        for(int j=0;j<8;j++)
+        {
+            m+=((k>>j)&0x01);
+        }
+        n|=(m>4)<<i;
+    }
+    return n;
+}
+uint16_t sprd_pkt_dec(uint8_t* din, uint16_t diLen,uint8_t* dOut)
+{
+    uint16_t crc16;
+    //despread
+    for(int i=0;i<diLen/8;i++)
+    {
+        dOut[i]=despread_byte(din+(i*8));
+    }
+    //crc
+    cic16_itu_table(/*seed*/0xFFFF,dOut,dOut[1]+2+2/*dlen+head(2)+crc(2)*/,(uint8_t*)(&crc16));
+
+    return crc16;
+}
+
+#if RF_PHY_SPRD_DBG
+void tst_sprd(void)
+{
+    uint8_t dataIn[20];
+    uint8_t decOut[20];
+    uint8_t dataOut[20*8];
+    uint8_t dLen = sizeof(dataIn)-2;
+    uint8_t ret;
+    uint32_t t0,t1;
+    for(int i=0;i<dLen;i++)
+    {
+        dataIn[i]=i;
+    }
+    dataIn[1]=dLen-2;
+    //spread
+    t0= read_current_fine_time();
+    ret= sprd_pkt_enc(dataIn, dataIn[1]+2, dataOut);
+    t1 = read_current_fine_time();
+    log_printf("===spread in ===== cost %d\n",t1-t0);
+    my_dump_byte(dataIn,dLen);
+    log_printf("===spread out =====\n");
+    my_dump_byte(dataOut,(dLen+2)*8);
+    //add error
+    uint8_t bit_err_pt[8]={0x10,0x11,0x013,0x34,0x50,0x92,0x23,0x44};
+    for(int i=0;i<(dLen+2)*8;i++)
+    {
+        dataOut[i]=dataOut[i]^(bit_err_pt[i%8]);
+    }
+    log_printf("===add err out =====\n");
+    my_dump_byte(dataOut,(dLen+2)*8);
+    //despread
+    t0= read_current_fine_time();
+    ret=sprd_pkt_dec(dataOut,(dLen+2)*8,decOut);
+    t1 = read_current_fine_time();
+    log_printf("===despread out ===== cost %d\n",t1-t0);
+    int bitErr=0;
+    for(int i=0;i<dLen;i++)
+    {
+        for(int j=0;j<8;j++)
+        {
+            bitErr+=(((dataIn[i]>>j)&0x01) ^ ((decOut[i]>>j)&0x01));
+        }
+    }
+
+    log_printf("===ret = %d bitErr %d\n",ret,bitErr);
+    my_dump_byte(decOut,dLen);
+
+
+
+}
+#endif

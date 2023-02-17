@@ -1391,7 +1391,7 @@ void PhyPlusPhy_Init(uint8 task_id)
     #endif
 
     s_phySch.txMargin   =   1500;//us
-    s_phySch.rxMargin   =   2000;//us
+    s_phySch.rxMargin   =   2500;//us
     
     s_phy.rxOnlyTO      =   10*1000;//us    valid range: 2000 --- 65535
     
@@ -1487,7 +1487,7 @@ static void process_trx_done_evt(void)
     if(s_phy.txAck)
     {
         // adv_buffer[0]+=1;
-        LOG("[TX OK]\n");
+        LOG_DEBUG("[TX OK]\n");
         if(phy_data_cbfunc != NULL)
         {
         #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
@@ -1509,7 +1509,7 @@ static void process_trx_done_evt(void)
     }
     else
     {
-        LOG("[TX Fail]\n");
+        LOG_DEBUG("[TX Fail]\n");
         if(phy_data_cbfunc != NULL)
         {
             phy_pdu_cb.type = NULL;

@@ -9,7 +9,7 @@ extern "C" {
 
 /*USB Register Def*/
 #define MAX_EP_IP_SUPPORT  16
-#define MAX_EP_NUM         2
+#define MAX_EP_NUM         3
 
 #define USB_DEV_KBD  	0
 #define USB_DEV_MS		1 
@@ -147,7 +147,7 @@ typedef struct{
 #define USB_DESC_LENGTH_INTERFACE       0x9
 #define USB_DESC_LENGTH_ENDPOINT        0x7
 #define USB_DESC_LENGTH_QUALIFIER       0xA
-#define USB_DESC_LENGTH_KEYBOARD_REPORT 0x3B
+//#define USB_DESC_LENGTH_KEYBOARD_REPORT 0x3B
 //#define USB_DESC_LENGTH_MOUSE_REPORT    0x40
 //#define USB_DESC_LENGTH_MOUSE_REPORT    0xB1
 #define USB_LENGTH_MOUSE_REPORT    8//6//0x8

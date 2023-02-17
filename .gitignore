@@ -17,18 +17,15 @@
 *.db
 *.cdkws.*
 *.tags
-
 !_bld_script/format.bat
-!_bld_script_keil_cdk/format.bat
 *.session
 *.log
 
-
 #ignor folder
-__bld_cmd
 **/.cdk
 **/Obj
 **/Lst
+__bld_cmd
 
 #VS Coder
 .vscode

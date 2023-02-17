@@ -35,10 +35,11 @@ gpio:
 i2c_e2prom:
 - example\peripheral\i2c_e2prom\ck802_proj\i2c_e2prom.cdkws
 
-# pwm_light:
-# - example\peripheral\pwm_light\ck802_proj\pwm_light.cdkws
-
 pwm_deadzone:
 - example\peripheral\pwm_deadzone\ck802_proj\pwm_deadzone.cdkws
 
+usb_mouse:
+- example\peripheral\usb_mouse\ck802_proj\usb_hid.cdkws
 
+usb_mouse_kbd:
+- example\peripheral\usb_mouse_kbd\ck802_proj\usb_mouse_kbd.cdkws

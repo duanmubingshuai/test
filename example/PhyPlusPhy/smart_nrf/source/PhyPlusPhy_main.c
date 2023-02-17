@@ -186,11 +186,11 @@ uint16 Smart_nRF_ProcessEvent(uint8 task_id, uint16 events)
         {
             0x02,   // length of this data
             0x01,//GAP_ADTYPE_FLAGS,
-            0x06,//DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
+            // 0x06,//DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
             // complete name
-            0x09,   // length of this data
-            0x09,//GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-            0x53,0x6D,0x61,0x72,0x54,0x6E,0x52,0x46,//SmarTnRF
+            // 0x09,   // length of this data
+            // 0x09,//GAP_ADTYPE_LOCAL_NAME_COMPLETE,
+            // 0x53,0x6D,0x61,0x72,0x54,0x6E,0x52,0x46,//SmarTnRF
             0x07, // length of this data including the data type byte
             0xff,//GAP_ADTYPE_MANUFACTURER_SPECIFIC, // manufacturer specific adv data type
             0x04, // Company ID - Fixed

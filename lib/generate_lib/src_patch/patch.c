@@ -948,22 +948,22 @@ void init_config(void)
        
     if(g_system_clk==SYS_CLK_XTAL_16M)
     {
-        pGlobal_config[WAKEUP_ADVANCE] = 2100;//650;//600;//310;
+        pGlobal_config[WAKEUP_ADVANCE] = 2500;//650;//600;//310;
         pGlobal_config[WAKEUP_DELAY] = 10;
     }
     else if(g_system_clk==SYS_CLK_DLL_48M)
     {
-        pGlobal_config[WAKEUP_ADVANCE] = 2250;//650;//600;//310;
+        pGlobal_config[WAKEUP_ADVANCE] = 2500;//650;//600;//310;
         pGlobal_config[WAKEUP_DELAY] = 10;
     }
     
     pGlobal_config[CLK_TRACKING_CONFIG_DLL ] = 0x0001f414;//0x0001f414;// [19:8] target_cnt [7:0] settle_thd 
-    pGlobal_config[CLK_TRACKING_CONFIG_XTAL] = 0x0000fa0a;// [19:8] target_cnt [7:0] settle_thd
+    pGlobal_config[CLK_TRACKING_CONFIG_XTAL] = 0x0000aa30;// [19:8] target_cnt [7:0] settle_thd
 
     pGlobal_config[RC32_CNT_TRACKING_AVG_CONFIG] = 0x00640508;//[31:16]avg init cnt  [15:8] alpha [7:0] beta
 
 	// sleep time, in us
-    pGlobal_config[MAX_SLEEP_TIME] = 1500000;    
+    pGlobal_config[MAX_SLEEP_TIME] = 25000000;    
     pGlobal_config[MIN_SLEEP_TIME] = 1500;
     
     pGlobal_config[ALLOW_TO_SLEEP_TICK_RC32K] = 60;// 30.5 per tick    
@@ -1010,7 +1010,7 @@ void init_config(void)
     else if(g_system_clk==SYS_CLK_DLL_48M)
     {
         // scan req -> scan rsp timing
-        pGlobal_config[SCAN_RSP_DELAY] = 5+RF_PHY_EXT_PREAMBLE_US;        // 12	//  2019/3/19 A2: 12 --> 9
+        pGlobal_config[SCAN_RSP_DELAY] = 3+RF_PHY_EXT_PREAMBLE_US;        // 12	//  2019/3/19 A2: 12 --> 9
     }                                      
 	else if(g_system_clk == SYS_CLK_DLL_64M)		//  2019/3/26 add
 	{

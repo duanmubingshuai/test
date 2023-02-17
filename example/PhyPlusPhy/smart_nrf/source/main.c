@@ -110,7 +110,11 @@ static void hal_mem_init_config(void)
 int  main(void)  
 {
     //hal_watchdog_config(WDG_2S);
-    g_system_clk = SYS_CLK_XTAL_16M;
+    #if(DEF_PHYPLUS_NRF_SUPPORT == 0)
+    g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_DBL_32M,SYS_CLK_XTAL_16M;
+    #else
+    g_system_clk = SYS_CLK_DLL_48M;
+    #endif
 	
     hal_mem_init_config();
     

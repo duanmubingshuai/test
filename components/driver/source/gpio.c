@@ -17,6 +17,7 @@
 
 #include "OSAL_Tasks.h"
 #include "watchdog.h"
+#include "pico_reg.h"
 
 extern void gpio_sleep_handler(void);
 extern void gpio_wakeup_handler(void);
@@ -51,8 +52,8 @@ void gpio_wakeup_handler_patch(void)
            gpio_write((gpio_pin_e)i,pol);
        }
    }
-   AP_AON->IOCTL[2] &= (~m_gpioCtx.retention_map);
-
+//   AP_AON->IOCTL[2] &= (~m_gpioCtx.retention_map);
+	aon_ioctl2_set(aon_ioctl2_get() & (~m_gpioCtx.retention_map));
    //get wakeup source
    for (i = 0; i < m_gpioCtx.gpioin_nums; i++)
    {
@@ -97,8 +98,10 @@ int gpio_init_patch(void)
 void gpio_fast_write(gpio_pin_e pin, uint8_t en)
 {
     if(en)
-        AP_GPIO->swporta_dr |= BIT(pin);
+//        AP_GPIO->swporta_dr |= BIT(pin);
+		gpio_swporta_dr_set(gpio_swporta_dr_get() | BIT(pin));
     else
-        AP_GPIO->swporta_dr &= ~BIT(pin);
+//        AP_GPIO->swporta_dr &= ~BIT(pin);
+		gpio_swporta_dr_set(gpio_swporta_dr_get() & (~BIT(pin)));
 }
 

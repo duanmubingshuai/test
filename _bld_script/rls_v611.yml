@@ -1,20 +1,20 @@
 ---
 #release tag name @ current repo
 ReleaseTagName: 
-- tag_v610
+- tag_v611
 
 ReleaseBranchName:
-- PHY62XX_SDK_6.1.0
+- PHY62XX_SDK_6.1.1
 
 #build config
 # - yaml file
 BuildConfig: 
-- bld_v610
+- bld_v611
 
 #Protect file config
 ProtectFile:
 - rls_example:
-  - bld_v610
+  - bld_v611
 - remove_file:
   - misc\*.asm 
   - misc\*.map 
@@ -27,5 +27,6 @@ ProtectFile:
   - lib\otpbin_sbpusb\
   - lib\otpbin_usb\
   - lib\src_ble\
+  - example\fpga_app\
   - components\libraries\dwc\
   - components\libraries\libc\

@@ -290,4 +290,6 @@ void rf_phy_get_pktFoot_fromPkt(uint32 pktFoot0, uint32 pktFoot1,
                                 uint8* rssi, uint16* foff,uint8* carrSens);
 //void        rf_phy_dtm_zigbee_pkt_gen(void);
 
+uint8_t sprd_pkt_enc(uint8_t* din, uint8_t diLen, uint8_t* dOut);
+uint16_t sprd_pkt_dec(uint8_t* din, uint16_t diLen,uint8_t* dOut);
 #endif

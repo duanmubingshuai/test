@@ -150,7 +150,7 @@ typedef struct{
 //#define USB_DESC_LENGTH_KEYBOARD_REPORT 0x3B
 //#define USB_DESC_LENGTH_MOUSE_REPORT    0x40
 //#define USB_DESC_LENGTH_MOUSE_REPORT    0xB1
-#define USB_LENGTH_MOUSE_REPORT    5//6//0x8
+#define USB_LENGTH_MOUSE_REPORT    8//6//0x8
 
 
 
@@ -282,16 +282,6 @@ typedef struct{
 
 #define HID_RX_BUFSIZE              128
 #define HID_MAX_PACKET_SIZE         64
-
-//uint8_t key_map[8][2] = {
-//	{"a", 0x04},
-//	{"b", 0x05},
-//	{"c", 0x06},
-//	{"d", 0x07},
-//	{"e", 0x08},
-//	{"f", 0x09},
-//	{"g", 0x0A},
-//};
 
 #define ALIGN(x) __attribute__((aligned(x)))
 

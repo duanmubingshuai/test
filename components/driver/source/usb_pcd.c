@@ -14,28 +14,31 @@ extern uint8_t hid_mouse_ready;
 extern uint8_t mouse_protocol;
 extern uint8_t mouse_idle_rate;
 
+//extern uint8_t hid_keyboard_ready;
+//extern uint8_t keyboard_protocol;
+//extern uint8_t keyboard_idle_rate;
 
-usb_hid_q_t usb_ep_tx_q;
+usb_hid_q_t usb_ep_tx_q[MAX_EP_NUM-1];
 #define __gpio_write(a,b)
 
-uint32_t usb_ep_tx_push(uint8_t *buf, uint32_t len)
+uint32_t usb_ep_tx_push(uint8_t qid, uint8_t *buf, uint32_t len)
 {
     int32_t ret = HAL_OK;
     _HAL_CS_ALLOC_();
     HAL_ENTER_CRITICAL_SECTION();
 
-    if(usb_ep_tx_q.num >= USB_HID_Q_NUM){
+    if(usb_ep_tx_q[qid].num >= USB_HID_Q_NUM){
         ret =  HAL_BUSY;
     }
     else
     {
         int i;
-        for(i = usb_ep_tx_q.num; i>0 ; i--){
-            osal_memcpy(&(usb_ep_tx_q.pkg[usb_ep_tx_q.num].bdata[0]),
-                &(usb_ep_tx_q.pkg[usb_ep_tx_q.num-1].bdata[0]), sizeof(usb_hid_pkg_t));
+        for(i = usb_ep_tx_q[qid].num; i>0 ; i--){
+            osal_memcpy(&(usb_ep_tx_q[qid].pkg[usb_ep_tx_q[qid].num].bdata[0]),
+                &(usb_ep_tx_q[qid].pkg[usb_ep_tx_q[qid].num-1].bdata[0]), sizeof(usb_hid_pkg_t));
         }
-        osal_memcpy(&(usb_ep_tx_q.pkg[0].bdata[0]), buf, len);
-        usb_ep_tx_q.num++;
+        osal_memcpy(&(usb_ep_tx_q[qid].pkg[0].bdata[0]), buf, len);
+        usb_ep_tx_q[qid].num++;
     }
 
     HAL_EXIT_CRITICAL_SECTION();
@@ -43,66 +46,75 @@ uint32_t usb_ep_tx_push(uint8_t *buf, uint32_t len)
 }
 
 
-usb_hid_pkg_t* usb_ep_tx_pop(void)
+usb_hid_pkg_t* usb_ep_tx_pop(uint8_t qid)
 {
-    if(usb_ep_tx_q.num){
-        usb_ep_tx_q.num --;
-        return &(usb_ep_tx_q.pkg[usb_ep_tx_q.num]);
+    usb_hid_pkg_t* pkg = NULL;
+    _HAL_CS_ALLOC_();
+    HAL_ENTER_CRITICAL_SECTION();
+    if(usb_ep_tx_q[qid].num){
+        usb_ep_tx_q[qid].num --;
+        pkg = &(usb_ep_tx_q[qid].pkg[usb_ep_tx_q[qid].num]);
     }
-    return NULL;
+    HAL_EXIT_CRITICAL_SECTION();
+    return pkg;
 }
 
 void usb_hid_tx_send(usb_hal_pcd_t *hpcd)
 {
-    int ep_num = 1;
-
+    int i;
+    bool no_more_txdata = true;
     if(hid_mouse_ready)
     {
         ep_in_sts_t tx_sts_clr;
         ep_in_ctl_t tx_ctl;
-        usb_hid_pkg_t* pkg = usb_ep_tx_pop();
-        __gpio_write(P12, 1);
-        __gpio_write(P12, 0);
-        //WaitUs(10);
-        if(pkg){
-            uint32_t *data = pkg->wdata;
-            volatile uint32_t *fifo = hpcd->tx_fifo[ep_num];
+        for(i = 1; i< MAX_EP_NUM; i++){
+            usb_hid_pkg_t* pkg = usb_ep_tx_pop(i -1);
+            int ep_num = i;
+            __gpio_write(P12, 1);
+            __gpio_write(P12, 0);
+            WaitUs(10);
+            if(pkg){
+                uint32_t *data = pkg->wdata;
+                volatile uint32_t *fifo = hpcd->tx_fifo[ep_num];
 
-            /*1. Clear Pakcet Status  */
-            tx_sts_clr.b.DATA_SENT = 1;
-            hpcd->in_ep_regs[ep_num]->in.EP_IN_STS = tx_sts_clr.d32;
+                no_more_txdata = false;
+                
+                /*1. Clear Pakcet Status  */
+                tx_sts_clr.b.DATA_SENT = 1;
+                hpcd->in_ep_regs[ep_num]->in.EP_IN_STS = tx_sts_clr.d32;
 
-            /*2. Clear Endpoint FIFO  */
-            tx_ctl.d32 = 0;
-            hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL = tx_ctl.d32;
+                /*2. Clear Endpoint FIFO  */
+                tx_ctl.d32 = 0;
+                hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL = tx_ctl.d32;
 
-            tx_ctl.b.FLUSH_FIFO = 1;
-            hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL = tx_ctl.d32;
+                tx_ctl.b.FLUSH_FIFO = 1;
+                hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL = tx_ctl.d32;
 
-            hal_pcd_in_ep_fifo_ready_clr(hpcd, ep_num);
+                hal_pcd_in_ep_fifo_ready_clr(hpcd, ep_num);
 
-            hpcd->in_ep_regs[ep_num]->in.EP_IN_TRANS_SZ = USB_LENGTH_MOUSE_REPORT;
-
-
-            /*Upate temporary data pointer  */
-            hpcd->ep[ep_num].xfer_tmpcnt = 0;
-            //gpio_write(P14, 1);
-            //gpio_write(P14, 0);
-
-            write_reg(fifo,  data[0]);
-            write_reg(fifo,  data[1]);
+                hpcd->in_ep_regs[ep_num]->in.EP_IN_TRANS_SZ = USB_LENGTH_MOUSE_REPORT;
 
 
-            /*4. Set FIFO Ready        */
-            tx_ctl.d32 = hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL;
-            tx_ctl.b.FIFO_READY = 1;
-            hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL = tx_ctl.d32;
+                /*Upate temporary data pointer  */
+                hpcd->ep[ep_num].xfer_tmpcnt = 0;
+                //gpio_write(P14, 1);
+                //gpio_write(P14, 0);
 
-            tx_sts_clr.d32 = 0;
-            tx_sts_clr.b.NAK_SENT = 1;
-            hpcd->in_ep_regs[ep_num]->in.EP_IN_STS = tx_sts_clr.d32;
+                write_reg(fifo,  data[0]);
+                write_reg(fifo,  data[1]);
+
+
+                /*4. Set FIFO Ready        */
+                tx_ctl.d32 = hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL;
+                tx_ctl.b.FIFO_READY = 1;
+                hpcd->in_ep_regs[ep_num]->in.EP_IN_CTL = tx_ctl.d32;
+
+                tx_sts_clr.d32 = 0;
+                tx_sts_clr.b.NAK_SENT = 1;
+                hpcd->in_ep_regs[ep_num]->in.EP_IN_STS = tx_sts_clr.d32;
+            }
         }
-        else
+        if(no_more_txdata)
         {
             //no more packet, diable sof int
             dev_int_en_t dev_int_en;
@@ -863,7 +875,7 @@ void USB_IRQHandler(void)
         hpcd->ep[1].fifo_depth = 16;
         hpcd->ep[1].is_in  = 1;
 
-/*
+#if( _DEF_USB_INFO_ == USB_DEV_MSKBD) 
         ep_info.d32 = 0;
         ep_info.d32 = hpcd->mac_ep_regs->DEV_EP_INFO[2];
         ep_info.b.EP_DIR = HAL_PCD_EP_DIR_IN;
@@ -872,7 +884,7 @@ void USB_IRQHandler(void)
         ep_info.b.EP_TYPE = HAL_PCD_EP_TYPE_INTR;
         ep_info.b.MAX_PKT = 64;
         hpcd->mac_ep_regs->DEV_EP_INFO[2] = ep_info.d32;
-        hpcd->in_ep_regs[2]->EP_IN_FIFO_SZ = 16;
+        hpcd->in_ep_regs[2]->in.EP_IN_FIFO_SZ = 16;
 
         hpcd->ep[2].xfer_buf = 0;
         hpcd->ep[2].xfer_cnt = 0;
@@ -881,7 +893,7 @@ void USB_IRQHandler(void)
         hpcd->ep[2].max_packet = 64;
         hpcd->ep[2].fifo_depth = 16;
         hpcd->ep[2].is_in  = 1;
-*/
+#endif
         dev_cfg.d32 = hpcd->dev_glb_regs->DEV_CFG;
         dev_cfg.b.CSR_DONE = 1;
         hpcd->dev_glb_regs->DEV_CFG = dev_cfg.d32;
@@ -892,12 +904,12 @@ void USB_IRQHandler(void)
         ep_in_ctl.b.FLUSH_FIFO = 1;
         hpcd->in_ep_regs[1]->in.EP_IN_CTL = ep_in_ctl.d32;
 
-        /*
+#if( _DEF_USB_INFO_ == USB_DEV_MSKBD) 
         ep_in_ctl.d32 = 0;
         ep_in_ctl.b.FIFO_READY = 0;
         ep_in_ctl.b.FLUSH_FIFO = 1;
-        hpcd->in_ep_regs[2]->EP_IN_CTL = ep_in_ctl.d32;
-        */
+        hpcd->in_ep_regs[2]->in.EP_IN_CTL = ep_in_ctl.d32;
+#endif
 
         dev_int_clr.b.SC_INT_STS = 1;
         hpcd->dev_glb_regs->DEV_INT_STS = dev_int_clr.d32;
@@ -937,6 +949,7 @@ void USB_IRQHandler(void)
         ep_out_ctl.b.FLUSH_FIFO = 1;
         hpcd->out_ep_regs[0]->out.EP_OUT_CTL = ep_out_ctl.d32;
         hid_mouse_ready = 0;
+//        hid_keyboard_ready = 0;
     }
 
 
@@ -992,6 +1005,7 @@ void USB_IRQHandler(void)
 //        LOG_DEBUG("Suspend Int\n");
         hpcd->dev_glb_regs->DEV_INT_STS = dev_int_clr.d32;
         hid_mouse_ready = 0;
+//        hid_keyboard_ready = 0;
         //NVIC_SystemReset();
     }
 
@@ -1011,7 +1025,8 @@ void pcd_init(usb_irq_cb_t cb)
 	usb_pin_init();
 
     //pcd_handle.get_dev_desc = get_dev_desc;
-    usb_ep_tx_q.num = 0;
+    for(int i = 0; i< MAX_EP_NUM-1; i++)
+        usb_ep_tx_q[i].num = 0;
     pcd_handle.cb = cb;
     hal_pcd_init(&pcd_handle);
 	NVIC_SetPriority(USB_IRQn, IRQ_PRIO_REALTIME);

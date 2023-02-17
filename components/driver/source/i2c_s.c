@@ -87,12 +87,12 @@ int i2cs_pin_init(iic_pin_e pin_mod)
 	clk_gate_enable(MOD_I2C0);
 	return PPlus_SUCCESS;
 }
-static uint8_t i2cs_irq_rx_handler(AP_I2C_TypeDef* pdev)
+static uint8_t i2cs_irq_rx_handler(void)
 {
 	uint32_t val;
 	
 	while(1){
-		if((pdev->IC_STATUS & BV(3)) == 0)              //rx fifo empty
+		if((i2c0_ic_status_get() & BV(3)) == 0)              //rx fifo empty
 			break;
 			
 
@@ -103,7 +103,7 @@ static uint8_t i2cs_irq_rx_handler(AP_I2C_TypeDef* pdev)
 	return val;
 }
 static uint32_t tx_dummy = 2; 
-void i2cs_irq_tx_handler(AP_I2C_TypeDef* pdev)
+void i2cs_irq_tx_handler(void)
 {
 
 	for(uint8_t send_count = 2; send_count > 0; send_count--)
@@ -114,7 +114,7 @@ void i2cs_irq_tx_handler(AP_I2C_TypeDef* pdev)
 	}
 
 }
-static void i2cs_irq_handler(AP_I2C_TypeDef* pdev)
+static void i2cs_irq_handler(void)
 {
 
 	volatile uint32_t int_status = i2c0_ic_intr_stat_get();
@@ -128,11 +128,11 @@ static void i2cs_irq_handler(AP_I2C_TypeDef* pdev)
 
 	if(int_status & I2C_MASK_RX_FULL)               //rx fifo full 
 	{
-		i2cs_irq_rx_handler(pdev);
+		i2cs_irq_rx_handler();
 	}
 	if(int_status & I2C_MASK_RD_REQ)                //master want to read the slave
 	{
-		i2cs_irq_tx_handler(pdev);
+		i2cs_irq_tx_handler();
 	}
 
 	volatile uint32_t wait_count = 1,bus_state;
@@ -142,7 +142,7 @@ static void i2cs_irq_handler(AP_I2C_TypeDef* pdev)
 
 void hal_I2C0_IRQHandler(void)
 {
-    i2cs_irq_handler(AP_I2C0);
+    i2cs_irq_handler();
 }
 
 int i2cs_init(uint8_t saddr)

@@ -252,7 +252,7 @@ static bStatus_t simpleGATTProfile_WriteAttrCB( uint16 connHandle, gattAttribute
 			break;
 		}
 		SimpleGATTProfile_Notify(connHandle,len,(uint8* )pValue);
-        #if( DEF_PHYPLUS_TRX_SUPPORT==2)
+        #if( DEF_PHYPLUS_TRX_SUPPORT&2)
         if(pValue[0]==0x12)
         {
             uint8_t ret;
@@ -271,7 +271,8 @@ static bStatus_t simpleGATTProfile_WriteAttrCB( uint16 connHandle, gattAttribute
                 LOG_DEBUG("[PPP RX] Start RX  ret %d\n", ret);
             }
         }
-        #elif( DEF_PHYPLUS_TRX_SUPPORT==1)
+        #endif
+        #if( DEF_PHYPLUS_TRX_SUPPORT&1)
         if(pValue[0]==0x11)
         {
             uint8_t ret;

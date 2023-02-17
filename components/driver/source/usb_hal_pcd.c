@@ -10,7 +10,7 @@
 #include "OSAL.h"
 #include "clock.h"
 
-uint32_t usb_ep_tx_push(uint8_t *buf, uint32_t len);
+uint32_t usb_ep_tx_push(uint8_t qid, uint8_t *buf, uint32_t len);
 
 #if 0
 int32_t  hal_pcd_enable_set_desc_func(usb_hal_pcd_t *hpcd)
@@ -253,7 +253,7 @@ int32_t hal_pcd_send_data(usb_hal_pcd_t *hpcd, uint8_t ep_num, uint8_t *buf, uin
     dev_int_en.b.SOF_INT_EN        = USB_INT_ENABLE;//USB_INT_ENABLE;	//USB_INT_DISABLE;	//
     hpcd->dev_glb_regs->DEV_INT_EN = dev_int_en.d32;
     
-    return usb_ep_tx_push(buf, len);
+    return usb_ep_tx_push(ep_num-1, buf, len);
 }
 
 int32_t hal_pcd_send_data_old(usb_hal_pcd_t *hpcd, uint8_t ep_num, uint8_t *buf, uint32_t len)
@@ -380,7 +380,7 @@ int32_t hal_pcd_send_data_old(usb_hal_pcd_t *hpcd, uint8_t ep_num, uint8_t *buf,
     }
     else
     {
-        LOG_ERROR("transfer error\n");
+//        LOG_ERROR("transfer error\n");
         return -HAL_ERROR;
     }
 

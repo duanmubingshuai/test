@@ -326,6 +326,10 @@ uint8_t nrf_pkt_dec(uint8_t* din, uint8_t diLen, uint8_t pduLen,nrfPkt_t *p_pkt)
         p_pkt->noAckBit  = (tmp0&0x01);
 
         //get pkt
+        if(p_pkt->pldLen > 32)
+        {
+            return ret = PPlus_ERR_INVALID_LENGTH;
+        }
         for(i=0;i<p_pkt->pldLen;i++)
         {
             tmp1 = din[bof++];
@@ -346,6 +350,10 @@ uint8_t nrf_pkt_dec(uint8_t* din, uint8_t diLen, uint8_t pduLen,nrfPkt_t *p_pkt)
         p_pkt->pldLen = pduLen; //pduLen=0 for dynamic pkt length
         p_pkt->pid    = 0;
         //get pkt
+        if(p_pkt->pldLen > 32)
+        {
+            return ret = PPlus_ERR_INVALID_LENGTH;
+        }
         for(i=0;i<p_pkt->pldLen;i++)
         {
             p_pkt->pdu[i]=bit_rev_8(din[bof++] );

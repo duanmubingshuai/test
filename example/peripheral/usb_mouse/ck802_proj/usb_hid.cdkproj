@@ -18,13 +18,7 @@ BareMetal: Without RTOS</Description>
     <File Name="../source/usb_demo.c" ExcludeProjConfig="">
       <FileOption/>
     </File>
-    <File Name="../source/usb_dev_kbd.c" ExcludeProjConfig="">
-      <FileOption/>
-    </File>
     <File Name="../source/usb_dev_ms.c">
-      <FileOption/>
-    </File>
-    <File Name="../source/usb_dev_mskbd.c" ExcludeProjConfig="">
       <FileOption/>
     </File>
   </VirtualDirectory>
@@ -57,7 +51,7 @@ BareMetal: Without RTOS</Description>
     </File>
   </VirtualDirectory>
   <MonitorProgress>
-    <DebugLaunch>43</DebugLaunch>
+    <DebugLaunch>33</DebugLaunch>
   </MonitorProgress>
   <VirtualDirectory Name="jump">
     <File Name="../../../../misc/jump_table.c">
@@ -231,7 +225,7 @@ BareMetal: Without RTOS</Description>
         <IncludeAllLibs>no</IncludeAllLibs>
       </Linker>
       <Debug>
-        <LoadApplicationAtStartup>yes</LoadApplicationAtStartup>
+        <LoadApplicationAtStartup>no</LoadApplicationAtStartup>
         <Connector>ICE</Connector>
         <StopAt>yes</StopAt>
         <StopAtText>main</StopAtText>
