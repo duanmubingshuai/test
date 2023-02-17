@@ -1,0 +1,113 @@
+#smart_nrf family
+srf_noack_tx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'1','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\srf_noack_tx.ihex','Lst\smart_nrf.asm','Lst\srf_noack_tx.asm']
+
+srf_noack_rx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'2','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\srf_noack_rx.ihex','Lst\smart_nrf.asm','Lst\srf_noack_rx.asm']
+
+srf_noack_rt:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\srf_noack_rt.ihex','Lst\smart_nrf.asm','Lst\srf_noack_rt.asm']
+
+srf_ack_tx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'1','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\srf_ack_tx.ihex','Lst\smart_nrf.asm','Lst\srf_ack_tx.asm']
+
+srf_ack_rx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'2','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\srf_ack_rx.ihex','Lst\smart_nrf.asm','Lst\srf_ack_rx.asm']
+
+srf_ack_rt:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\srf_ack_rt.ihex','Lst\smart_nrf.asm','Lst\srf_ack_rt.asm']
+
+snrf_noack_tx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'1','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'1','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\snrf_noack_tx.ihex','Lst\smart_nrf.asm','Lst\snrf_noack_tx.asm']
+
+snrf_noack_rx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'2','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'1','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\snrf_noack_rx.ihex','Lst\smart_nrf.asm','Lst\snrf_noack_rx.asm']
+
+snrf_noack_rt:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'1','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\snrf_noack_rt.ihex','Lst\smart_nrf.asm','Lst\snrf_noack_rt.asm']
+
+snrf_ack_tx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'1','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'1','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\snrf_ack_tx.ihex','Lst\smart_nrf.asm','Lst\snrf_ack_tx.asm']
+
+snrf_ack_rx:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'2','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'1','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\snrf_ack_rx.ihex','Lst\smart_nrf.asm','Lst\snrf_ack_rx.asm']
+
+snrf_ack_rt:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'1','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\smart_nrf.ihex','Obj\snrf_ack_rt.ihex','Lst\smart_nrf.asm','Lst\snrf_ack_rt.asm']
+
+srf_mesh:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'1'}
+- ['Obj\smart_nrf.ihex','Obj\srf_mesh.ihex','Lst\smart_nrf.asm','Lst\srf_mesh.asm']
+
+srf_light:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0','PHYPLUS_LIGHT_CONTROL':'1'}
+- ['Obj\smart_nrf.ihex','Obj\srf_light.ihex','Lst\smart_nrf.asm','Lst\srf_light.asm']
+#smart_nrf family end
+
+#SbpSnrf family
+sbpsrf_noack_tx:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'1','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\sbp.ihex','Obj\sbpsrf_noack_tx.ihex','Lst\sbp.asm','Lst\sbpsrf_noack_tx.asm']
+
+sbpsrf_noack_rx:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'2','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\sbp.ihex','Obj\sbpsrf_noack_rx.ihex','Lst\sbp.asm','Lst\sbpsrf_noack_rx.asm']
+
+sbpsrf_noack_rt:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\sbp.ihex','Obj\sbpsrf_noack_rt.ihex','Lst\sbp.asm','Lst\sbpsrf_noack_rt.asm']
+
+sbpsrf_ack_tx:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'1','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\sbp.ihex','Obj\sbpsrf_ack_tx.ihex','Lst\sbp.asm','Lst\sbpsrf_ack_tx.asm']
+
+sbpsrf_ack_rx:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'2','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\sbp.ihex','Obj\sbpsrf_ack_rx.ihex','Lst\sbp.asm','Lst\sbpsrf_ack_rx.asm']
+
+sbpsrf_ack_rt:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+- ['Obj\sbp.ihex','Obj\sbpsrf_ack_rt.ihex','Lst\sbp.asm','Lst\sbpsrf_ack_rt.asm']
+
+sbpsrf_mesh:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'3','DEF_PHYPLUS_AUTOACK_SUPPORT':'1','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'1'}
+- ['Obj\sbp.ihex','Obj\sbpsrf_mesh.ihex','Lst\sbp.asm','Lst\sbpsrf_mesh.asm']
+
+sbpsrf_only:
+- example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+- {'DEF_PHYPLUS_TRX_SUPPORT':'0','DEF_PHYPLUS_AUTOACK_SUPPORT':'0','DEF_PHYPLUS_NRF_SUPPORT':'0','DEF_PHYPLUS_MESH_SUPPORT':'0'}
+#SbpSnrf family end
+

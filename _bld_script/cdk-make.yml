@@ -1,0 +1,20 @@
+---
+
+cdk0:
+- C:\C-Sky\CDK\cdk-make.exe
+
+cdk1:
+- C:\CDK\cdk-make.exe
+
+cdk2: 
+- D:\C-Sky\CDK\cdk-make.exe
+
+cdk3:
+- D:\CDK\cdk-make.exe
+
+#urladdr
+GitUrl:
+- git_url:
+  - git@github.com:duanmubingshuai/test.git
+- git_releaseurl:
+  - git@github.com:duanmubingshuai/hello_w.git
