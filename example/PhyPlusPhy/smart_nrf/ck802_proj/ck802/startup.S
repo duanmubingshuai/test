@@ -21,7 +21,7 @@
  * @date     02. June 2017
  ******************************************************************************/
 
-#define CONFIG_ARCH_INTERRUPTSTACK 768
+#define CONFIG_ARCH_INTERRUPTSTACK 1024
 
 .section .vectors
     .align  10

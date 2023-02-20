@@ -16,6 +16,12 @@ snrf:
 srf:
 - example\PhyPlusPhy\smart_rf\ck802_proj\smart_rf.cdkws
 
+spp:
+- example\smart_link\private_peripheral\simple_private_peripheral\ck802_proj\simple_private_peripheral.cdkws
+
+spc:
+- example\smart_link\private_central\simple_private_central\ck802_proj\simple_private_central.cdkws
+
 hid:
 - example\ble_peripheral\simple_ble_hid\ck802_proj\simple_ble_hid.cdkws
 

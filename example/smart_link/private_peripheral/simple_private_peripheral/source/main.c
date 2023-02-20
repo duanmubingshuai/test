@@ -77,7 +77,9 @@ static void hal_rfphy_init(void)
     //============config RF Frequency Offset
     g_rfPhyFreqOffSet   =RF_PHY_FREQ_FOFF_00KHZ;
     //============config xtal 16M cap
-    XTAL16M_CAP_SETTING(0x09);
+    //XTAL16M_CAP_SETTING(0x09);
+    extern void hal_rfPhyFreqOff_Set(void);
+    hal_rfPhyFreqOff_Set();
     XTAL16M_CURRENT_SETTING(0x03);
 
 	extern void hal_rom_code_ini(void);

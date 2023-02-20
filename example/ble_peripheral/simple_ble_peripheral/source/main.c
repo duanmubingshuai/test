@@ -77,10 +77,17 @@ static void hal_rfphy_init(void)
     g_rfPhyTxPower  = RF_PHY_TX_POWER_0DBM ;
     //============config BLE_PHY TYPE
     g_rfPhyPktFmt   = PKT_FMT_BLE1M;
+    #if(0)
     //============config RF Frequency Offset
     g_rfPhyFreqOffSet   =RF_PHY_FREQ_FOFF_00KHZ;
-    XTAL16M_CURRENT_SETTING(0x01);
+    #else
+    extern void hal_rfPhyFreqOff_Set(void);
+    hal_rfPhyFreqOff_Set();
+    #endif
 
+    XTAL16M_CURRENT_SETTING(0x01);
+    extern void hal_rfPhyFreqOff_Set(void);
+    hal_rfPhyFreqOff_Set();
 	hal_rom_code_ini();
 
 	NVIC_SetPriority(BB_IRQn, IRQ_PRIO_REALTIME);

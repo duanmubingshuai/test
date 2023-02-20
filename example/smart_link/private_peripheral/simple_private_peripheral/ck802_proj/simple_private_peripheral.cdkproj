@@ -84,7 +84,9 @@ BareMetal: Without RTOS</Description>
     </File>
   </VirtualDirectory>
   <VirtualDirectory Name="lib" ExcludeProjConfig="">
-    <File Name="../../../../../lib/librf.a"/>
+    <File Name="../../../../../lib/librf.a">
+      <FileOption/>
+    </File>
   </VirtualDirectory>
   <VirtualDirectory Name="driver">
     <File Name="../../../../../components/driver/source/clock.c" ExcludeProjConfig="BuildSet">
@@ -243,7 +245,7 @@ BareMetal: Without RTOS</Description>
         <Undefine/>
         <Optim>Optimize size (-Os)</Optim>
         <DebugLevel>Maximum (-g3)</DebugLevel>
-        <IncludePath>$(ProjectPath);$(ProjectPath)/../../../../../components/ble/controller;$(ProjectPath)/../../../../../components/ble/hci;$(ProjectPath)/../../../../../components/ble/host;$(ProjectPath)/../../../../../components/ble/include;$(ProjectPath)/../../../../../components/inc;$(ProjectPath)/../../../../../components/libraries/crc16;$(ProjectPath)/../../../../../components/libraries/dfl;$(ProjectPath)/../../../../../components/libraries/secure;$(ProjectPath)/../../../../../components/osal/include;$(ProjectPath)/../../../../../misc;$(ProjectPath)/../../source/;$(ProjectPath)/../../source_ble/;$(ProjectPath)/../include;$(ProjectPath)/../../../../../components/arch/ck802;$(ProjectPath)/../../../../components/arch/register;$(ProjectPath)/../../../../../components/libraries/dwc;$(ProjectPath)/../../../../../components/driver_rom/include;$(ProjectPath)/../../../../../components/profiles/Roles;$(ProjectPath)/../../../../../components/profiles/DevInfo;$(ProjectPath)/../../../../../components/profiles/SimpleProfile</IncludePath>
+        <IncludePath>$(ProjectPath);$(ProjectPath)/../../../../../components/ble/controller;$(ProjectPath)/../../../../../components/ble/hci;$(ProjectPath)/../../../../../components/ble/host;$(ProjectPath)/../../../../../components/ble/include;$(ProjectPath)/../../../../../components/inc;$(ProjectPath)/../../../../../components/libraries/crc16;$(ProjectPath)/../../../../../components/libraries/dfl;$(ProjectPath)/../../../../../components/libraries/secure;$(ProjectPath)/../../../../../components/osal/include;$(ProjectPath)/../../../../../misc;$(ProjectPath)/../../source/;$(ProjectPath)/../../source_ble/;$(ProjectPath)/../include;$(ProjectPath)/../../../../../components/arch/ck802;$(ProjectPath)/../../../../../components/arch/register;$(ProjectPath)/../../../../../components/libraries/dwc;$(ProjectPath)/../../../../../components/driver_rom/include;$(ProjectPath)/../../../../../components/profiles/Roles;$(ProjectPath)/../../../../../components/profiles/DevInfo;$(ProjectPath)/../../../../../components/profiles/SimpleProfile</IncludePath>
         <OtherFlags>-ffunction-sections -fdata-sections -DADV_NCONN_CFG=0x01  -DADV_CONN_CFG=0x02  -DSCAN_CFG=0x04   -DINIT_CFG=0x08   -DBROADCASTER_CFG=0x01 -DOBSERVER_CFG=0x02  -DPERIPHERAL_CFG=0x04  -DCENTRAL_CFG=0x08 </OtherFlags>
         <Verbose>no</Verbose>
         <Ansi>no</Ansi>

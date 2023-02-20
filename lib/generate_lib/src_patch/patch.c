@@ -1412,6 +1412,21 @@ uint32 get_date_time(void)
 	return rd;
 }
 
+void hal_rfPhyFreqOff_Set(void)
+{
+    int32_t freqPpm=0;
+    freqPpm= *(volatile int32_t*) 0x1fff80c8;
+
+    if((freqPpm!=0xffffffff) && (freqPpm>=-50) && (freqPpm<=50))
+    {
+        g_rfPhyFreqOffSet=(int8_t)freqPpm;
+    }
+    else
+    {
+        g_rfPhyFreqOffSet   =RF_PHY_FREQ_FOFF_00KHZ;
+    }
+}
+
 //void patch_test()
 //{
 //	for (uint8 i = 0; i < g_maxConnNum; i++)

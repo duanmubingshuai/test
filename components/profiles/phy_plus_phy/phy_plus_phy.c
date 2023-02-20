@@ -88,6 +88,9 @@
 
 #define PHYPLUS_RFPHY_IDLE                      (0xFF)
 
+#define PHYPLUS_SPRD_ENABLE                     (1)
+#define PHYPLUS_SPRD_DISABLE                    (0)
+
 #define PHYPLUS_AUTOACK_ENABLE                  (1)
 #define PHYPLUS_AUTOACK_DISABLE                 (0)
 #define PHYPLUS_NRF_DISABLE                     (0)
@@ -130,11 +133,15 @@
 #define PHYPLUS_HW_MIN_SCAN_TIME_US             (2000)
 
 #define PHYPLUS_RF_TXACK_PKT_LEN                (6)
-#if DEF_PHYPLUS_NRF_SUPPORT == PHYPLUS_NRF_DISABLE
+
+#if DEF_PHYPLUS_SPRD_SUPPORT==PHYPLUS_SPRD_ENABLE
+#define PHYPLUS_DATA_MAX_LENGTH                 (16)
+#elif DEF_PHYPLUS_NRF_SUPPORT == PHYPLUS_NRF_DISABLE
 #define PHYPLUS_DATA_MAX_LENGTH                 (31)
 #else
 #define PHYPLUS_DATA_MAX_LENGTH                 (32)
 #endif
+
 #define PHYPLUS_RF_MAX_LENGTH                   (PHYPLUS_DATA_MAX_LENGTH+12)
 
 #define PHYPLUS_DBG_INTV                        (10) //unit: second
@@ -164,6 +171,9 @@
 #define DEF_PHYPLUS_TRX_SUPPORT PHYPLUS_CONFIG_TRX_ALL
 #endif
 
+#ifndef DEF_PHYPLUS_SPRD_SUPPORT
+#define DEF_PHYPLUS_SPRD_SUPPORT PHYPLUS_SPRD_DISABLE
+#endif
 
 extern uint8 ll_hw_get_tr_mode(void);
 extern volatile uint32 llWaitingIrq;
@@ -235,9 +245,13 @@ typedef struct chanHop_s
 uint8 PhyPlusPhy_TaskID; // Task ID for internal task/event processing
 //volatile uint32 phyWaitingIrq = FALSE;
 uint32 PHY_ISR_entry_time = 0;
-
+#if(DEF_PHYPLUS_SPRD_SUPPORT==PHYPLUS_SPRD_ENABLE)
+uint8_t  phyBufRx[256] __attribute__ ((aligned(4)));;
+uint8_t  phyBufTx[256] __attribute__ ((aligned(4)));;
+#else
 uint8_t  phyBufRx[PHYPLUS_RF_MAX_LENGTH] __attribute__ ((aligned(4)));;
 uint8_t  phyBufTx[PHYPLUS_RF_MAX_LENGTH] __attribute__ ((aligned(4)));;
+#endif
 
 uint8_t s_pubAddr[6];
 static uint8_t advHead[2];
@@ -388,6 +402,9 @@ static uint8 phy_allow_tx(void)
     {
         pktLen = pktLen<<2;
     }
+    #if(DEF_PHYPLUS_SPRD_SUPPORT==PHYPLUS_SPRD_ENABLE)
+    pktLen=pktLen*8;
+    #endif
 
     // Hold off interrupts.
     _HAL_CS_ALLOC_();
@@ -626,6 +643,16 @@ void phy_hw_timing_setting(void)
     ll_hw_set_trx_settle    (57, 8, 52);        //TxBB,RxAFE,PL
 }
 
+uint8_t phy_sprd_hw_write_tfifo(uint8_t* din, uint8_t dLen)
+{
+    uint8_t buf[256];
+    uint16 sprdLen = (dLen+2)*8;//dLen included the pduHead, +2 to include crc16
+    if(sprdLen>256)
+        return PPlus_ERR_DATA_SIZE;
+    sprd_pkt_enc(din, dLen, buf);
+    ll_hw_write_tfifo(buf,sprdLen);
+    return PPlus_SUCCESS;
+}
 void phy_hw_pktFmt_Config(pktCfg_t cfg)
 {
     //baseband cfg
@@ -637,6 +664,13 @@ void phy_hw_pktFmt_Config(pktCfg_t cfg)
         ll_hw_set_pplus_pktfmt(cfg.pduLen);
         ll_hw_ign_rfifo(LL_HW_IGN_NONE);
     }
+#elif(DEF_PHYPLUS_SPRD_SUPPORT==PHYPLUS_SPRD_ENABLE)
+    {
+        //fix length mode ,no hw crc gen/check(but need sw crc gen/check)
+        //spread x8
+        ll_hw_set_pplus_pktfmt(cfg.pduLen*8);
+        ll_hw_ign_rfifo(LL_HW_IGN_NONE);
+    }	
 #else
     {
         //crc
@@ -682,9 +716,13 @@ uint8_t phy_rf_tx(void)
     }
 #else
     {
-        set_max_length(PHYPLUS_RF_MAX_LENGTH); 
-        //need updata phyBufTx    
+        set_max_length(0xff);
+        //need updata phyBufTx
+        #if (DEF_PHYPLUS_SPRD_SUPPORT==PHYPLUS_SPRD_DISABLE)
         ll_hw_write_tfifo(s_pktCfg.p_txBuf,s_pktCfg.p_txBuf[1]+2);
+        #else
+        phy_sprd_hw_write_tfifo(s_pktCfg.p_txBuf,s_pktCfg.p_txBuf[1]+2);
+        #endif
     }
 #endif
 
@@ -724,7 +762,7 @@ uint8_t phy_rf_rx(void)
     }
 #else
     {
-        set_max_length(PHYPLUS_RF_MAX_LENGTH);
+        set_max_length(0xff);
     }
 #endif
 
@@ -738,6 +776,7 @@ void phy_rf_txack(void)
 {
     uint32_t t0,t1,T2,delay;
     uint8_t dLen;
+    uint8_t trigger=1;
     
     ll_hw_set_stx();
 
@@ -745,11 +784,14 @@ void phy_rf_txack(void)
     t0=read_current_fine_time();
     T2 = TIME_DELTA(t0,PHY_ISR_entry_time);
     delay = 127-T2;
-    
-    ll_hw_set_trx_settle(   delay,         // set BB delay
+    trigger = (delay > 30 && delay < 127) ? 1:0; 
+    ll_hw_set_trx_settle(   ((trigger) ? delay:60),         // set BB delay
                         PHYPLUS_HW_AFE_DELAY,
                         PHYPLUS_HW_PLL_DELAY);        //RxAFE,PLL
-    phy_hw_go();
+                        
+                   
+    if(trigger)                    
+        phy_hw_go();
        
     ll_hw_rst_tfifo();
 #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
@@ -793,8 +835,12 @@ void phy_rf_txack(void)
             }
         }
         dLen=rfTxAckBuf[1];
-        set_max_length(PHYPLUS_RF_MAX_LENGTH);
+        set_max_length(0xff);
+        #if(DEF_PHYPLUS_SPRD_SUPPORT == PHYPLUS_SPRD_DISABLE)
         ll_hw_write_tfifo(rfTxAckBuf,dLen+2);
+        #else
+        phy_sprd_hw_write_tfifo(rfTxAckBuf,dLen+2);
+        #endif
     }
     #else
     {
@@ -822,11 +868,14 @@ void phy_rf_txack(void)
             }
         }
         dLen=rfTxAckBuf[1];
-        set_max_length(PHYPLUS_RF_MAX_LENGTH);
+        set_max_length(0xff);
         ll_hw_write_tfifo(rfTxAckBuf,dLen+2);
     }
     #endif
 #endif
+    if(trigger==0)
+        phy_hw_go();
+        
     t1=read_current_fine_time();
     llWaitingIrq=TRUE;
 
@@ -1204,7 +1253,39 @@ void PLUSPHY_IRQHandler(void)
               
             }
         }
-
+		#elif(DEF_PHYPLUS_SPRD_SUPPORT==PHYPLUS_SPRD_ENABLE)
+        {
+            if(0==(irq_status & LIRQ_RTO))
+            {
+                uint16_t pktLen;
+                uint32_t pktFoot0, pktFoot1;
+                uint8_t buf[256];
+                ll_hw_read_rfifo_pplus(buf, &pktLen,&pktFoot0,&pktFoot1);
+                uint16_t crc16 =sprd_pkt_dec(buf, pktLen,s_pktCfg.p_rxBuf);
+                rf_phy_get_pktFoot_fromPkt(pktFoot0,pktFoot1,
+                                           &phyRssi,&phyFoff,&phyCarrSens);
+                                          
+                //my_dump_byte(buf, pktLen);      
+                //LOG("\npktLen=%d crc16=%d :",pktLen,crc16); 
+                //my_dump_byte(s_pktCfg.p_rxBuf,s_pktCfg.p_rxBuf[1]+2+2);
+                if(crc16==0)
+                {
+                    if(osal_memcmp(s_pktCfg.p_rxBuf+2,peer_addr,6))    //20221020 ZONG: move addr check here, and check remote addr instead of local addr
+                    {
+                        #if(DEF_PHYPLUS_AUTOACK_SUPPORT == PHYPLUS_AUTOACK_ENABLE)       //SRX:RX->TXACK
+                        if(!(PHYPLUS_GET_ACK_BIT(s_pktCfg.p_rxBuf[0])) && (PHYPLUS_GET_NEEDACK_BIT(s_pktCfg.p_rxBuf[0])))
+                        {
+                            osal_memcpy((uint8_t*)(&s_rf_crc),(uint8_t*)(&s_pktCfg.p_rxBuf[2+s_pktCfg.p_rxBuf[1]]),2);
+                            phy_rf_txack();
+                            //LOG("%08x\n",s_rf_crc);
+                        
+                        }
+                        #endif
+                        phy_rx_data_check();
+                    }
+                }
+            }
+        }
         #else
         {
             if(irq_status & LIRQ_COK)
@@ -1274,6 +1355,21 @@ void PLUSPHY_IRQHandler(void)
                 rf_phy_get_pktFoot_fromPkt(pktFoot0,pktFoot1,
                                            &phyRssi,&phyFoff,&phyCarrSens);
                 phy_rx_data_check();
+            }
+        }
+        #elif(DEF_PHYPLUS_SPRD_SUPPORT==PHYPLUS_SPRD_ENABLE)
+        {
+            if(0==(irq_status & LIRQ_RTO))
+            {
+                uint16_t pktLen;
+                uint32_t pktFoot0, pktFoot1;
+                uint8_t buf[256];
+                ll_hw_read_rfifo_pplus(buf, &pktLen,&pktFoot0,&pktFoot1);
+                uint16_t crc16 =sprd_pkt_dec(buf, pktLen,s_pktCfg.p_rxBuf);
+                rf_phy_get_pktFoot_fromPkt(pktFoot0,pktFoot1,
+                                           &phyRssi,&phyFoff,&phyCarrSens);
+                if(crc16==0)
+                    phy_rx_data_check();
             }
         }
         #else
@@ -1376,18 +1472,29 @@ void PhyPlusPhy_Init(uint8 task_id)
     s_pubAddr[5] = p[4];
     s_pubAddr[4] = p[5];
     s_pktCfg.syncWord   =   DEFAULT_SYNCWORD;
-    s_pktCfg.pduLen     =   PHYPLUS_DATA_MAX_LENGTH+6;// (1+2+2+1);
+    
     #if(DEF_PHYPLUS_AUTOACK_SUPPORT == PHYPLUS_AUTOACK_DISABLE)
         advHead[0]= 0x02;
     #else
         advHead[0]= 0x04;
     #endif
+	#if(DEF_PHYPLUS_SPRD_SUPPORT == PHYPLUS_SPRD_DISABLE)
+    s_pktCfg.pduLen     =   PHYPLUS_DATA_MAX_LENGTH+6;// (1+2+2+1);
 	advHead[1]= s_pktCfg.pduLen ;
-        //packet config setup
+    //packet config setup
     s_pktCfg.crcFmt     =   LL_HW_CRC_BLE_FMT;//LL_HW_CRC_BLE_FMT;LL_HW_CRC_NULL
     s_pktCfg.crcSeed    =   DEFAULT_CRC_SEED;
     s_pktCfg.wtSeed     =   s_chanHop.wt_map[0];//WHITEN_SEED_CH37;//DEFAULT_WHITEN_SEED;
     s_pktCfg.pktFmt     =   PHYPLUS_PKT_FMT_1M;
+    #else
+    //packet config setup
+    s_pktCfg.pduLen     =   PHYPLUS_DATA_MAX_LENGTH+2+2;// (pud 16, head 2, crc 2)-->20 byte ---spread-->20*8=160Byte;
+	advHead[1]= s_pktCfg.pduLen ;
+    s_pktCfg.crcFmt     =   LL_HW_CRC_NULL;//LL_HW_CRC_BLE_FMT;LL_HW_CRC_NULL
+    s_pktCfg.crcSeed    =   DEFAULT_CRC_SEED;
+    s_pktCfg.wtSeed     =   WHITEN_OFF;//WHITEN_SEED_CH37;//DEFAULT_WHITEN_SEED;
+    s_pktCfg.pktFmt     =   PHYPLUS_PKT_FMT_1M;
+    #endif
     #endif
 
     s_phySch.txMargin   =   1500;//us
@@ -1409,9 +1516,9 @@ void PhyPlusPhy_Init(uint8 task_id)
     }
     #else
     {
-        s_phy.rxAckTO       =   500;//us, Set to 0 switch to STX instead of TRX mode for send data
+        s_phy.rxAckTO       =   2500;//us, Set to 0 switch to STX instead of TRX mode for send data
         s_phy.reTxMax       =   5;//tx retry count Max, Set to 0 to turn off Auto-ReTx
-        s_phy.reTxDly       =   500;//auto retry delay     
+        s_phy.reTxDly       =   2500;//auto retry delay     
     }
     #endif
     
@@ -1487,7 +1594,7 @@ static void process_trx_done_evt(void)
     if(s_phy.txAck)
     {
         // adv_buffer[0]+=1;
-        LOG_DEBUG("[TX OK]\n");
+        LOG("[TX OK]\n");
         if(phy_data_cbfunc != NULL)
         {
         #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
@@ -1509,7 +1616,7 @@ static void process_trx_done_evt(void)
     }
     else
     {
-        LOG_DEBUG("[TX Fail]\n");
+        LOG("[TX Fail]\n");
         if(phy_data_cbfunc != NULL)
         {
             phy_pdu_cb.type = NULL;
