@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CDK_Workspace Name="simple_private_peripheral" Database="simple_private_peripheral.tags" DoubleClick="Yes">
+  <DefaultPackPath>$(CDKWS)\__workspace_pack__</DefaultPackPath>
+  <Project Name="spp" Path="simple_private_peripheral.cdkproj" RootPath="" Active="Yes"/>
+  <BuildMatrix>
+    <WorkspaceConfiguration Name="Debug" Selected="yes">
+      <Environment/>
+      <Project Name="spp" ConfigName="BuildSet"/>
+    </WorkspaceConfiguration>
+  </BuildMatrix>
+</CDK_Workspace>

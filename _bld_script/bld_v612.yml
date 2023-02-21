@@ -1,0 +1,48 @@
+---
+
+# rf: 
+# - lib\generate_lib\ck802_proj\rf.cdkws
+# - [Obj\rf.a, ..\..\librf.a]
+
+# sbp:
+# - example\ble_peripheral\simple_ble_peripheral\ck802_proj\simple_ble_peripheral.cdkws
+
+# hid:
+# - example\ble_peripheral\simple_ble_hid\ck802_proj\simple_ble_hid.cdkws
+
+light:
+- example\ble_peripheral\simple_ble_light\ck802_proj\pwm_light.cdkws
+
+
+snrf:
+- example\PhyPlusPhy\smart_nrf\ck802_proj\smart_nrf.cdkws
+
+spp:
+- example\smart_link\private_peripheral\simple_private_peripheral\ck802_proj\simple_private_peripheral.cdkws
+
+# dtm:
+# - example\PhyPlusPhy\dtmOnly\ck802_proj\dtmOnly.cdkws
+
+# nos:
+# - example\PhyPlusPhy\snrf_nos\ck802_proj\snrf_nos.cdkws
+
+
+# adc:
+# - example\peripheral\adc\ck802_proj\adc.cdkws
+
+gpio:
+- example\peripheral\gpio\ck802_proj\gpio.cdkws
+# - {'_DEF_DEBUG_INFO_':'1'}
+# - [Obj\app0_ck802.ihex, Obj\gpio.ihex]
+
+# i2c_e2prom:
+# - example\peripheral\i2c_e2prom\ck802_proj\i2c_e2prom.cdkws
+
+# pwm_deadzone:
+# - example\peripheral\pwm_deadzone\ck802_proj\pwm_deadzone.cdkws
+
+# usb_mouse:
+# - example\peripheral\usb_mouse\ck802_proj\usb_hid.cdkws
+
+# usb_mouse_kbd:
+# - example\peripheral\usb_mouse_kbd\ck802_proj\usb_mouse_kbd.cdkws
