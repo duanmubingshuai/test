@@ -1,10 +1,10 @@
 ---
 #release tag name @ current repo
 ReleaseTagName: 
-- tag_v612_test
+- tag_v612_2
 
 ReleaseBranchName:
-- PHY62XX_SDK_6.1.2
+- PHY62XX_SDK_6.1.2.2
 
 #build config
 # - yaml file
