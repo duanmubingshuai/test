@@ -208,10 +208,9 @@ int hal_gpioin_unregister(gpio_pin_e pin);
 int hal_gpio_init(void);
 void hal_gpio_debug_mux(Freq_Type_e fre,bool en);
 
-
 //rom api
 extern int gpio_write(gpio_pin_e pin, uint8_t en);
-
+extern bool gpio_read(gpio_pin_e pin);
 #ifdef __cplusplus
 }
 #endif

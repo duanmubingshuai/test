@@ -404,7 +404,7 @@ void trn_handle_frnd_update
     MS_access_cm_set_key_refresh_phase(subnet_handle, &krstate);
     /* Process the Flags and IVI */
 
-    if((ms_iv_index.iv_index != param->ivi) || ((param->flags & 0x02) != ms_iv_index.iv_update_state))
+    if((ms_iv_index.iv_index != param->ivi) || ((param->flags == 0x02) != ms_iv_index.iv_update_state))
     {
         retval = MS_access_cm_set_iv_index
                  (
@@ -751,10 +751,12 @@ void trn_frnd_handle_segment_ack(MS_SUBNET_HANDLE subnet_handle)
 
     /* Stop the Friend Poll Timer */
     EM_stop_timer(&frnd_element.thandle);
+
     /* Update the FSN */
     /*rev message from friend judge last pkt is poll or update*/
     if((frnd_element.fsn && 0x80) != 0x80)
         frnd_element.fsn ^= 0x01;
+
     frnd_element.poll_retry_count = 0;
     frnd_element.poll_to = ((frnd_req.poll_to * 100) - (FRND_POLLTO_FACTOR * 100));
     /* Sleep the bearer */
@@ -1507,7 +1509,6 @@ void trn_frndpoll_timeout_handler (void* args, UINT16 size)
     lpn_index = *((UINT16*)args);
     /* TODO: Check lpn index. Add Assert */
     lpn = &lpn_element[lpn_index];
-
     /* Reset the timer handle */
     lpn->thandle = EM_TIMER_HANDLE_INIT_VAL;
     TRN_TRC ("[FRND] Friend Poll Timeout Handler. For Src Addr: 0x%04X, Subnet Handle: 0x%04X\n",

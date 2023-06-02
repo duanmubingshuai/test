@@ -8,6 +8,7 @@
 #include "flash.h"
 #include "OSAL.h"
 #include "log.h"
+#include "ll_def.h"
 
 
 /*
@@ -139,6 +140,13 @@ ppsp_impl_dbg_dump_byte(uint8* data, uint32 size)
 #define PPSP_IMPL_CFGS_OPCO_COMP_ISSU   0x25    // issu COMP by master, resp by slave. complete of transfer
 #define PPSP_IMPL_CFGS_OPCO_COMP_RESP   0x26    // resp COMP by slave, issu by master. reply with crc
 
+#define PPSP_IMPL_CFGS_OPCO_MCFM_ISSU   0x27    // issu COMP by master, resp by slave. secure MConfirm
+#define PPSP_IMPL_CFGS_OPCO_SCFM_RESP   0x28    // resp COMP by slave, issu by master. reply with SConfirm
+#define PPSP_IMPL_CFGS_OPCO_MRAD_ISSU   0x29    // issu COMP by master, resp by slave. secure MRand
+#define PPSP_IMPL_CFGS_OPCO_SRAD_RESP   0x2A    // resp COMP by slave, issu by master. reply with SRand
+#define PPSP_IMPL_CFGS_OPCO_MVRF_ISSU   0x2B    // issu COMP by master, resp by slave. secure MVerify
+#define PPSP_IMPL_CFGS_OPCO_SVRF_RESP   0x2C    // resp COMP by slave, issu by master. reply with SVerify
+
 #define PPSP_IMPL_CFGS_OPCO_USER_ISSU   0xFE    // issu USER, resp by slave
 #define PPSP_IMPL_CFGS_OPCO_USER_RESP   0xFF    // issu USER, resp by slave
 
@@ -196,6 +204,13 @@ __ppsp_impl_opco_prim_list[] =
     PPSP_IMPL_CFGS_OPCO_COMP_ISSU,
     PPSP_IMPL_CFGS_OPCO_COMP_RESP,
 
+    PPSP_IMPL_CFGS_OPCO_MCFM_ISSU,
+    PPSP_IMPL_CFGS_OPCO_SCFM_RESP,
+    PPSP_IMPL_CFGS_OPCO_MRAD_ISSU,
+    PPSP_IMPL_CFGS_OPCO_SRAD_RESP,
+    PPSP_IMPL_CFGS_OPCO_MVRF_ISSU,
+    PPSP_IMPL_CFGS_OPCO_SVRF_RESP,
+
     PPSP_IMPL_CFGS_OPCO_USER_ISSU,
     PPSP_IMPL_CFGS_OPCO_USER_RESP,
 };
@@ -223,6 +238,25 @@ __ppsp_impl_msgs_numb = 0;  // expect sequ numb of next
 uint8   __ppsp_impl_upda_buff[PPSP_IMPL_CFGS_PROG_BUFF_SIZE];
 uint32  __ppsp_impl_upda_frsz;
 
+static uint8
+__ppsp_impl_mconfirm_data[16];
+static uint8
+__ppsp_impl_sconfirm_data[16];
+static uint8
+__ppsp_impl_mrand_data[16];
+static uint8
+__ppsp_impl_srand_data[16];
+static uint8
+__ppsp_impl_mverify_data[16];
+static uint8
+__ppsp_impl_sverify_data[16];
+
+extern uint32_t g_ota_sec_key[4];
+bool is_crypto_app(void);
+extern llStatus_t LL_Rand( uint8* randData,
+                           uint8 dataLen );
+
+extern void LL_ENC_AES128_Encrypt( uint8* key,uint8* plaintext,uint8* ciphertext );
 
 /*
     private function prototype
@@ -349,7 +383,7 @@ ppsp_impl_chk_msgs_lnth(const void* mesg, uint16 coun)
 /*
     desc: chk mesg id
 */
-static int32
+int32
 ppsp_impl_chk_msgs_numb(const void* mesg, uint16 coun)
 {
     // logs_ent("mesg:#X%08x, coun:#d%d", mesg, coun);
@@ -502,6 +536,7 @@ ppsp_impl_new_msgs_raws(uint8 numb, uint8 encr, uint8 opco, uint8 alln, uint8 se
     return ( msgs );
 }
 
+#if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
 static int32
 ppsp_impl_cvt_hexs_char(uint8* dest, uint32 dsiz, const uint8* srcs, uint32 ssiz, int revs)
 {
@@ -540,6 +575,7 @@ ppsp_impl_cvt_hexs_char(uint8* dest, uint32 dsiz, const uint8* srcs, uint32 ssiz
 
     return ( SUCCESS );
 }
+#endif
 
 static int32
 ppsp_impl_era_prog_data(uint32 addr)
@@ -630,11 +666,10 @@ ppsp_impl_psh_prog_data(uint32 addr, void* valu, uint32 size)
         }
 
         // 4 bytes aligned
-        if ( addr & 0x000003 )
-        {
-            return ( FAILURE );
-        }
-
+        // if ( addr & 0x000003 )
+        // {
+        //     return ( FAILURE );
+        // }
         #if 0   // PRIME: 6202/6212
         uint32  coun = (size+sizeof(uint32)-1)/sizeof(uint32);
         uint32  dwrd;   // data in word
@@ -671,6 +706,7 @@ ppsp_impl_psh_prog_data(uint32 addr, void* valu, uint32 size)
 
 /*****************************************************************************/
 // Authorization relative
+#if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
 static int32
 ppsp_impl_get_auth_rand(uint8* rand)
 {
@@ -692,6 +728,7 @@ ppsp_impl_get_auth_rand(uint8* rand)
     osal_memcpy(rand, zstr, osal_strlen((char*)zstr));
     return ( SUCCESS );
 }
+#endif
 
 static int32
 ppsp_impl_get_auth_pids(uint8* pids)
@@ -1491,6 +1528,218 @@ ppsp_impl_ack_serv_msgs_comp(/* uint8 encr,  */uint8 rslt)
 }
 
 static void
+ppsp_impl_ack_serv_msgs_sconfirm(/* uint8 encr,  */uint8 type)
+{
+    logs_ent("");
+    logs_inf("acks trgt sconfirm key ...");
+
+    if ( 0 == __ppsp_impl_clit_hdlr )
+    {
+        logs_err("!! NULL APPL HDLR, SKIP !!");
+        return;
+    }
+
+    /* */
+    // shared btle xfer buff & otas buff
+    // rply text
+    LL_Rand((uint8_t*)__ppsp_impl_srand_data, sizeof(__ppsp_impl_srand_data));
+    LL_ENC_AES128_Encrypt((uint8_t*)g_ota_sec_key,__ppsp_impl_srand_data,__ppsp_impl_sconfirm_data);
+//  ppsp_impl_dbg_dump_byte(__ppsp_impl_sconfirm_data, 16);
+    __ppsp_impl_upda_frsz    = 16;
+    osal_memcpy(__ppsp_impl_upda_buff,__ppsp_impl_sconfirm_data,__ppsp_impl_upda_frsz);
+    uint8* msgs_data = __ppsp_impl_upda_buff;
+    uint16 msgs_size = __ppsp_impl_upda_frsz;
+    #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+    uint8 encr;
+    ppsp_impl_get_auth_rslt(encr);
+
+    if ( 1 == encr )
+    {
+        uint8   padd_valu;
+        ppsp_impl_get_pkcs_7pad(16, msgs_size, padd_valu);
+        osal_memset(msgs_data+msgs_size, padd_valu, padd_valu);
+        ppsp_impl_enc_text(msgs_data, msgs_data);
+        // msgs_data =     // msgs_data now been encrypted
+        msgs_size = 16; // msgs_size cipr size
+    }
+
+    #endif
+    uint8* msgs_xfer = 0;
+    msgs_xfer = ppsp_impl_new_msgs_raws(
+                    __ppsp_impl_msgs_numb,          // msg numb, auto incr
+                    #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+                    encr,                              // flag of encryption
+                    #else
+                    0,                              // flag of encryption
+                    #endif
+                    PPSP_IMPL_CFGS_OPCO_SCFM_RESP,  // op-code
+                    0,                              // segment numb
+                    0,                              // seg seq numb
+                    msgs_data,                      // payload
+                    msgs_size);                     // size
+
+    if ( 0 == msgs_xfer )
+    {
+        logs_err("!! NEW XFER MSGS FAIL, SKIP !!");
+        return;
+    }
+
+    // call under line xfer
+    __ppsp_impl_clit_hdlr->ppsp_impl_appl_writ_hdlr(
+        PPSP_SERV_CFGS_CHAR_FFD8_INDX,
+        msgs_xfer,
+        PPSP_IMPL_CFGS_MSGS_HDER_SIZE+msgs_size);
+    osal_mem_free(msgs_xfer);
+}
+
+
+static void
+ppsp_impl_ack_serv_msgs_srand(/* uint8 encr,  */uint8 type)
+{
+    logs_ent("");
+    logs_inf("acks trgt srand key ...");
+
+    if ( 0 == __ppsp_impl_clit_hdlr )
+    {
+        logs_err("!! NULL APPL HDLR, SKIP !!");
+        return;
+    }
+
+    /* */
+    // shared btle xfer buff & otas buff
+    uint8_t key[16];
+    LL_ENC_AES128_Encrypt((uint8_t*)g_ota_sec_key,__ppsp_impl_mrand_data,key);
+
+    if(osal_memcmp(key,__ppsp_impl_mconfirm_data,sizeof(key))==0)
+    {
+        logs_err("!! MConfirm key exchange failed, SKIP !!");
+        return;
+    }
+    else
+    {
+        __ppsp_impl_upda_frsz    = 16;
+        osal_memcpy(__ppsp_impl_upda_buff,__ppsp_impl_srand_data,__ppsp_impl_upda_frsz);
+        uint8* msgs_data = __ppsp_impl_upda_buff;
+        uint16 msgs_size = __ppsp_impl_upda_frsz;
+        #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+        uint8 encr;
+        ppsp_impl_get_auth_rslt(encr);
+
+        if ( 1 == encr )
+        {
+            uint8   padd_valu;
+            ppsp_impl_get_pkcs_7pad(16, msgs_size, padd_valu);
+            osal_memset(msgs_data+msgs_size, padd_valu, padd_valu);
+            ppsp_impl_enc_text(msgs_data, msgs_data);
+            // msgs_data =     // msgs_data now been encrypted
+            msgs_size = 16; // msgs_size cipr size
+        }
+
+        #endif
+        uint8* msgs_xfer = 0;
+        msgs_xfer = ppsp_impl_new_msgs_raws(
+                        __ppsp_impl_msgs_numb,          // msg numb, auto incr
+                        #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+                        encr,                              // flag of encryption
+                        #else
+                        0,                              // flag of encryption
+                        #endif
+                        PPSP_IMPL_CFGS_OPCO_SRAD_RESP,  // op-code
+                        0,                              // segment numb
+                        0,                              // seg seq numb
+                        msgs_data,                      // payload
+                        msgs_size);                     // size
+
+        if ( 0 == msgs_xfer )
+        {
+            logs_err("!! NEW XFER MSGS FAIL, SKIP !!");
+            return;
+        }
+
+        // call under line xfer
+        __ppsp_impl_clit_hdlr->ppsp_impl_appl_writ_hdlr(
+            PPSP_SERV_CFGS_CHAR_FFD8_INDX,
+            msgs_xfer,
+            PPSP_IMPL_CFGS_MSGS_HDER_SIZE+msgs_size);
+        osal_mem_free(msgs_xfer);
+    }
+}
+
+static void
+ppsp_impl_ack_serv_msgs_sverify(/* uint8 encr,  */uint8 type)
+{
+    logs_ent("");
+    logs_inf("acks trgt sverify key ...");
+
+    if ( 0 == __ppsp_impl_clit_hdlr )
+    {
+        logs_err("!! NULL APPL HDLR, SKIP !!");
+        return;
+    }
+
+    /* */
+    // shared btle xfer buff & otas buff
+    uint8_t random_key[16];
+    LL_ENC_AES128_Encrypt(__ppsp_impl_mrand_data,__ppsp_impl_srand_data,random_key);
+    LL_ENC_AES128_Encrypt((uint8_t*)g_ota_sec_key,random_key,__ppsp_impl_sverify_data);
+
+    if(osal_memcmp(__ppsp_impl_sverify_data,__ppsp_impl_mverify_data,sizeof(__ppsp_impl_mverify_data))==0)
+    {
+        logs_err("!! Verify key failed, SKIP !!");
+        return;
+    }
+    else
+    {
+        __ppsp_impl_upda_frsz    = 16;
+        osal_memcpy(__ppsp_impl_upda_buff,__ppsp_impl_sverify_data,__ppsp_impl_upda_frsz);
+        uint8* msgs_data = __ppsp_impl_upda_buff;
+        uint16 msgs_size = __ppsp_impl_upda_frsz;
+        #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+        uint8 encr;
+        ppsp_impl_get_auth_rslt(encr);
+
+        if ( 1 == encr )
+        {
+            uint8   padd_valu;
+            ppsp_impl_get_pkcs_7pad(16, msgs_size, padd_valu);
+            osal_memset(msgs_data+msgs_size, padd_valu, padd_valu);
+            ppsp_impl_enc_text(msgs_data, msgs_data);
+            // msgs_data =     // msgs_data now been encrypted
+            msgs_size = 16; // msgs_size cipr size
+        }
+
+        #endif
+        uint8* msgs_xfer = 0;
+        msgs_xfer = ppsp_impl_new_msgs_raws(
+                        __ppsp_impl_msgs_numb,          // msg numb, auto incr
+                        #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+                        encr,                              // flag of encryption
+                        #else
+                        0,                              // flag of encryption
+                        #endif
+                        PPSP_IMPL_CFGS_OPCO_SVRF_RESP,  // op-code
+                        0,                              // segment numb
+                        0,                              // seg seq numb
+                        msgs_data,                      // payload
+                        msgs_size);                     // size
+
+        if ( 0 == msgs_xfer )
+        {
+            logs_err("!! NEW XFER MSGS FAIL, SKIP !!");
+            return;
+        }
+
+        // call under line xfer
+        __ppsp_impl_clit_hdlr->ppsp_impl_appl_writ_hdlr(
+            PPSP_SERV_CFGS_CHAR_FFD8_INDX,
+            msgs_xfer,
+            PPSP_IMPL_CFGS_MSGS_HDER_SIZE+msgs_size);
+        osal_mem_free(msgs_xfer);
+    }
+}
+
+
+static void
 ppsp_impl_prc_serv_msgs_vers(uint8* msgs)
 {
     logs_ent("");
@@ -1609,6 +1858,16 @@ ppsp_impl_prc_serv_msgs_upda(uint8* msgs)
         return;
     }
 
+    #if (FLASH_PROTECT_FEATURE == 1)
+    uint8_t ret = hal_flash_disable_lock(SLB_OTA);
+
+    if (ret != PPlus_SUCCESS)
+    {
+        logs_err("!! Err:The flash write protection status is abnormal !! \r\n");
+        return;
+    }
+
+    #endif
     uint32 sctr_numb = (__ppsp_impl_clit_hdlr->ppsp_impl_appl_bins_size+PPSP_IMPL_CFGS_PROG_SCTR_SIZE-1)/PPSP_IMPL_CFGS_PROG_SCTR_SIZE;
 
     for ( uint8 itr0 = 0; itr0 < sctr_numb; itr0 += 1 )
@@ -1780,8 +2039,145 @@ ppsp_impl_prc_serv_msgs_comp(uint8* msgs)
     }
 }
 
+static void
+ppsp_impl_prc_serv_msgs_mconfirm(uint8* msgs)
+{
+    logs_ent("");
+    logs_inf("proc reqs mconfirm key ...");
+    // uint8   msgn;
+    uint8   encr;
+    uint8   frsz;
+    uint8*  plds;
+    // ppsp_impl_get_msgs_numb(msgs, msgn);
+    ppsp_impl_get_msgs_encr(msgs, encr);
+    ppsp_impl_get_msgs_frsz(msgs, frsz);
+    ppsp_impl_get_msgs_plds(msgs, plds);
 
+    if ( (0x01 == encr && 0x10 != frsz) || (0x00 == encr && 0x10 != frsz) )
+    {
+        logs_err("!! INVALID MESG CONTENT !!");
+        return;
+    }
 
+    /* */
+    // shared btle xfer buff & otas buff
+    uint8* msgs_data = plds;
+    uint16 msgs_size = frsz;
+    (void)(msgs_size);
+    #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+    uint8* text_data = __ppsp_impl_upda_buff;
+
+    if ( 0x01 == encr )
+    {
+        ppsp_impl_dec_cipr(text_data, msgs_data);
+        msgs_data = text_data;
+        msgs_size = frsz - text_data[frsz-1];
+        // if ( 0x01 != msgs_size )
+        // {
+        //     logs_err("!! INVALID MESG CONTENT !!");
+        //     return;
+        // }
+    }
+
+    #endif
+    osal_memcpy(__ppsp_impl_mconfirm_data,msgs_data,msgs_size);
+//    ppsp_impl_dbg_dump_byte(__ppsp_impl_mconfirm_data, 16);
+    ppsp_impl_ack_serv_msgs_sconfirm(0);
+}
+
+static void
+ppsp_impl_prc_serv_msgs_mrand(uint8* msgs)
+{
+    logs_ent("");
+    logs_inf("proc reqs mrand key ...");
+    // uint8   msgn;
+    uint8   encr;
+    uint8   frsz;
+    uint8*  plds;
+    // ppsp_impl_get_msgs_numb(msgs, msgn);
+    ppsp_impl_get_msgs_encr(msgs, encr);
+    ppsp_impl_get_msgs_frsz(msgs, frsz);
+    ppsp_impl_get_msgs_plds(msgs, plds);
+
+    if ( (0x01 == encr && 0x10 != frsz) || (0x00 == encr && 0x10 != frsz) )
+    {
+        logs_err("!! INVALID MESG CONTENT !!");
+        return;
+    }
+
+    /* */
+    // shared btle xfer buff & otas buff
+    uint8* msgs_data = plds;
+    uint16 msgs_size = frsz;
+    (void)(msgs_size);
+    #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+    uint8* text_data = __ppsp_impl_upda_buff;
+
+    if ( 0x01 == encr )
+    {
+        ppsp_impl_dec_cipr(text_data, msgs_data);
+        msgs_data = text_data;
+        msgs_size = frsz - text_data[frsz-1];
+        // if ( 0x01 != msgs_size )
+        // {
+        //     logs_err("!! INVALID MESG CONTENT !!");
+        //     return;
+        // }
+    }
+
+    #endif
+    osal_memcpy(__ppsp_impl_mrand_data,msgs_data,msgs_size);
+//    ppsp_impl_dbg_dump_byte(__ppsp_impl_mrand_data, 16);
+    ppsp_impl_ack_serv_msgs_srand(0);
+}
+
+static void
+ppsp_impl_prc_serv_msgs_mverify(uint8* msgs)
+{
+    logs_ent("");
+    logs_inf("proc reqs mverify key ...");
+    // uint8   msgn;
+    uint8   encr;
+    uint8   frsz;
+    uint8*  plds;
+    // ppsp_impl_get_msgs_numb(msgs, msgn);
+    ppsp_impl_get_msgs_encr(msgs, encr);
+    ppsp_impl_get_msgs_frsz(msgs, frsz);
+    ppsp_impl_get_msgs_plds(msgs, plds);
+
+    if ( (0x01 == encr && 0x10 != frsz) || (0x00 == encr && 0x10 != frsz) )
+    {
+        logs_err("!! INVALID MESG CONTENT !!");
+        return;
+    }
+
+    /* */
+    // shared btle xfer buff & otas buff
+    uint8* msgs_data = plds;
+    uint16 msgs_size = frsz;
+    (void)(msgs_size);
+    #if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
+    uint8* text_data = __ppsp_impl_upda_buff;
+
+    if ( 0x01 == encr )
+    {
+        ppsp_impl_dec_cipr(text_data, msgs_data);
+        msgs_data = text_data;
+        msgs_size = frsz - text_data[frsz-1];
+        // if ( 0x01 != msgs_size )
+        // {
+        //     logs_err("!! INVALID MESG CONTENT !!");
+        //     return;
+        // }
+    }
+
+    #endif
+    osal_memcpy(__ppsp_impl_mverify_data,msgs_data,msgs_size);
+//    ppsp_impl_dbg_dump_byte(__ppsp_impl_mverify_data, 16);
+    ppsp_impl_ack_serv_msgs_sverify(0);
+}
+
+#if (1 == PPSP_IMPL_CFGS_MSGS_CRYP_ENAB)
 static void
 ppsp_impl_mak_clit_msgs_rand(uint8* msgs)
 {
@@ -1834,6 +2230,7 @@ ppsp_impl_mak_clit_msgs_rand(uint8* msgs)
         PPSP_IMPL_CFGS_MSGS_HDER_SIZE+msgs_size);
     osal_mem_free(msgs_xfer);
 }
+#endif
 
 static void
 ppsp_impl_mak_clit_msgs_verf(uint8 rslt)
@@ -2504,6 +2901,7 @@ ppsp_impl_serv_rmsg_hdlr(uint8 para, const void* valu, uint16 coun)
 {
     logs_ent("para:%d, valu:%08x, coun:%d", para, valu, coun);
     // ppsp_impl_dbg_dump_byte(valu, coun);
+    bool is_encrypt = FALSE;
 
     if ( SUCCESS != ppsp_impl_chk_msgs_vali(valu, coun) )
     {
@@ -2516,6 +2914,7 @@ ppsp_impl_serv_rmsg_hdlr(uint8 para, const void* valu, uint16 coun)
     ppsp_impl_get_msgs_numb(valu, msgn);
     ppsp_impl_get_msgs_opco(valu, opco);
     __ppsp_impl_msgs_numb = msgn;
+    is_encrypt = is_crypto_app();
 
     if ( PPSP_IMPL_CFGS_OPCO_RAND_ISSU == opco )
     {
@@ -2535,6 +2934,18 @@ ppsp_impl_serv_rmsg_hdlr(uint8 para, const void* valu, uint16 coun)
     }
     else if ( PPSP_IMPL_CFGS_OPCO_UPDA_ISSU == opco )
     {
+        //before secure slb ota, need do key exchange process
+        uint8 key[16] = {0};
+
+        if(is_encrypt)
+        {
+            if((osal_memcmp(key,__ppsp_impl_mverify_data,sizeof(__ppsp_impl_mverify_data)) == 1)|| (osal_memcmp(key,__ppsp_impl_sverify_data,sizeof(__ppsp_impl_sverify_data)) == 1))
+            {
+                logs_err("!! RCVD INVL MSGS, DO KEY EXCHANGE!! \r\n");
+                return;
+            }
+        }
+
         ppsp_impl_prc_serv_msgs_upda((uint8*)valu);
     }
     else if ( PPSP_IMPL_CFGS_OPCO_PACK_ISSU == opco )
@@ -2544,6 +2955,18 @@ ppsp_impl_serv_rmsg_hdlr(uint8 para, const void* valu, uint16 coun)
     else if ( PPSP_IMPL_CFGS_OPCO_COMP_ISSU == opco )
     {
         ppsp_impl_prc_serv_msgs_comp((uint8*)valu);
+    }
+    else if(PPSP_IMPL_CFGS_OPCO_MCFM_ISSU == opco)
+    {
+        ppsp_impl_prc_serv_msgs_mconfirm((uint8*)valu);
+    }
+    else if(PPSP_IMPL_CFGS_OPCO_MRAD_ISSU == opco)
+    {
+        ppsp_impl_prc_serv_msgs_mrand((uint8*)valu);
+    }
+    else if(PPSP_IMPL_CFGS_OPCO_MVRF_ISSU == opco)
+    {
+        ppsp_impl_prc_serv_msgs_mverify((uint8*)valu);
     }
     else
     {

@@ -98,8 +98,14 @@ llConnState_t               pConnContext[BLE_MAX_ALLOW_CONNECTION];
 /*********************************************************************
     OSAL LARGE HEAP CONFIG
 */
-#define     LARGE_HEAP_SIZE  (5*1024)
+#define     LARGE_HEAP_SIZE  (3*1024)
 uint8       g_largeHeap[LARGE_HEAP_SIZE];
+
+#define     LL_LINKBUF_CFG_NUM                6
+
+#define     LL_PKT_BUFSIZE                    280
+#define     LL_LINK_HEAP_SIZE    ( ( BLE_MAX_ALLOW_CONNECTION * 3 + LL_LINKBUF_CFG_NUM ) * LL_PKT_BUFSIZE )//basic Space + configurable Space
+ALIGN4_U8   g_llLinkHeap[LL_LINK_HEAP_SIZE];
 
 /*********************************************************************
     GLOBAL VARIABLES
@@ -162,6 +168,9 @@ static void hal_low_power_io_init(void)
 
 static void ble_mem_init_config(void)
 {
+    //ll linkmem setup
+    extern void ll_osalmem_init(osalMemHdr_t* hdr, uint32 size);
+    ll_osalmem_init((osalMemHdr_t*)g_llLinkHeap, LL_LINK_HEAP_SIZE);
     osal_mem_set_heap((osalMemHdr_t*)g_largeHeap, LARGE_HEAP_SIZE);
     LL_InitConnectContext(pConnContext,
                           g_pConnectionBuffer,
@@ -207,7 +216,6 @@ static void hal_rfphy_init(void)
     ble_mem_init_config();
 }
 
-
 static void hal_init(void)
 {
     hal_low_power_io_init();
@@ -228,10 +236,10 @@ static void hal_init(void)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 int  main(void)
 {
-    g_system_clk = SYS_CLK_DBL_32M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
+    g_system_clk = SYS_CLK_DBL_32M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
     drv_irq_init();
     init_config();
@@ -239,7 +247,6 @@ int  main(void)
     hal_init();
     extern void ll_patch_multi(void);
     ll_patch_multi();
-
     #if(CFG_HCLK_DYNAMIC_CHANGE)
     extern void ll_patch_hclk_dynamic_chg(void);
     ll_patch_hclk_dynamic_chg();

@@ -34,7 +34,7 @@
 
 /* ------------------------------------------- Static Global Variables */
 /* Flag - whether Stack is Initialized */
-DECL_STATIC UCHAR ms_stack_init_state = MS_STACK_INIT_UNDEFINED;
+UCHAR ms_stack_init_state = MS_STACK_INIT_UNDEFINED;
 
 #ifdef MS_HAVE_DYNAMIC_CONFIG
     /* Global Configuration for Mesh Stack */

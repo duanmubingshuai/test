@@ -72,9 +72,6 @@
 #include "xmodem_service.h"
 #include "phy_console.h"
 
-#ifdef PHY_SLB_OTA_ENABLE
-    #include "ppsp_impl.h"
-#endif
 /*********************************************************************
     MACROS
 */
@@ -487,10 +484,6 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     ota_app_AddService();
     #endif
     SimpleProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile
-    #ifdef PHY_SLB_OTA_ENABLE
-    ppsp_impl_ini();
-    osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PPSP_PERIODIC_EVT, SBP_PPSP_PERIODIC_EVT_PERIOD );
-    #endif
     console_init(UART1, 115200, P24, P25, sbp_atcmd, cons_callback);
     // Setup the SimpleProfile Characteristic Values
     {
@@ -779,16 +772,6 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
         uint8_t ret=GAP_DeviceDiscoveryRequest(&sbp_scanparam);
         LOG("START SCAN %d\n",ret);
         return ( events ^ SBP_ENABLE_SCAN_EVT );
-    }
-
-    #endif
-    #ifdef PHY_SLB_OTA_ENABLE
-
-    if ( events & SBP_PPSP_PERIODIC_EVT )
-    {
-        ppsp_impl_appl_timr_hdlr();
-        osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PPSP_PERIODIC_EVT, SBP_PPSP_PERIODIC_EVT_PERIOD/5 );
-        return ( events ^ SBP_PERIODIC_EVT );
     }
 
     #endif

@@ -1,4 +1,4 @@
-
+﻿
 /**
     \file cliface.h
 
@@ -45,13 +45,13 @@
 #define CLI_IS_CMD_SEPARATOR(ch) ((' ' == (ch)) || ('\t' == (ch)) || ('\r' == (ch)) || ('\n' == (ch)))
 
 /** TBD: Move to limits/configuration header file */
-#define CLI_MAX_ARGS          16
-#define CLI_MAX_PROMPT_LEN    16
+#define CLI_MAX_ARGS          64
+#define CLI_MAX_PROMPT_LEN    64
 
 #ifdef BLE_AT_ENABLE
-#define CLI_strlen(s) strlen((const char *)(s))
+    #define CLI_strlen(s) strlen((const char *)(s))
 #else
-#define CLI_strlen(s)   EM_str_len(s)
+    #define CLI_strlen(s)   EM_str_len(s)
 #endif
 
 

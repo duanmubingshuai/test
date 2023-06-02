@@ -6,7 +6,6 @@ LR_IROM1 0x1fff1838 0x0E7C8 {  ; load region size_region
  ER_IROM1 0x1fff1838 0x0E7C8  {  ; load address = execution address
   *.o (RESET, +First)
   *(InRoot$$Sections)
-  *.o(_section_standby_code_)
   *.o(_section_sram_code_)
   .ANY (+RO)  
   .ANY (+RW +ZI)

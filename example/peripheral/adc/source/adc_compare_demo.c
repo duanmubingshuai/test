@@ -49,8 +49,9 @@
 #include "log.h"
 #include "voice_demo.h"
 #include "Voice_Queue.h"
-#define ADC_MODE CCOMPARE_MODE
+#include "adc_config.h"
 
+#if (APP_RUN_MODE == ADC_RUNMODE_COMPARE)
 
 /*********************************************************************
     TYPEDEFS
@@ -80,7 +81,7 @@ const static uint16_t threshold_high_compare = 3548;
     LOCAL VARIABLES
 */
 
-uint8 adcDemo_Compare_TaskID;   // Task ID for internal task/event processing
+static uint8 adcDemo_Compare_TaskID;   // Task ID for internal task/event processing
 /*
     channel:
     is_differential_mode:
@@ -98,10 +99,9 @@ uint8 adcDemo_Compare_TaskID;   // Task ID for internal task/event processing
 static adc_Cfg_t adc_cfg =
 {
 
-    .channel = ADC_BIT(ADC_CH2P_P14),
+    .channel = ADC_BIT(ADC_CH2DIFF),
     .is_continue_mode = FALSE,
-    .is_differential_mode = 0x00,
-
+    .is_differential_mode = ADC_BIT(ADC_CH2DIFF),
     .is_high_resolution = 0x00,
 
 };
@@ -132,6 +132,7 @@ static void adc_ProcessOSALMsg( osal_event_hdr_t* pMsg )
 void adc_Compare_Init( uint8 task_id )
 {
     adcDemo_Compare_TaskID = task_id;
+    adc_Compare_MeasureTask();
 }
 
 
@@ -167,7 +168,6 @@ uint16 adc_Compare_ProcessEvent( uint8 task_id, uint16 events )
 
 static void adc_compare_evt(adc_Evt_t* pev)
 {
-    static unsigned char adc_cnt = 0 ;
     float value = 0;
     int i = 0;
     bool is_high_resolution = FALSE;
@@ -236,20 +236,7 @@ static void adc_compare_evt(adc_Evt_t* pev)
 
         if(adc_cfg.is_continue_mode == FALSE)
         {
-            adc_cnt++;
-
-            if( adc_cnt <= 0x09 )
-            {
-                LOG("adc_cnt  = %08x   adcMeasureTask_EVT   \n",adc_cnt);
-                osal_start_timerEx(adcDemo_Compare_TaskID, adcMeasureTask_Compare_EVT,1000);
-            }
-            else
-            {
-                LOG("adc_cnt  = %08x   adcMeasureTask_EVT   \n",adc_cnt);
-                osal_start_timerEx(voiceDemo_TaskID, VOICE_RECORD_START_EVT,1000);
-                // osal_start_timerEx(adcDemo_TaskID, VOICE_VOICE_RECORD_STOP_EVT,3000);
-                adc_cnt = 0 ;
-            }
+            osal_start_timerEx(adcDemo_Compare_TaskID, adcMeasureTask_Compare_EVT,1000);
         }
     }
 }
@@ -257,7 +244,7 @@ static void adc_compare_evt(adc_Evt_t* pev)
 static void adc_Compare_MeasureTask( void )
 {
     int ret;
-    LOG("adcMeasureTask\n");
+    LOG("adcMeasureTask COMPARE\n");
     ret = hal_adc_config_channel(adc_cfg, adc_compare_evt);
 
     if(ret)
@@ -266,30 +253,28 @@ static void adc_Compare_MeasureTask( void )
         return;
     }
 
-    static uint8_t threshold_flag = 0;
-    ret =   hal_adc_comppare_reset(ADC_CH2P_P14);
-    //  LOG("_______________ret = %08x ",ret);
-
-    if(threshold_flag == 0)//check low threshold
-    {
-        hal_adc_compare_enable(ADC_CH2P_P14,0,threshold_low_compare,(threshold_low_compare-5));//adc<threshold_low_compare int
-        threshold_flag = 1;
-    }
-    else
-    {
-        if(adc_get_high_threshold_flag() == TRUE)//check high threshold
-        {
-            hal_adc_compare_enable(ADC_CH2P_P14,1,(threshold_high_compare+5),threshold_high_compare);//adc>threshold_high_compare int
-            threshold_flag = 0;
-        }
-        else//check low threshold
-        {
-            hal_adc_compare_enable(ADC_CH2P_P14,0,threshold_low_compare,(threshold_low_compare-5));//adc<threshold_low_compare int
-            threshold_flag = 0;
-        }
-    }
-
-    //WaitMs(1);
+    // static uint8_t threshold_flag = 0;
+    // ret =   hal_adc_comppare_reset(ADC_CH2DIFF);
+    // //  LOG("_______________ret = %08x ",ret);
+    // if(threshold_flag == 0)//check low threshold
+    // {
+    //     hal_adc_compare_enable(ADC_CH2DIFF,0,threshold_low_compare,(threshold_low_compare-5));//adc<threshold_low_compare int
+    //     threshold_flag = 1;
+    // }
+    // else
+    // {
+    //     if(adc_get_high_threshold_flag() == TRUE)//check high threshold
+    //     {
+    //         hal_adc_compare_enable(ADC_CH2DIFF,1,(threshold_high_compare+5),threshold_high_compare);//adc>threshold_high_compare int
+    //         threshold_flag = 0;
+    //     }
+    //     else//check low threshold
+    //     {
+    //         hal_adc_compare_enable(ADC_CH2DIFF,0,threshold_low_compare,(threshold_low_compare-5));//adc<threshold_low_compare int
+    //         threshold_flag = 0;
+    //     }
+    // }
     hal_adc_start(CCOMPARE_MODE);
 }
 
+#endif

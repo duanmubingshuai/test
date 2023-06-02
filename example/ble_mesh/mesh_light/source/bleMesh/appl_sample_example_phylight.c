@@ -1041,6 +1041,7 @@ API_RESULT UI_phy_model_server_cb
     API_RESULT retval;
     retval = API_SUCCESS;
     opcode = msg_raw->opcode;
+    UCHAR  proxy_state;
 
     switch(opcode)
     {
@@ -1055,7 +1056,16 @@ API_RESULT UI_phy_model_server_cb
         {
             printf("rcv MS_STATE_PHY_MODEL_RESET_T\n");
             MS_common_reset();
-            EM_start_timer (&thandle, 1, timeout_cb, NULL, 0);
+            proxy_state = UI_proxy_state_get();
+
+            if(MS_PROXY_CONNECTED == proxy_state)
+            {
+                blebrr_disconnect_pl();
+            }
+            else
+            {
+                EM_start_timer (&thandle, 3, timeout_cb, NULL, 0);
+            }
         }
         break;
         }
@@ -1443,7 +1453,7 @@ DECL_STATIC PROV_CAPABILITIES_S UI_prov_capab =
 PROV_DEVICE_S UI_lprov_device =
 {
     /** UUID */
-    {0x0a, 0x04, 0x62, 0x12, 0x00, 0x01, 0x00, 0x01, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x00, 0x00},
+    {0x04, 0x05, 0x62, 0x22, 0x00, 0x01, 0x00, 0x01, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x00, 0x00},
 
     /** OOB Flag */
     0x00,
@@ -1736,8 +1746,8 @@ static API_RESULT UI_prov_callback
         break;
 
     default:
-			//CONSOLE_OUT("Unknown Event - 0x%02X\n", event_type);
-			break;        
+        //CONSOLE_OUT("Unknown Event - 0x%02X\n", event_type);
+        break;
     }
 
     return API_SUCCESS;
@@ -2419,6 +2429,101 @@ void appl_mesh_sample (void)
     return;
 }
 
+void appl_mesh_sample_recover (void)
+{
+    MS_ACCESS_NODE_ID node_id;
+    MS_ACCESS_ELEMENT_DESC   element;
+    MS_ACCESS_ELEMENT_HANDLE element_handle;
+    API_RESULT retval;
+    MS_CONFIG* config_ptr;
+    #ifdef MS_HAVE_DYNAMIC_CONFIG
+    MS_CONFIG  config;
+    /* Initialize dynamic configuration */
+    MS_INIT_CONFIG(config);
+    config_ptr = &config;
+    #else
+    config_ptr = NULL;
+    #endif /* MS_HAVE_DYNAMIC_CONFIG */
+    MS_prov_stop_interleave_timer();
+    MS_brr_bcast_end(BRR_BCON_TYPE_PROXY_NETID, BRR_BCON_ACTIVE);
+    MS_brr_bcast_end(BRR_BCON_TYPE_PROXY_NODEID, BRR_BCON_ACTIVE);
+    MS_brr_bcast_end(BRR_BCON_TYPE_UNPROV_DEVICE, BRR_BCON_ACTIVE);
+    MS_brr_bcast_end(BRR_BCON_TYPE_UNPROV_DEVICE, BRR_BCON_PASSIVE);
+    EM_stop_timer(&thandle);
+    nvsto_init(NVS_FLASH_BASE1,NVS_FLASH_BASE2);
+    /* Initialize Mesh Stack */
+    MS_init(config_ptr);
+    /* Register with underlying BLE stack */
+    blebrr_register();
+    /* Register GATT Bearer Connection/Disconnection Event Hook */
+    blebrr_register_gatt_iface_event_pl(UI_gatt_iface_event_pl_cb);
+    /* Create Node */
+    retval = MS_access_create_node(&node_id);
+    /* Register Element */
+    /**
+        TBD: Define GATT Namespace Descriptions from
+        https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
+
+        Using 'main' (0x0106) as Location temporarily.
+    */
+    element.loc = 0x0106;
+    retval = MS_access_register_element
+             (
+                 node_id,
+                 &element,
+                 &element_handle
+             );
+
+    if (API_SUCCESS == retval)
+    {
+        /* Register foundation model servers */
+        retval = UI_register_foundation_model_servers(element_handle);
+    }
+
+    if (API_SUCCESS == retval)
+    {
+        /* Register Generic OnOff model server */
+        retval = UI_register_generic_onoff_model_server(element_handle);
+    }
+
+    #ifdef  USE_HSL
+
+    if (API_SUCCESS == retval)
+    {
+        /* Register Light Lightness model server */
+        retval = UI_register_light_hsl_model_server(element_handle);
+    }
+
+    #endif
+    #ifdef  USE_CTL
+
+    if (API_SUCCESS == retval)
+    {
+        /* Register Light Lightness model server */
+        retval = UI_register_light_ctl_model_server(element_handle);
+    }
+
+    #endif
+    #ifdef  USE_SCENE
+
+    if (API_SUCCESS == retval)
+    {
+        /* Register Light Scene model server */
+        retval = UI_register_scene_model_server(element_handle);
+    }
+
+    #endif
+    #ifdef  USE_VENDORMODEL
+
+    if (API_SUCCESS == retval)
+    {
+        /* Register Vendor Defined model server */
+        retval = UI_register_vendor_defined_model_server(element_handle);
+    }
+
+    #endif
+}
+
 API_RESULT UI_sample_get_net_key(void )
 {
     UINT8   index=0;
@@ -2554,7 +2659,7 @@ void UI_sample_reinit(void)
             setup <role:[1 - Device, 2 - Provisioner]> <bearer:[1 - Adv, 2 - GATT]
         */
         role = PROV_ROLE_DEVICE;
-        brr  = PROV_BRR_GATT|PROV_BRR_ADV;  //PROV_BRR_ADV,PROV_BRR_GATT
+        brr  = PROV_BRR_ADV|PROV_BRR_GATT;  //PROV_BRR_ADV,PROV_BRR_GATT
         printf("Bearer type = 0x%02X(Bit0-adv, Bit1-GATT)\r\n", brr);
 //        UI_prov_brr_handle = brr;
         /**

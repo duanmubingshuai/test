@@ -253,8 +253,6 @@ static int uart_hw_deinit(UART_INDEX_e uart_index)
     }
 
     NVIC_DisableIRQ(irq_type);
-    hal_gpio_fmux(m_uartCtx[uart_index].cfg.tx_pin,Bit_DISABLE);
-    hal_gpio_fmux(m_uartCtx[uart_index].cfg.rx_pin,Bit_DISABLE);
     cur_uart->LCR=0x80;
     cur_uart->DLM=0;
     cur_uart->DLL=0;
@@ -274,6 +272,8 @@ static int uart_hw_deinit(UART_INDEX_e uart_index)
         JUMP_FUNCTION(UART1_IRQ_HANDLER)   =   0;
     }
 
+    hal_gpio_fmux(m_uartCtx[uart_index].cfg.tx_pin,Bit_DISABLE);
+    hal_gpio_fmux(m_uartCtx[uart_index].cfg.rx_pin,Bit_DISABLE);
     return PPlus_SUCCESS;
 }
 
@@ -309,10 +309,11 @@ static int uart_hw_init(UART_INDEX_e uart_index)
 //      hal_gpio_fmux(P9, Bit_DISABLE);
 //      hal_gpio_fmux(P10, Bit_DISABLE);
 //  }
-    hal_gpio_pull_set(pcfg->tx_pin, GPIO_PULL_UP);
-    hal_gpio_pull_set(pcfg->rx_pin, GPIO_PULL_UP);
-    hal_gpio_fmux_set(pcfg->tx_pin, fmux_tx);
-    hal_gpio_fmux_set(pcfg->rx_pin, fmux_rx);
+    //ADD DUMMY PIN TO FMUX(P27)
+    hal_gpio_pull_set(P27, GPIO_PULL_UP_S);
+    hal_gpio_pull_set(P27, GPIO_PULL_UP_S);
+    hal_gpio_fmux_set(P27, fmux_tx);
+    hal_gpio_fmux_set(P27, fmux_rx);
     cur_uart->LCR =0;
     dll = ((pclk>>4)+(pcfg->baudrate>>1))/pcfg->baudrate;
     cur_uart->MCR=0x0;
@@ -351,6 +352,13 @@ static int uart_hw_init(UART_INDEX_e uart_index)
 
     if(pcfg->use_tx_buf)
         cur_uart->IER |= IER_ETBEI;
+
+    hal_gpio_pull_set(pcfg->tx_pin, GPIO_PULL_UP_S);
+    hal_gpio_pull_set(pcfg->rx_pin, GPIO_PULL_UP_S);
+    hal_gpio_fmux_set(pcfg->tx_pin, fmux_tx);
+    hal_gpio_fmux_set(pcfg->rx_pin, fmux_rx);
+    hal_gpio_fmux(P27, Bit_DISABLE);
+    hal_gpio_pull_set(P27, GPIO_PULL_DOWN);
 
     if(uart_index== UART0)
     {

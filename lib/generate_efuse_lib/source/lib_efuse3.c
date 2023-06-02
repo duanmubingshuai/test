@@ -119,11 +119,12 @@ unsigned int lib_efuse_pass_flg(void)
     return efuse_inf.pass_flg;
 }
 
-void lib_read_efuse3_data(struct efuse_data_buff* buff)
+void lib_read_hw_version(uint32_t* buff)
 {
     subWriteReg(0x4000f054,19,19,0x01);
     extern int efuse_read(EFUSE_block_t block,uint32_t* buf);
-    efuse_read(EFUSE_BLOCK_3,buff->data);
+    efuse_read(EFUSE_BLOCK_3,buff);
+    lib_efuse_load((uint32_t*)buff);
 }
 
 void lib_efuse_load(uint32_t* efuse_data)

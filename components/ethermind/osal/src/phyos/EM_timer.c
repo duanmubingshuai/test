@@ -905,13 +905,14 @@ EM_RESULT EM_timer_get_remaining_time
     EM_RESULT     retval;
     UINT64        current_timestamp;
     UINT32        time_ms;
+
 //    if (NULL == handle)
 //    {
 //        EM_TIMER_ERR(
 //            "NULL Argument Unacceptable for Timer Handles.\n");
 //        return EM_TIMER_HANDLE_IS_NULL;
 //    }
-	if (EM_TIMER_MAX_ENTITIES <= handle)
+    if (EM_TIMER_MAX_ENTITIES <= handle)
     {
         EM_TIMER_ERR(
             "NULL Argument Unacceptable for Timer Handles.\r\n");
@@ -922,7 +923,7 @@ EM_RESULT EM_timer_get_remaining_time
     /* Lock Timer */
     timer_lock();
 //    timer = (TIMER_ENTITY*)handle;
-	timer = &timer_entity[handle];
+    timer = &timer_entity[handle];
     retval = timer_search_entity(timer);
 
     if (EM_SUCCESS != retval)

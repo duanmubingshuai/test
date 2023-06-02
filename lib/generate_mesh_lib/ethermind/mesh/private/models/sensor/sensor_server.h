@@ -1,11 +1,11 @@
 ﻿/**
- * \file sensor_server.h
- */
+    \file sensor_server.h
+*/
 
 /*
- * Copyright (C) 2017. PHYPLUSINC Ltd.
- * All rights reserved.
- */
+    Copyright (C) 2017. PHYPLUSINC Ltd.
+    All rights reserved.
+*/
 
 #ifndef _H_SENSOR_SERVER_
 #define _H_SENSOR_SERVER_
@@ -19,12 +19,12 @@
 
 enum SENSOR_SETTING_ACCESS
 {
- Sensor_Access_Prohibited0=0,
- Sensor_Access_read=1,
- Sensor_Access_Prohibited2=2,
- Sensor_Access_written=3,
- Sensor_Access_Prohibited4=4,
- Sensor_Access_Prohibited_max=0xff
+    Sensor_Access_Prohibited0=0,
+    Sensor_Access_read=1,
+    Sensor_Access_Prohibited2=2,
+    Sensor_Access_written=3,
+    Sensor_Access_Prohibited4=4,
+    Sensor_Access_Prohibited_max=0xff
 };
 
 
@@ -35,28 +35,28 @@ enum SENSOR_SETTING_ACCESS
 
 /* --------------------------------------------- Global Definitions */
 #ifdef  SENSOR_SERVER_NO_DEBUG
-#define SENSOR_SERVER_ERR         EM_debug_null
+    #define SENSOR_SERVER_ERR         EM_debug_null
 #else /* SENSOR_SERVER_NO_DEBUG */
-#ifdef VAR_ARG_IN_MACRO_NOT_SUPPORTED
-#define SENSOR_SERVER_ERR
-#else
-#define SENSOR_SERVER_ERR(...)     EM_debug_error(MS_MODULE_ID_MESH_MODEL, __VA_ARGS__)
-#endif /* VAR_ARG_IN_MACRO_NOT_SUPPORTED */
+    #ifdef VAR_ARG_IN_MACRO_NOT_SUPPORTED
+        #define SENSOR_SERVER_ERR
+    #else
+        #define SENSOR_SERVER_ERR(...)     EM_debug_error(MS_MODULE_ID_MESH_MODEL, __VA_ARGS__)
+    #endif /* VAR_ARG_IN_MACRO_NOT_SUPPORTED */
 #endif /* SENSOR_SERVER_NO_DEBUG */
 #ifdef SENSOR_SERVER_DEBUG
-#ifdef VAR_ARG_IN_MACRO_NOT_SUPPORTED
-#define SENSOR_SERVER_TRC
-#define SENSOR_SERVER_INF
-#define SENSOR_SERVER_debug_dump_bytes(data, datalen)
-#else
-#define SENSOR_SERVER_TRC(...)     EM_debug_trace(MS_MODULE_ID_MESH_MODEL,__VA_ARGS__)
-#define SENSOR_SERVER_INF(...)     EM_debug_info(MS_MODULE_ID_MESH_MODEL,__VA_ARGS__)
-#define SENSOR_SERVER_debug_dump_bytes(data, datalen) EM_debug_dump_bytes(MS_MODULE_ID_MESH_MODEL, (data), (datalen))
-#endif /* VAR_ARG_IN_MACRO_NOT_SUPPORTED */
+    #ifdef VAR_ARG_IN_MACRO_NOT_SUPPORTED
+        #define SENSOR_SERVER_TRC
+        #define SENSOR_SERVER_INF
+        #define SENSOR_SERVER_debug_dump_bytes(data, datalen)
+    #else
+        #define SENSOR_SERVER_TRC(...)     EM_debug_trace(MS_MODULE_ID_MESH_MODEL,__VA_ARGS__)
+        #define SENSOR_SERVER_INF(...)     EM_debug_info(MS_MODULE_ID_MESH_MODEL,__VA_ARGS__)
+        #define SENSOR_SERVER_debug_dump_bytes(data, datalen) EM_debug_dump_bytes(MS_MODULE_ID_MESH_MODEL, (data), (datalen))
+    #endif /* VAR_ARG_IN_MACRO_NOT_SUPPORTED */
 #else /* SENSOR_SERVER_DEBUG */
-#define SENSOR_SERVER_TRC          EM_debug_null
-#define SENSOR_SERVER_INF          EM_debug_null
-#define SENSOR_SERVER_debug_dump_bytes(data, datalen)
+    #define SENSOR_SERVER_TRC          EM_debug_null
+    #define SENSOR_SERVER_INF          EM_debug_null
+    #define SENSOR_SERVER_debug_dump_bytes(data, datalen)
 #endif /* SENSOR_SERVER_DEBUG */
 
 
@@ -191,12 +191,12 @@ typedef struct _MS_access_Sensor_model_state_params
 {
     /** State Type */
     UINT16 state_type;
-	UINT16 len;
+    UINT16 len;
 
     /** State pointer */
-    void * state;
+    void* state;
 
-}MS_ACCESS_SENSOR_MODEL_STATE_PARAMS;	
+} MS_ACCESS_SENSOR_MODEL_STATE_PARAMS;
 
 
 /** -- Sensor  Defined States */
@@ -205,12 +205,12 @@ extern  MS_STATE_SENSOR_DESCRIPTOR_STRUCT UI_Sensor_Descrip_Infor[SENSOR_NUM];
 
 /* --------------------------------------------- Function */
 API_RESULT MS_sensor_server_init
-        (
-            /* IN */    MS_ACCESS_ELEMENT_HANDLE    element_handle,
-            /* INOUT */ MS_ACCESS_MODEL_HANDLE      * time_model_handle,
-            /* INOUT */ MS_ACCESS_MODEL_HANDLE      * time_setup_model_handle,
-            /* IN */    MS_SENSOR_SERVER_CB         appl_cb
-        );
+(
+    /* IN */    MS_ACCESS_ELEMENT_HANDLE    element_handle,
+    /* INOUT */ MS_ACCESS_MODEL_HANDLE*       time_model_handle,
+    /* INOUT */ MS_ACCESS_MODEL_HANDLE*       time_setup_model_handle,
+    /* IN */    MS_SENSOR_SERVER_CB         appl_cb
+);
 
 /**
     \brief Access Layer Model Publication Timeout Callback.

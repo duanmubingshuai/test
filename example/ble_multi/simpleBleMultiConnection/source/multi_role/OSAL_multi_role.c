@@ -42,6 +42,11 @@
 /* Application */
 #include "multi_role.h"
 
+
+#ifdef PHY_SLB_OTA_ENABLE
+    #include "slb_app.h"
+#endif
+
 /*********************************************************************
     GLOBAL VARIABLES
 */
@@ -63,7 +68,10 @@ __ATTR_SECTION_SRAM__ const pTaskEventHandlerFn tasksArr[] =
     GAPBondMgr_ProcessEvent,
     GATTServApp_ProcessEvent,
     GAPMultiRole_ProcessEvent,
-    multiRoleApp_ProcessEvent
+    multiRoleApp_ProcessEvent,
+    #ifdef PHY_SLB_OTA_ENABLE
+    SLB_OTA_ProcessEvent,
+    #endif
 };
 
 __ATTR_SECTION_SRAM__ const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -109,7 +117,10 @@ void osalInitTasks( void )
     GATTServApp_Init( taskID++ );
     GAPMultiRole_Init( taskID++ );
     /* Application */
-    multiRoleApp_Init( taskID );
+    multiRoleApp_Init( taskID++ );
+    #ifdef PHY_SLB_OTA_ENABLE
+    SLB_OTA_Init( taskID );
+    #endif
 }
 
 /*********************************************************************

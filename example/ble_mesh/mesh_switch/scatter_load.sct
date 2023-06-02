@@ -68,11 +68,14 @@ LR_ROM_XIP  0x11017000 0x01e000 {
 	aes-ccm.o(+RO)
 	aes.o(+RO)
 	kscan.o(+RO)
-	hal_keyboard_matrix.o(+RO)
 	donglekey.o(+RO)
 	access_ps.o(+RO)
 	ms_limit_config.o(+RO)
 	printfa.o(+RO)
+	bsp_button.o(+RO)
+	prov_pl.o(+RO)
+	bsp_button_task.o(+RO)
+	keyboard.o(+RO)
    *.o(_section_xip_code_, _func_xip_code_.*)
   }
  }  

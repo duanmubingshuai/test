@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -77,6 +77,7 @@ extern uint8 bleMesh_TaskID;   // Task ID for internal task/event processing
 #define BLEMESH_CHECK_NODE_EVT                              0x0200
 #ifdef BLE_CLIENT_ROLE
 #define START_DISCOVERY_SERVICE_EVT                         0x0400
+#define BLEMESH_CONNECT_TIMEOUT                             0x0800
 #endif
 
 //#define BLEMESH_KEY_REFRESH_EVT                             0x0800

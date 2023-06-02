@@ -86,8 +86,13 @@
 #include "mesh_clients.h"
 
 #include "dongleKey.h"
-#include "hal_keyboard_matrix.h"
 #include "cli_model.h"
+#include "global_config.h"
+#include "bsp_button.h"
+#include "bsp_button_task.h"
+
+#define BTN_LONG_PRESS_START_TICK_COUNT         (100)
+#define BTN_LONG_PRESS_KEEP_TICK_COUNT          (100)
 
 extern void appl_mesh_sample (void);
 extern void appl_dump_bytes(UCHAR* buffer, UINT16 length);
@@ -108,6 +113,13 @@ extern void timeout_cb (void* args, UINT16 size);
 /*********************************************************************
     TYPEDEFS
 */
+
+typedef struct
+{
+    uint8 key;// init it.TRUE set as combine key
+    uint8 status;//press or release status
+} Keys_message;
+
 
 /*********************************************************************
     GLOBAL VARIABLES
@@ -131,6 +143,10 @@ extern EM_timer_handle thandle;
 /*********************************************************************
     EXTERNAL FUNCTIONS
 */
+static void keyboard_bsp_btn_callback(uint8 evt);
+static void app_powerkey_press_report(uint8 key_index);
+static void app_powerkey_release_report(uint8 key_index);
+static void app_powerkey_longpress_report(void);
 void blebrr_handle_evt_adv_complete (UINT8 enable);
 void blebrr_handle_evt_adv_report (gapDeviceInfoEvent_t* adv);
 void blebrr_handle_evt_scan_complete (UINT8 enable);
@@ -169,7 +185,7 @@ static gapAdvertisingParams_t bleMesh_advparam;
 static UCHAR bleMesh_DiscCancel = FALSE;             // HZF? not use???
 
 
-UCHAR cmdstr[64];
+UCHAR cmdstr[CLI_MAX_ARGS];
 UCHAR cmdlen;
 #if (SDK_VER_CHIP == __DEF_CHIP_QFN32__)
     #define GPIO_GREEN    P32
@@ -224,6 +240,50 @@ DECL_CONST CLI_COMMAND cli_cmd_list[] =
     { "status", "internal status", cli_internal_status }
 };
 
+static bsp_app bsp_app_CBs =
+{
+    keyboard_bsp_btn_callback,
+    app_powerkey_press_report,
+    app_powerkey_release_report,
+    app_powerkey_longpress_report,
+};
+
+static bsp_button_Cfg_t user_button_cfg =
+{
+    .bsp_evt_cb = &bsp_app_CBs,
+
+    #ifdef BSP_BTN_LONG_PRESS_ENABLE
+    .bsp_long_press_keep_cnt = BTN_LONG_PRESS_KEEP_TICK_COUNT,
+    .bsp_long_press_start_cnt = BTN_LONG_PRESS_START_TICK_COUNT,
+    #endif
+
+    #if (BSP_COMBINE_BTN_NUM > 0)
+    // ! bsp combine button config
+    .usr_combine_btn_array = {
+        (BIT(9) | BIT(10)),
+        (BIT(10) | BIT(11) | BIT(12)),
+    },
+    .combine_btn_num = BSP_COMBINE_BTN_NUM,
+    #endif
+    // ! config keyboard col gpio
+    .col_pin = {
+        KSCAN_COL_0_GPIO,
+        KSCAN_COL_1_GPIO,
+        KSCAN_COL_2_GPIO,
+        KSCAN_COL_3_GPIO,
+    },
+    // ! config keyboard row gpio
+    .row_pin = {
+        KSCAN_ROW_0_GPIO,
+        KSCAN_ROW_1_GPIO,
+        KSCAN_ROW_2_GPIO,
+        KSCAN_ROW_3_GPIO,
+    },
+};
+
+static Keys_message KeyCode;
+
+
 /*********************************************************************
     LOCAL FUNCTIONS
 */
@@ -245,6 +305,81 @@ uint32  osal_memory_statics(void);
 /*********************************************************************
     PUBLIC FUNCTIONS
 */
+
+static void keyboard_bsp_btn_callback(uint8_t evt)
+{
+    uint8 key_index = BSP_BTN_INDEX(evt);
+
+    // !start power off event
+    // start_enter_power_off_mode();
+    switch (BSP_BTN_TYPE(evt))
+    {
+    case BSP_BTN_PD_TYPE:
+        LOG("[key]:%02d pre\n", key_index);
+        KeyCode.key = key_index;
+        KeyCode.status = BSP_BTN_PD_TYPE;
+        osal_set_event(bleMesh_TaskID, BLEMESH_HAL_KEY_MATRIX_EVT);
+        break;
+
+    case BSP_BTN_UP_TYPE:
+        LOG("[key]:%02d rel\n", key_index);
+        break;
+
+    case BSP_BTN_LPS_TYPE:
+        LOG("[key]:%02d longpress\n", key_index);
+        break;
+
+    case BSP_BTN_LPK_TYPE:
+        LOG("long press keep\r\n");
+        break;
+
+    default:
+        LOG("unexpected\n");
+        break;
+    }
+}
+
+/*********************************************************************
+    @fn      app_powerkey_press_report
+
+    @brief   power offkey press report api
+
+    @param   key_index---key data
+
+    @return  none
+*/
+static void app_powerkey_press_report(uint8 key_index)
+{
+    LOG("[key]:%02d pre---tick=%d\n", key_index, hal_systick());
+}
+
+/*********************************************************************
+    @fn      app_powerkey_release_report
+
+    @brief   power offkey release report api
+
+    @param   key_index---key data
+
+    @return  none
+*/
+static void app_powerkey_release_report(uint8 key_index)
+{
+    LOG("[key]:%02d rel\n", key_index);
+}
+
+/*********************************************************************
+    @fn      app_powerkey_release_report
+
+    @brief   power offkey release report api
+
+    @param   key_index---key data
+
+    @return  none
+*/
+static void app_powerkey_longpress_report(void)
+{
+    LOG("poweroff key long tickc=%d\n", hal_systick());
+}
 
 /*********************************************************************
     @fn      bleMesh_Init
@@ -285,6 +420,7 @@ void bleMesh_Init( uint8 task_id )
     // HCI_LE_SetDefaultPhyMode(0, 0, 0x01, 0x01);
     hal_pwrmgr_register(MOD_USR1, NULL, NULL);
     hal_pwrmgr_lock(MOD_USR1);
+    btp_button_init(&user_button_cfg);
 }
 
 
@@ -421,8 +557,8 @@ uint16 bleMesh_ProcessEvent( uint8 task_id, uint16 events )
         #endif
         MS_NET_ADDR pub_addr;
         bleMesh_key_process(KeyCode.key,&pub_addr);
-        uint8 row_index = (KeyCode.key-1)>>2;
-        uint8 col_index = (KeyCode.key-1) & 0x03;
+        uint8 row_index = (KeyCode.key)>>2;
+        uint8 col_index = (KeyCode.key) & 0x03;
 
         if(row_index == 0)
         {
@@ -690,6 +826,10 @@ static void bleMesh_ProcessGAPMsg( gapEventHdr_t* pMsg )
     {
         osal_stop_timerEx(bleMesh_TaskID, BLEMESH_GAP_MSG_EVT);
         blebrr_timer_stop();
+
+        if(BLEBRR_GET_STATE() == BLEBRR_STATE_ADV_ENABLED)
+            BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+
         blebrr_scan_enable();
         gapEstLinkReqEvent_t* pPkt = (gapEstLinkReqEvent_t*)pMsg;
         printf("\r\n GAP_LINK_ESTABLISHED_EVENT received! \r\n");
@@ -974,7 +1114,7 @@ void bleMesh_gkey_set(uint8 indx, MS_NET_ADDR addr)
 void bleMesh_key_process(uint8 key,MS_NET_ADDR* pub_addr)
 {
     MS_NET_ADDR addr;
-    addr = __gkey_addr[(key-1)&0x03];
+    addr = __gkey_addr[(key)&0x03];
     /*  switch((key-1)&0x03)
         {
         case 0:

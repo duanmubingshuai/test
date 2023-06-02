@@ -12,6 +12,119 @@
 
 ---
 
+### **Version**: PHY62XX_SDK_3.1.3
+
+### **Change List**
+
+### **[components]**
+
+    driver:
+        boot        : 1.Add read chip harware version function,new hw version support 48M DLL
+                      2.Initial AON register after wakeup process or software reset 
+        flash       : Add flash lock moudle to realize flash lock/unlock
+        pwrmgr      : 1.Bugfixed AON register abnormal,use rom interface
+                      2.LDO low current bit set zero when CFG_SRAM_RETENTION_LOW_CURRENT_LDO_ENABLE is not define
+                      3.Reset all common peripheral interrupt priority to IRQ_PRIO_HAL after wakeup 
+        fs          : 1.Add CRC verify
+                      2.Supports fs ID caching, enabling fast indexing of fs read and write operations
+                      3.Support fs dual backup operation, which can retrieve old data in case of current file CRC error
+        spi		    : 1.Bugfixed multi-bytes transmit error
+                      2.Add Data Frame Size(DFS) select function
+        uart        : Bugfixed uart busy when set baudrate
+        pwm         : Bugfixed pwm dead zone Settings and complementary interface Settings
+        bsp_button  : Use bsp button driver(SW) instead of kscan(HW)
+    mesh:           :
+        EM_timer    : 1.Bugfixed op EM_stop_timer when this timer expire                      
+                      2.Add sensor/time/scheduler model(client/server)                      
+    profiles        : 1.Add latest phy_plus_phy profiles, aka 2.4G proprietary protocol, support smart_RF/smart_nRF with Autoack or not                      
+                      2.Add encryption upgrade for slb                       
+
+### **[example]**
+    example         : Remove tasksArr and tasksCnt from XIP to SRAM
+    ble_mesh        : 1.mesh_gateway: Add PB-GATT provision function
+                      2.Redefine cli command buffer length
+                      3.Add mesh gcc demo
+                      4.mesh_lpn: Bugfixed lpn receive message before poll fsn error
+    ble_peripheral  : 1.When enter dtm mode,watchdog clock is disabled
+                      2.SbpSmart_nRF project uses the lastest common phy_plus_phy profiles in components//profiles
+    ble_multi       : 1.Add sbm AT demo(CLI) 
+                      2.Add scan_duration with random values 
+                      3.Bugfixed multi schedule abnormal stop                 
+	peripheral  	: Use macro definitions to distinguish adc demos,No longer mixed together
+    ppsp_demo  	    : Add ppsp demo
+    ota_dongle      : Add ota dongle demo 
+    PhyPlusPhy      : Smart_nrf project uses the lastest common phy_plus_phy profiles in components//profiles      
+
+### **[lib]**
+    rf.lib          : 1.Bugfixed fake connection
+                      2.Add txdataQLen to limit notify or write_cmd
+                      3.Optimize ll malloc linkbuf 
+                      4.Fix phyrsp &phyupdate issue in same conn_event 
+                      5.Adjust directadv delay
+                      6.Adjust slave rx window for crcok
+    ble_host.lib    : Optimize the transmission of received message(patch filter)                     
+    mesh_lib        : 1.Bugfixed mesh stack of ltrn/trn                     
+                      2.Add mesh nodeid and networkid beacon scan procedure
+                      3.Add mesh patch,support mesh node and mesh gateway
+
+### **[misc]**
+    bb_rom_sym_m0   : Update some symbol tables 
+---
+
+### **Version**: PHY62XX_SDK_3.1.2
+
+### **Change List**
+
+### **[components]**
+
+    driver:
+        ota_flash   : use dma interface in flash write api(default)
+        flash       : 1.improve spif read/write speed
+					  2.optimze flash lock api
+        pwrmgr      : add rc32k clock tracking init and clear calibration flag
+		gpio		: add param check in gpio driver
+    mesh:           : 1.add mesh config data back-up function(read&write)
+					  2.change mesh limit dir for user config	
+					  3.Bugfixed cbtimer stop in margin case
+					  4.Bugfixed blebrr state error in scan/adv mode
+
+### **[example]**
+    ble_mesh        : 1.add fast provision
+					  2.add mesh frined/lpn project
+					  3.add mesh multi connect project
+    ble_peripheral  : 1.add extBlePeripheral project
+                      2.add sbpMultiConn project
+                      3.add gcc demo
+                      4.add sbpSmart_nRF project
+                      5.add sbpSmartRF project
+    ble_central     : 1.add extBLECentral project
+                      2.add sbcMultiConn project
+    ble_multi       : 1.modify the ADV schedule logic 
+                      2.add slave multi timer list 
+                      3.Bugfixed some node free multiple times                    
+	peripheral  	: 1.resource adc driver in adc demo(interrupt,polling,compare and adc voice)
+					  2.add iic demo
+					  
+
+### **[lib]**
+
+    rf.lib          : 1.optimized 16M tracking function
+                      2.add xiprestore
+                      3.support advscan concurrent
+                      4.add extadv function
+                      5.add secscan active scan feature
+                      6.adjust adv interval no 20ms limit
+                      7.use the OSAL memory heap to apply for link buffer dynamically
+                      8.add smart_nrf function
+    ble_host.lib    : 1.single and multiple connections use the same lib                      
+    mesh_lib        : 1.Bugfixed mesh stack					  
+					  2.optimze mesh relay&transmit count
+
+### **[misc]**
+
+
+---
+
 ### **Version**: PHY62XX_SDK_3.1.1
 
 ### **Change List**

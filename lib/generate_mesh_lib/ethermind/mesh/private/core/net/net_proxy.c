@@ -56,12 +56,11 @@ DECL_STATIC UCHAR proxy_iface_state;
 
     /* Proxy Adv state */
     DECL_STATIC UCHAR proxy_adv_state;
-    #ifdef MS_PRIVATE_SUPPORT
-        /* Private Adv timer handle */
-        DECL_STATIC EM_timer_handle net_proxy_priv_timer_handle ;
-        /* Private Adv state */
-        DECL_STATIC UCHAR private_adv_state;
-    #endif
+
+    /* Private Adv timer handle */
+    DECL_STATIC EM_timer_handle net_proxy_priv_timer_handle ;
+    /* Private Adv state */
+    DECL_STATIC UCHAR private_adv_state;
 #endif /* MS_PROXY_SERVER */
 
 /* Secure Network Beacon Handler */
@@ -70,16 +69,12 @@ void proxy_handle_nodeid_beacon(UCHAR* pdata, UINT16 pdatalen)
     PROXY_BCON_STATE_PARAMS state_params;
     UINT8 marker = 0;
     PROXY_BCON_NODEID_DATA data;
-    
     MS_UNPACK_BE_N_BYTE(&data.hash_data[0],&pdata[marker],8);
     marker += 8;
-
     MS_UNPACK_BE_N_BYTE(&data.random_data[0],&pdata[marker],8);
     marker += 8;
-
     MS_UNPACK_BE_N_BYTE(&data.addr[0],&pdata[marker],8);
     marker += 6;
-
     state_params.beacon_type = BRR_BCON_TYPE_PROXY_NODEID;
     state_params.beacon_data = &data;
 
@@ -87,7 +82,6 @@ void proxy_handle_nodeid_beacon(UCHAR* pdata, UINT16 pdatalen)
     {
         proxy_bcon_callback(&state_params);
     }
-    
 }
 
 /* Secure Network Beacon Handler */
@@ -96,13 +90,10 @@ void proxy_handle_networkid_beacon(UCHAR* pdata, UINT16 pdatalen)
     PROXY_BCON_STATE_PARAMS state_params;
     UINT8 marker = 0;
     PROXY_BCON_NETWORKID_DATA data;
-
     MS_UNPACK_BE_N_BYTE(&data.network_id[0],&pdata[marker],8);
     marker += 8;
-
     MS_UNPACK_BE_N_BYTE(&data.addr[0],&pdata[marker],8);
     marker += 6;
-
     state_params.beacon_type = BRR_BCON_TYPE_PROXY_NETID;
     state_params.beacon_data = &data;
 
@@ -149,10 +140,8 @@ API_RESULT net_proxy_init(void)
     /* Initialize Timers */
     net_proxy_netid_timer_handle  = EM_TIMER_HANDLE_INIT_VAL;
     net_proxy_nodeid_timer_handle = EM_TIMER_HANDLE_INIT_VAL;
-    #ifdef MS_PRIVATE_SUPPORT
     net_proxy_priv_timer_handle = EM_TIMER_HANDLE_INIT_VAL;
     private_adv_state             = 0x00;
-    #endif
     /* Initialize Proxy ADV related Globals */
     proxy_nodeid_all_subnets      = MS_FALSE;
     proxy_nodeid_timeout          = 0;
@@ -606,14 +595,15 @@ API_RESULT net_proxy_server_filter_op
                 NET_ERR(
                     "[PROXY-ERR]: Address 0x%04X not present in list!\n", t_addr);
             }
+
             for (i3 = 0; i3 < MS_CONFIG_LIMITS(MS_PROXY_FILTER_DYNAMIC_LIST_SIZE); i3++)
-	        {
-	            if (net_proxy_list[(*handle - 1)].v_addr[i3] == t_addr)
-	            {                  
-	                net_proxy_list[(*handle - 1)].v_addr[i3] = MS_NET_ADDR_UNASSIGNED;                    
-	                break;
-	            }
-	        }
+            {
+                if (net_proxy_list[(*handle - 1)].v_addr[i3] == t_addr)
+                {
+                    net_proxy_list[(*handle - 1)].v_addr[i3] = MS_NET_ADDR_UNASSIGNED;
+                    break;
+                }
+            }
         }
 
         ms_access_ps_store(MS_PS_RECORD_PROXY_FILTER_ADDR);
@@ -936,10 +926,10 @@ API_RESULT MS_proxy_bcon_handler_register(void)
     API_RESULT retval;
     /* Register for the proxy nodeid beacon with the bearer */
     retval = MS_brr_register_beacon_handler
-    (
-        MS_BCON_TYPE_PROXY_NODEID,
-        proxy_handle_nodeid_beacon
-    );
+             (
+                 MS_BCON_TYPE_PROXY_NODEID,
+                 proxy_handle_nodeid_beacon
+             );
 
     /* Register for the proxy networkid beacon with the bearer */
     if(retval == API_SUCCESS)
@@ -1155,8 +1145,6 @@ API_RESULT MS_proxy_server_adv_start
         /* Set Network ID proxy adv state */
         proxy_adv_state |= MS_PROXY_NET_ID_ADV_MODE;
     }
-
-    #ifdef MS_PRIVATE_SUPPORT
     else if (MS_PROXY_PRIV_ADV_MODE == proxy_adv_mode)
     {
         UCHAR  net_id[26];
@@ -1191,8 +1179,6 @@ API_RESULT MS_proxy_server_adv_start
 //      }
         private_adv_state |= MS_PROXY_PRIV_ADV_MODE;
     }
-
-    #endif
     else if (MS_PROXY_NODE_ID_ADV_MODE == proxy_adv_mode)
     {
         if (EM_TIMER_HANDLE_INIT_VAL != net_proxy_nodeid_timer_handle)
@@ -1262,9 +1248,7 @@ API_RESULT MS_proxy_server_stop_timer(void)
 {
     EM_stop_timer(&net_proxy_nodeid_timer_handle);
     EM_stop_timer(&net_proxy_netid_timer_handle);
-    #ifdef MS_PRIVATE_SUPPORT
     EM_stop_timer(&net_proxy_priv_timer_handle);
-    #endif
     return API_SUCCESS;
 }
 
@@ -1309,7 +1293,7 @@ API_RESULT MS_proxy_server_adv_stop (void)
         "[PROXY]: << MS_proxy_server_adv_stop, retval 0x%04X\n", retval);
     return retval;
 }
-#ifdef MS_PRIVATE_SUPPORT
+
 API_RESULT MS_private_server_adv_stop (void)
 {
     API_RESULT retval;
@@ -1391,7 +1375,6 @@ void net_proxy_priv_timeout_handler(void* args, UINT16 size)
     }
 }
 
-#endif
 API_RESULT net_proxy_nodeid_adv(MS_SUBNET_HANDLE handle)
 {
     UCHAR*        adv_rand;

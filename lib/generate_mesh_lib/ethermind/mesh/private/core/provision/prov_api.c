@@ -266,15 +266,19 @@ API_RESULT MS_prov_setup
                          pdevice->oob,
                          pdevice->uri
                      );
-            unprovisionbcon_interleave_handle = PROV_BRR_ADV;
-            retval = EM_start_timer
-                     (
-                         &unprovisionbcon_interleave_timer_handle,
-                         EM_TIMEOUT_MILLISEC | adv_interleave_timeout,
-                         ms_prov_beacon_interleave,
-                         (void*)&pdevice,
-                         sizeof(void*)
-                     );
+
+            if(retval == API_SUCCESS)
+            {
+                unprovisionbcon_interleave_handle = PROV_BRR_ADV;
+                retval = EM_start_timer
+                         (
+                             &unprovisionbcon_interleave_timer_handle,
+                             EM_TIMEOUT_MILLISEC | adv_interleave_timeout,
+                             ms_prov_beacon_interleave,
+                             (void*)&pdevice,
+                             sizeof(void*)
+                         );
+            }
         }
 
         if (API_SUCCESS == retval)

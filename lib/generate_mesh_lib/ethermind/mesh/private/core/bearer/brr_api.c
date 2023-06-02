@@ -1,4 +1,4 @@
-﻿/**
+/**
     \file brr_api.c
 
     This file defines the Bearer Layer Application Interface Methods
@@ -148,6 +148,7 @@ API_RESULT MS_brr_add_bearer
         break;
 
     case BRR_TYPE_GATT:
+    case BRR_TYPE_PB_GATT:
 
         /* Check for a GATT Network bearer entity availability */
         for (i = 1; i < MS_CONFIG_LIMITS(MS_NUM_NETWORK_INTERFACES); i ++)
@@ -198,13 +199,19 @@ API_RESULT MS_brr_add_bearer
                      pdata,
                      plen
                  );
-        retval = brr_bearer_cb[brr_type + 1]
-                 (
-                     &handle,
-                     BRR_IFACE_UP,
-                     pdata,
-                     plen
-                 );
+
+        //when type adv,should register PB_ADV(by hq 20221129)
+        if(brr_type == BRR_TYPE_ADV)
+        {
+            retval = brr_bearer_cb[brr_type + 1]
+                     (
+                         &handle,
+                         BRR_IFACE_UP,
+                         pdata,
+                         plen
+                     );
+        }
+
         /* Lock */
         BRR_LOCK();
         *brr_handle = handle;
@@ -587,7 +594,6 @@ API_RESULT MS_brr_start_proxy_adv
     return retval;
 }
 
-#ifdef MS_PRIVATE_SUPPORT
 API_RESULT MS_brr_start_priv_proxy_adv
 (
     /* IN */ UCHAR      type,
@@ -631,7 +637,7 @@ API_RESULT MS_brr_start_priv_proxy_adv
     BRR_UNLOCK();
     return retval;
 }
-#endif
+
 /**
     \brief API to send common Bearer PDUs
 
@@ -722,7 +728,8 @@ API_RESULT MS_brr_send_pdu
         do
         {
             extern uint16 ATT_GetCurrentMTUSize(uint16 connHandle);
-            bearer->omtu = ATT_GetCurrentMTUSize(0) - 3;      // add by HZF
+            extern uint16_t active_conn_hndl;
+            bearer->omtu = ATT_GetCurrentMTUSize(active_conn_hndl) - 3;      // add by HZF
 
             /* Check if the data length PDU with 1 byte header will fit in the MTU */
             if (bearer->omtu < (datalen + 1))

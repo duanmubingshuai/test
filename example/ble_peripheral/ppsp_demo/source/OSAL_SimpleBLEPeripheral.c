@@ -78,6 +78,10 @@
 #include "simpleBLEPeripheral.h"
 #include "halPeripheral.h"
 
+#ifdef PHY_SLB_OTA_ENABLE
+    #include "slb_app.h"
+#endif
+
 /*********************************************************************
     GLOBAL VARIABLES
 */
@@ -100,6 +104,9 @@ __ATTR_SECTION_SRAM__ const pTaskEventHandlerFn tasksArr[] =
     #endif
     GATTServApp_ProcessEvent,                                         // task 7
     SimpleBLEPeripheral_ProcessEvent,                                 // task 8
+    #ifdef PHY_SLB_OTA_ENABLE
+    SLB_OTA_ProcessEvent,
+    #endif
 
 };
 
@@ -149,6 +156,9 @@ void osalInitTasks( void )
     GATTServApp_Init( taskID++ );
     /* Application */
     SimpleBLEPeripheral_Init( taskID++ );
+    #ifdef PHY_SLB_OTA_ENABLE
+    SLB_OTA_Init( taskID );
+    #endif
 }
 #endif
 /*********************************************************************

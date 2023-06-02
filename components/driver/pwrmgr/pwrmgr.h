@@ -69,6 +69,13 @@ typedef struct
     uint16_t on_time;
 } pwroff_cfg_t;
 
+typedef struct
+{
+    uint8_t sramRet_config:3;
+    uint8_t moudle_num:5;
+} PWRMGR_CFG_BIT;
+
+
 
 extern uint32_t g_system_reset_cause;
 extern sysclk_t g_system_clk_change;
@@ -89,6 +96,7 @@ int hal_pwrmgr_RAM_retention_clr(void);
 int hal_pwrmgr_RAM_retention_set(void);
 int hal_pwrmgr_LowCurrentLdo_enable(void);
 int hal_pwrmgr_LowCurrentLdo_disable(void);
+int hal_pwrmgr_get_module_lock_status(void);
 
 void hal_pwrmgr_poweroff(pwroff_cfg_t* pcfg, uint8_t wakeup_pin_num);
 __ATTR_SECTION_SRAM__ void hal_pwrmgr_enter_sleep_rtc_reset(uint32_t sleepRtcTick);

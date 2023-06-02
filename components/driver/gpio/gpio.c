@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -225,6 +225,7 @@ void hal_gpio_fmux_set(gpio_pin_e pin,gpio_fmux_e type)
         bit_index = pin & 0x03;
         l = 8 * bit_index;
         h = l + 5;
+        hal_gpioin_disable(pin);
         subWriteReg(&(AP_IOMUX->gpio_sel[reg_index]),h,l,type);
         hal_gpio_fmux(pin, Bit_ENABLE);
     }
@@ -234,6 +235,10 @@ int hal_gpio_pin_init(gpio_pin_e pin,gpio_dir_t type)
 {
     if (pin > (NUMBER_OF_PINS - 1))
         return PPlus_ERR_NOT_SUPPORTED;
+
+    if((m_gpioCtx.pin_assignments[pin] == GPIO_PIN_ASSI_OUT) &&
+            (m_gpioCtx.pin_retention_status & BIT(pin)) && (type == GPIO_INPUT))
+        return PPlus_ERR_INVALID_PARAM;
 
     hal_gpio_fmux(pin,Bit_DISABLE);
 
@@ -708,9 +713,4 @@ void hal_gpio_debug_mux(Freq_Type_e fre,bool en)
         AP_IOMUX->debug_mux_en |= BIT(fre);
     else
         AP_IOMUX->debug_mux_en &= ~BIT(fre);
-}
-
-void hal_gpioin_set_flag(gpio_pin_e pin)
-{
-    m_gpioCtx.pin_assignments[pin] = GPIO_PIN_ASSI_IN;
 }

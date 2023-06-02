@@ -235,7 +235,7 @@ int  main(void)
     g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
     drv_irq_init();
     init_config();
@@ -250,6 +250,7 @@ int  main(void)
     struct efuse_data_buff efuse3_data;
     lib_read_efuse3_data(&efuse3_data);
     LOG("data[0]:0x%x,data[1]:0x%x\n",efuse3_data.data[0],efuse3_data.data[1]);
+
     while(1) {;}
 }
 

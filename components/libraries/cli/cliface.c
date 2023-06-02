@@ -24,7 +24,7 @@ CLI_COMMAND* g_cli_cmd_list;
 uint8_t g_cli_cmd_len;
 
 //#ifdef HAVE_CLI
-#define CLI_CMD_BUF_LEN 1
+#define CLI_CMD_BUF_LEN 256
 typedef struct
 {
     CLI_COMMAND*    cmd_list;
@@ -333,7 +333,7 @@ int CLI_process_line_manual(uint8_t* buffer,uint32_t buffer_len)
         {
             #ifdef BLE_AT_ENABLE
 
-            if(('\r' == *cmd) && ('\n' == *(cmd+1))) //  at cmd end flag : '\r\n' 
+            if(('\r' == *cmd) && ('\n' == *(cmd+1))) //  at cmd end flag : '\r\n'
             {
                 *cmd = '\0';
             }
@@ -341,12 +341,12 @@ int CLI_process_line_manual(uint8_t* buffer,uint32_t buffer_len)
             {
                 *cmd = '\0';
             }
-            #else
 
+            #else
             *cmd = '\0';
             #endif //end BLE_AT_ENABLE
-            
         }
+
         #ifdef BLE_AT_ENABLE
         else if((*cmd == '=') || (*cmd == '?'))
         {
@@ -356,9 +356,9 @@ int CLI_process_line_manual(uint8_t* buffer,uint32_t buffer_len)
                 argv[argc++] = (cmd + 1);
             }
             else
-            argv[argc++] = cmd;   
-            
+                argv[argc++] = cmd;
         }
+
         #endif //end BLE_AT_ENABLE
         /* Check if this is start of a new argument */
         else if ('\0' == (*(cmd - 1)))
@@ -374,7 +374,6 @@ int CLI_process_line_manual(uint8_t* buffer,uint32_t buffer_len)
     // CLI_TRC("[CLI] Command %s, Number of arguments %d\n", buffer, argc);
     // {
     //     uint8_t ai;
-
     //     for (ai = 0; ai < argc; ai++)
     //     {
     //         CLI_TRC("Arg [%02X] %s\n", ai, argv[ai]);
@@ -387,7 +386,8 @@ int CLI_process_line_manual(uint8_t* buffer,uint32_t buffer_len)
     for (index = 0; index < g_cli_cmd_len; index++)
     {
         #ifdef BLE_AT_ENABLE
-        if (strstr((const char *)buffer,g_cli_cmd_list[index].cmd))
+
+        if (strstr((const char*)buffer,g_cli_cmd_list[index].cmd))
         #else
         if (0 == CLI_STR_COMPARE(buffer,g_cli_cmd_list[index].cmd))
         #endif

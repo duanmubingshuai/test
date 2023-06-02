@@ -41,7 +41,7 @@ LR_ROM_XIP  0x11020000 0x01e000 {
 	uart.o(+RO)
 	em_timer.o(+RO)
 	vendormodel_client.o(+RO)
-	mesh_clients.o(+RO)
+	;mesh_clients.o(+RO)
 	;model_state_handler_pl.o(+RO)
 	blebrr_pl.o(+RO)
 	blebrr.o(+RO)

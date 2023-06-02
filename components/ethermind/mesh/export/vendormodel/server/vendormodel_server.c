@@ -21,7 +21,11 @@
 
 
 /* --------------------------------------------- Static Global Variables */
-static DECL_CONST UINT32 vendormodel_server_opcode_list[] =
+#if defined ( __GNUC__ )
+    static DECL_CONST UINT32 vendormodel_server_opcode_list[] =
+#else
+    __ATTR_SECTION_XIP__ static DECL_CONST UINT32 vendormodel_server_opcode_list[] =
+#endif
 {
     MS_ACCESS_VENDORMODEL_GET_OPCODE,
     MS_ACCESS_VENDORMODEL_SET_OPCODE,

@@ -63,8 +63,13 @@ extern void hal_rom_boot_init(void);
 */
 
 #define   BLE_MAX_ALLOW_CONNECTION              1
-#define   BLE_MAX_ALLOW_PKT_PER_EVENT_TX        2
-#define   BLE_MAX_ALLOW_PKT_PER_EVENT_RX        2
+#if (GATT_PVNR == 1)
+    #define   BLE_MAX_ALLOW_PKT_PER_EVENT_TX        4
+    #define   BLE_MAX_ALLOW_PKT_PER_EVENT_RX        4
+#else
+    #define   BLE_MAX_ALLOW_PKT_PER_EVENT_TX        1
+    #define   BLE_MAX_ALLOW_PKT_PER_EVENT_RX        1
+#endif
 #define   BLE_PKT_VERSION                       BLE_PKT_VERSION_5_1 //BLE_PKT_VERSION_5_1 //BLE_PKT_VERSION_5_1     
 
 
@@ -112,10 +117,25 @@ llConnState_t               pConnContext[BLE_MAX_ALLOW_CONNECTION];
 /*********************************************************************
     OSAL LARGE HEAP CONFIG
 */
-#define     LARGE_HEAP_SIZE  (8*1024)
-ALIGN4_U8       g_largeHeap[LARGE_HEAP_SIZE];
+#if (MESH_HEAP == 1)
+    #define     LARGE_HEAP_SIZE  (5*1024)
+    ALIGN4_U8   g_largeHeap[LARGE_HEAP_SIZE];
 
-#define     LL_LINK_HEAP_SIZE    (2*1024)
+    #define     MESH_HEAP_SIZE    (2*1024)
+    ALIGN4_U8   g_meshHeap[MESH_HEAP_SIZE];
+#else
+    #define     LARGE_HEAP_SIZE  (8*1024)
+    ALIGN4_U8   g_largeHeap[LARGE_HEAP_SIZE];
+#endif
+
+#if (GATT_PVNR == 1)
+    #define     LL_LINKBUF_CFG_NUM                6
+#else
+    #define     LL_LINKBUF_CFG_NUM                0
+#endif
+
+#define     LL_PKT_BUFSIZE                    280
+#define     LL_LINK_HEAP_SIZE    ( ( BLE_MAX_ALLOW_CONNECTION * 3 + LL_LINKBUF_CFG_NUM ) * LL_PKT_BUFSIZE )//basic Space + configurable Space
 ALIGN4_U8   g_llLinkHeap[LL_LINK_HEAP_SIZE];
 /*********************************************************************
     GLOBAL VARIABLES
@@ -181,6 +201,10 @@ static void ble_mem_init_config(void)
     //ll linkmem setup
     extern void ll_osalmem_init(osalMemHdr_t* hdr, uint32 size);
     ll_osalmem_init((osalMemHdr_t*)g_llLinkHeap, LL_LINK_HEAP_SIZE);
+    #if (MESH_HEAP == 1)
+    extern void mesh_osalmem_init(osalMemHdr_t* hdr, uint32 size);
+    mesh_osalmem_init((osalMemHdr_t*)g_meshHeap, MESH_HEAP_SIZE);
+    #endif
     osal_mem_set_heap((osalMemHdr_t*)g_largeHeap, LARGE_HEAP_SIZE);
     LL_InitConnectContext(pConnContext,
                           g_pConnectionBuffer,
@@ -204,7 +228,7 @@ static void ble_mem_init_config(void)
 static void hal_rfphy_init(void)
 {
     //============config the txPower
-    g_rfPhyTxPower  = RF_PHY_TX_POWER_0DBM ;
+    g_rfPhyTxPower  = RF_PHY_TX_POWER_EXTRA_MAX ;
     //============config BLE_PHY TYPE
     g_rfPhyPktFmt   = PKT_FMT_BLE1M;
     //============config RF Frequency Offset
@@ -245,12 +269,17 @@ int  main(void)
     g_system_clk = SYS_CLK_DLL_48M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
     drv_irq_init();
     init_config();
+    #if (GATT_PVNR == 1)
     extern void ll_patch_mesh_master(void);
     ll_patch_mesh_master();
+    #else
+    extern void ll_patch_mesh(void);
+    ll_patch_mesh();
+    #endif
     hal_rfphy_init();
     hal_init();
     #if(_BUILD_FOR_DTM_==1)

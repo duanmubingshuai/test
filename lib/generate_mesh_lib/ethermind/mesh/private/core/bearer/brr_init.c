@@ -328,6 +328,7 @@ void brr_read_data_ind(BRR_HANDLE* brr_handle, UCHAR* data, UINT16 datalen, MS_B
 void brr_read_data_service_ind(BRR_HANDLE* brr_handle, UCHAR* data, UINT16 datalen, MS_BUFFER* info)
 {
     UINT16 service_type;
+
     if (MS_CONFIG_LIMITS(MS_NUM_NETWORK_INTERFACES) <= (*brr_handle))
     {
         BRR_ERR("Bearer handle out of range. Dropping...\n");
@@ -338,27 +339,33 @@ void brr_read_data_service_ind(BRR_HANDLE* brr_handle, UCHAR* data, UINT16 datal
 
     switch (service_type)
     {
-        case MESH_PROVISIONING_SERVICE:
+    case MESH_PROVISIONING_SERVICE:
+    {
+        if (NULL != brr_beacon_cb[0])
         {
-            if (NULL != brr_beacon_cb[0])
-            {
-                brr_beacon_cb[0]((data + 4), (datalen - 4));
-            }
-            break;
+            brr_beacon_cb[0]((data + 4), (datalen - 4));
         }
-        case MESH_PROXY_SERVICE: 
+
+        break;
+    }
+
+    case MESH_PROXY_SERVICE:
+    {
+        UINT8 proxy_id_type = data[4];
+
+        if(proxy_id_type > 1)
+            return;
+
+        if (NULL != brr_beacon_cb[proxy_id_type + 2])
         {
-            UINT8 proxy_id_type = data[4];
-            if(proxy_id_type > 1)
-                return;
-            if (NULL != brr_beacon_cb[proxy_id_type + 2])
-            {
-                brr_beacon_cb[proxy_id_type + 2]((data + 5), (datalen - 4));
-            }
-            break;
+            brr_beacon_cb[proxy_id_type + 2]((data + 5), (datalen - 4));
         }
-        default :
-            break;
+
+        break;
+    }
+
+    default :
+        break;
     }
 }
 

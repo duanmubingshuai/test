@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************
+/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -61,11 +61,12 @@
 #ifdef ON_SLB_BOOTLOADER
 //boot loader mode
 #define SLB_ASSERT(r) {if(r) return r;}
-  #if defined(__GNUC__)
+#define SLB_PBUF_SIZE (16*1024+16)
+#if defined(__GNUC__)
     uint8_t* s_partition_buf = (uint8_t*)0x1fffb300; //buffer size 16K+16B
-  #else
-    uint8_t __attribute__((section("ota_partition_buffer_area"))) s_partition_buf[16*1024+16] ;
-  #endif
+#else
+    uint8_t __attribute__((section("ota_partition_buffer_area"))) s_partition_buf[SLB_PBUF_SIZE] ;
+#endif
 #else
 //application mode
 
@@ -102,6 +103,10 @@ slb_ctx_t    m_slb_ctx =
 const char*  tag_ota_fw= "OTAF";
 const char*  tag_ota_fw_used= "@TAF";
 const char*  tag_selfload_ota_info= "SOIF";
+bool is_crypto_app(void);
+//void flash_load_parition(unsigned char* pflash, int size, unsigned char* run_addr);
+int flash_load_parition(unsigned char* pflash, int size, unsigned char* micIn,unsigned char* run_addr);
+int flash_check_parition(unsigned char* pflash, int size, unsigned char* run_addr,unsigned char* micOut);
 
 int slb_spif_write(uint32_t faddr, uint8_t* pdata, uint32_t size)
 {
@@ -138,7 +143,9 @@ int slb_spif_write(uint32_t faddr, uint8_t* pdata, uint32_t size)
 
     return PPlus_SUCCESS;
     #endif
-    return(hal_flash_write_by_dma(faddr, (uint8_t*) pdata, size));
+    uint8_t retval;
+    retval = hal_flash_write_by_dma(faddr, (uint8_t*) pdata, size);
+    return retval;
 }
 
 int slb_spif_read(uint32_t faddr, uint8_t* pdata, uint32_t size)
@@ -184,129 +191,177 @@ uint16_t slb_flash_calc_checksum(uint32_t addr, uint32_t size)
 
 static int slb_erase_fw(void)
 {
-    return ota_flash_erase(OTAF_APP_BANK_0_ADDR);
+    uint8_t retval;
+    retval = ota_flash_erase(OTAF_APP_BANK_0_ADDR);
+    return retval;
 }
 
 int slb_apply_exch_zone_to_fw_ram(uint32_t part_num)
 {
-  int i;
-  uint32_t part_info[4];
-  uint32_t flash_offset = 0;
-  uint32_t ram_part_idx = 0;
-  //make exchange zone effect(load data to boot zone)
-  slb_erase_fw();
-  
-  for(i = 0; i< part_num; i++)
-  {
-      slb_spif_read(SLB_FLASH_FW_PART_FADDR(i), (uint8_t*) part_info, 0x10);
-      slb_spif_read(SLB_FLASH_PART_DATA_BASE + part_info[0], (uint8_t*)s_partition_buf, part_info[2]);
-      //LOG("part_num:%d,fladdr:%x,size:%x,crc:%x \n",i,part_info[1],part_info[2],part_info[3]);
-  
-      if((part_info[1] & 0xff000000) == OTAF_BASE_ADDR)//case runaddr is in XIP
-      {
-          //erase
-          slb_spif_erase(part_info[1], part_info[2]);
-          slb_spif_write(part_info[1], (uint8_t*)s_partition_buf, part_info[2]);
-      }
-      else
-      {
-          slb_spif_write(OTAF_APP_BANK_0_ADDR + flash_offset, (uint8_t*)s_partition_buf, part_info[2]);
-  
-          if(i > 0) //prepare boot sector
-          {
-              part_info[0] = flash_offset;
-              slb_spif_write(OTAF_2nd_BOOTINFO_ADDR + 0x10 + 0x10*ram_part_idx, (uint8_t*) part_info, 16);
-              ram_part_idx ++;
-          }
-  
-          flash_offset += part_info[2] +4;
-          flash_offset &= 0xfffffffc;//word align
-      }
-  }
-  
-  //prepare boot
-  part_info[0] = ram_part_idx;
-  part_info[1] = OTAF_DUAL_BANK_0;//single bank
-  part_info[2] = 0;
-  part_info[3] = 0xffffffff;
-  slb_spif_write(OTAF_2nd_BOOTINFO_ADDR, (uint8_t*) part_info, 16);
-  SLB_DELETE_EXCHANGE_ZONE();
-  return PPlus_SUCCESS;
+    int i;
+    uint32_t part_info[4];
+    uint32_t flash_offset = 0;
+    uint32_t ram_part_idx = 0;
+    //make exchange zone effect(load data to boot zone)
+    slb_erase_fw();
 
+    for(i = 0; i< part_num; i++)
+    {
+        slb_spif_read(SLB_FLASH_FW_PART_FADDR(i), (uint8_t*) part_info, 0x10);
+        slb_spif_read(SLB_FLASH_PART_DATA_BASE + part_info[0], (uint8_t*)s_partition_buf, part_info[2]);
+        //LOG("part_num:%d,fladdr:%x,size:%x,crc:%x \n",i,part_info[1],part_info[2],part_info[3]);
+
+        if((part_info[1] & 0xff000000) == OTAF_BASE_ADDR)//case runaddr is in XIP
+        {
+            //erase
+            slb_spif_erase(part_info[1], part_info[2]);
+            slb_spif_write(part_info[1], (uint8_t*)s_partition_buf, part_info[2]);
+        }
+        else
+        {
+            slb_spif_write(OTAF_APP_BANK_0_ADDR + flash_offset, (uint8_t*)s_partition_buf, part_info[2]);
+
+            if(i > 0) //prepare boot sector
+            {
+                part_info[0] = flash_offset;
+                slb_spif_write(OTAF_2nd_BOOTINFO_ADDR + 0x10 + 0x10*ram_part_idx, (uint8_t*) part_info, 16);
+                ram_part_idx ++;
+            }
+
+            flash_offset += part_info[2] +4;
+            flash_offset &= 0xfffffffc;//word align
+        }
+    }
+
+    //prepare boot
+    part_info[0] = ram_part_idx;
+    part_info[1] = OTAF_DUAL_BANK_0;//single bank
+    part_info[2] = 0;
+    part_info[3] = 0xffffffff;
+    slb_spif_write(OTAF_2nd_BOOTINFO_ADDR, (uint8_t*) part_info, 16);
+    SLB_DELETE_EXCHANGE_ZONE();
+    return PPlus_SUCCESS;
 }
 
 int slb_apply_exch_zone_to_fw_xip(uint32_t part_num)
 {
-  int i;
-  uint32_t part_info[4];
-  //make exchange zone effect(load data to boot zone)
-  hal_flash_erase_sector(OTAF_2nd_BOOTINFO_ADDR);
-  
-  for(i = 1; i< part_num; i++)
-  {
-      uint32_t size;
-      uint32_t type;
-      slb_spif_read(SLB_FLASH_FW_PART_FADDR(i), (uint8_t*) part_info, 0x10);
-      type = (part_info[2] & 0xff000000)>>24;
-      part_info[2] = part_info[2] & 0xffffff; //high byte is data type(compress/encrypt etc.)
-      {
-        slb_spif_read(SLB_FLASH_PART_DATA_BASE + part_info[0], (uint8_t*)s_partition_buf, part_info[2]);
-        LOG("part_num:%d,fladdr:%x,size:%x,crc:%x \n",i,part_info[1],part_info[2],part_info[3]);
-  
-        if((part_info[1] & 0xff000000) == OTAF_BASE_ADDR)//case runaddr is in XIP
+    int i;
+    uint32_t part_info[4];
+    //make exchange zone effect(load data to boot zone)
+    hal_flash_erase_sector(OTAF_2nd_BOOTINFO_ADDR);
+
+    for(i = 1; i< part_num; i++)
+    {
+//      uint32_t size;
+//      uint32_t type;
+        slb_spif_read(SLB_FLASH_FW_PART_FADDR(i), (uint8_t*) part_info, 0x10);
+//      type = (part_info[2] & 0xff000000)>>24;
+        part_info[2] = part_info[2] & 0xffffff; //high byte is data type(compress/encrypt etc.)
         {
-          //erase
-          slb_spif_erase(part_info[1], part_info[2]);
-          slb_spif_write(part_info[1], (uint8_t*)s_partition_buf, part_info[2]);
-          
-          if(i == 1) //prepare boot sector
-          {
-              part_info[0] = 0;
-              slb_spif_write(OTAF_2nd_BOOTINFO_ADDR + 0x10 + 0x10*0, (uint8_t*) part_info, 16);
-          }
+            slb_spif_read(SLB_FLASH_PART_DATA_BASE + part_info[0], (uint8_t*)s_partition_buf, part_info[2]);
+            LOG("part_num:%d,fladdr:%x,size:%x,crc:%x \n",i,part_info[1],part_info[2],part_info[3]);
+
+            if((part_info[1] & 0xff000000) == OTAF_BASE_ADDR)//case runaddr is in XIP
+            {
+                //erase
+                slb_spif_erase(part_info[1], part_info[2]);
+                slb_spif_write(part_info[1], (uint8_t*)s_partition_buf, part_info[2]);
+
+                if(i == 1) //prepare boot sector
+                {
+                    part_info[0] = 0;
+                    slb_spif_write(OTAF_2nd_BOOTINFO_ADDR + 0x10 + 0x10*0, (uint8_t*) part_info, 16);
+                }
+            }
         }
-      }
+    }
 
-  }
-  
-  //prepare boot
-  part_info[0] = 1;
-  part_info[1] = OTAF_DUAL_SLBXIP;//single bank
-  part_info[2] = 0;
-  part_info[3] = 0xffffffff;
-  slb_spif_write(OTAF_2nd_BOOTINFO_ADDR, (uint8_t*) part_info, 16);
-  SLB_DELETE_EXCHANGE_ZONE();
-  return PPlus_SUCCESS;
-
+    //prepare boot
+    part_info[0] = 1;
+    part_info[1] = OTAF_DUAL_SLBXIP;//single bank
+    part_info[2] = 0;
+    part_info[3] = 0xffffffff;
+    slb_spif_write(OTAF_2nd_BOOTINFO_ADDR, (uint8_t*) part_info, 16);
+    SLB_DELETE_EXCHANGE_ZONE();
+    return PPlus_SUCCESS;
 }
 
 static int slb_apply_exch_zone_to_fw(uint32_t part_num)
 {
-    int i;
+    int i,ret;
     uint32_t part_info[4];
     uint32_t is_xip_only = true;
+    bool is_encrypt = FALSE;
+    uint32_t slb_boot_bypass_crc;
+    is_encrypt = is_crypto_app();
+//  LOG("is_encrypt %d\n",is_encrypt);
+    slb_spif_read(OTAF_2nd_BOOT_FAST_BOOT,(uint8_t*)&slb_boot_bypass_crc, 4);
 
     //validate partition
     for(i = 1; i< part_num; i++)
     {
         uint32_t crc = 0;
         slb_spif_read(SLB_FLASH_FW_PART_FADDR(i), (uint8_t*) part_info, 0x10);
-        slb_spif_read(SLB_FLASH_PART_DATA_BASE + part_info[0], (uint8_t*)s_partition_buf, part_info[2]);
-        if(part_info[1] & 0xffff0000 == SRAM_BASE_ADDR)
-          is_xip_only = false;
-        crc = (uint32_t)crc16(0, (const volatile void*)s_partition_buf, part_info[2]);
 
-        if(crc != part_info[3])
+        if(part_info[2] > SLB_PBUF_SIZE)
         {
+//          LOG("Partition size invalid. %x\n",part_info[2]);
             SLB_DELETE_EXCHANGE_ZONE();
             return PPlus_ERR_INVALID_DATA;
         }
+
+//      LOG("part_num:%d,fladdr:%x,runaddr:%x,size:%x,crc:%x \n",i,part_info[0],part_info[1],part_info[2],part_info[3]);
+        slb_spif_read(SLB_FLASH_PART_DATA_BASE + part_info[0], (uint8_t*)s_partition_buf, part_info[2]);
+
+        if((part_info[1] & 0xffff0000) == SRAM_BASE_ADDR)
+            is_xip_only = false;
+
+        if(is_encrypt)
+        {
+            if((part_info[1] & 0xffff0000) == SRAM_BASE_ADDR)
+            {
+                ret = flash_load_parition((uint8_t*)(SLB_FLASH_PART_DATA_BASE + part_info[0]), (int)part_info[2], (uint8_t*)&part_info[3],NULL);
+
+//              LOG("ret=%d\n",ret);
+                if(ret!=0)
+                {
+                    SLB_DELETE_EXCHANGE_ZONE();
+                    return PPlus_ERR_INVALID_DATA;
+                }
+            }
+            else
+            {
+                //xip
+                if(slb_boot_bypass_crc != OTA_FAST_BOOT_MAGIC)
+                {
+//                  LOG("Check xip mic!!!\n");
+                    flash_check_parition((uint8_t*)(SLB_FLASH_PART_DATA_BASE + part_info[0]),(int)part_info[2],NULL,(uint8_t*)&crc);
+
+                    if(crc != part_info[3])
+                    {
+//                      LOG("crc %x, mic %x\n",crc,part_info[3]);
+                        SLB_DELETE_EXCHANGE_ZONE();
+                        return PPlus_ERR_INVALID_DATA;
+                    }
+                }
+            }
+        }
+        else
+        {
+            crc = (uint32_t)crc16(0, (const volatile void*)s_partition_buf, part_info[2]);
+
+            if(crc != part_info[3])
+            {
+                SLB_DELETE_EXCHANGE_ZONE();
+                return PPlus_ERR_INVALID_DATA;
+            }
+        }
     }
+
     if(is_xip_only)
-      return slb_apply_exch_zone_to_fw_xip(part_num);
+        return slb_apply_exch_zone_to_fw_xip(part_num);
 
     return slb_apply_exch_zone_to_fw_ram(part_num);
-
 }
 
 

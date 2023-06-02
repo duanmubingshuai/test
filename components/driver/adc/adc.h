@@ -58,10 +58,12 @@ extern "C" {
 #define    ENABLE_ADC_INT       AP_ADCC->intr_mask |= 0x000001ff
 #define    MASK_ADC_INT         AP_ADCC->intr_mask &= 0xfffffe00
 
-#define    CLEAR_ADC_INT(n)     AP_ADC->intr_clear |= BIT(n)
+#define    CLEAR_ADC_INT(n)        AP_ADCC->intr_clear |= BIT(n)
+#define    CLEAR_ADC_INT_ALL      {AP_ADCC->intr_clear = 0x3ffff;}
 
-#define    IS_CLAER_ADC_INT_VOICE (AP_ADC->intr_clear & BIT(8))
-#define    IS_CLAER_ADC_INT(n)    (AP_ADC->intr_clear & BIT(n))
+#define    IS_CLAER_ADC_INT_VOICE (AP_ADCC->intr_clear & BIT(8))
+#define    IS_CLAER_ADC_INT(n)    (AP_ADCC->intr_clear & BIT(n))
+
 
 
 
@@ -82,12 +84,6 @@ extern "C" {
 
 
 #define adcMeasureTask_EVT                            0x0080
-#define VOICE_RECORD_START_EVT                        0x0040
-#define VOICE_VOICE_RECORD_STOP_EVT                   0x0020
-
-#define VOICE_ENCODE_EVT                              0X0008
-#define VOICE_OUTQUEUE_EVT                            0X0004
-#define VOICE_RECORD_STOP_EVT                         0x0002
 
 #define ADC_USE_TIMEOUT 0
 #define ADC_OP_TIMEOUT  100

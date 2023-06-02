@@ -75,6 +75,11 @@ extern "C"
 #define SBP_RTC_TEST_EVT                               0x0100
 #define SBP_DYN_CLK_CHG_TEST_EVT                       0x0200
 
+#define xDBG_SPIF_TEST
+#ifdef DBG_SPIF_TEST
+#define SBP_SPIF_FLASH_TEST_EVT                         0x0400
+#endif
+
 #define SBP_LL_DEBUG_SHOW_EVT                           0x0800
 /*********************************************************************
     MACROS

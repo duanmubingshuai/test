@@ -49,28 +49,36 @@ SECTIONS
     .data : {
         _sdata = ABSOLUTE(.);
         _stextram = ABSOLUTE(.);
-		*.o(_section_standby_code_)
-		*.o(_section_sram_code_)
-		*flash.o(.text .text.*)
+        *.o(_section_standby_code_)
+        *.o(_section_sram_code_)
 
-		*patch.o(.text .text.*)
-		*main.o(.text .text.*)
-		*pwrmgr.o(.text .text.*)
-                *timer.o(.text .text.*)
-		*clock.o(.text.hal_xtal16m_cap_Set)
-		*rf_phy_driver.o(.text .text.*)
-		*phy_sec_ext.o(.text .text.*)
-		//*(.text)
-		*libphy6222_host.a:l2cap_util.o(.text.L2CAP_Fragment_SendDataPkt)
-		*libphy6222_host.a:l2cap_util.o(.text.l2capSegmentBuffToLinkLayer)
-		*libphy6222_host.a:l2cap_util.o(.text.l2capPocessFragmentTxData)
-		
-		*libc.a:lib_a-sprintf.o(.text .text.*)
+
+        *patch.o(.text.*)
+        *patch_ext_adv.o(.text.*)
+
+        *rf_phy_driver.o(.text.*)
+        *pwrmgr.o(.text .text.*)
+        *timer.o(.text .text.*)
+
+        *flash.o(.text .text.*)
+        *clock.o(.text.*)
+
+        *phy_sec_ext.o(.text .text.*)
+
+        *libc.a:lib_a-sprintf.o(.text .text.*)
         *libc.a:lib_a-strlen.o(.text .text.*)
-        *libc.a:lib_a-memcmp.o(.text .text.*)
-        *libc.a:lib_a-memcpy-stub.o(.text .text.*)
         *libc.a:lib_a-memset.o(.text .text.*)
+        *libc.a:lib_a-memcpy-stub.o(.text .text.*)
+        *libc.a:lib_a-memcmp.o(.text .text.*)
         *libc.a:lib_a-memmove.o(.text .text.*)
+        *libgcc.a:_udivsi3.o(.text)
+        *libgcc.a:_divsi3.o(.text)
+        *libgcc.a:_dvmd_tls.o(.text)
+        *libgcc.a:_thumb1_case_sqi.o(.text)
+        *libgcc.a:_thumb1_case_uqi.o(.text)
+
+
+
         _etextram = ABSOLUTE(.);
 
 
@@ -93,7 +101,7 @@ SECTIONS
         end = __heap_start__;
         _end = end;
         __end = end;
-		
+        
         _ebss = ABSOLUTE(.);
     } > sram
 

@@ -50,6 +50,7 @@ extern "C"
 // Simple BLE Central Task Events
 #define START_DEVICE_EVT                              0x0001
 #define BUP_OTA_PERIOD_EVT                            0x0020
+#define MULTIROLE_WRCCCD_EVT                          0x0040
 #define MULTIROLE_HID_SEND_REPORT_EVT                 0x1000
 #define MULTIROLE_HID_IDLE_EVT                        0x2000
 #define MULTIROLE_PERIOD_EVT                          0x4000

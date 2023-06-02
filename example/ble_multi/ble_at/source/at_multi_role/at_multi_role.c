@@ -64,7 +64,7 @@
 #define DEFAULT_CONN_MIN_INTV                   40
 
 // Whether to enable automatic parameter update request when a connection is formed
-#define DEFAULT_ENABLE_UPDATE_REQUEST         TRUE
+#define DEFAULT_ENABLE_UPDATE_REQUEST          FALSE //TRUE
 
 // Connection Pause Peripheral time value (in 1000ms)
 #define DEFAULT_CONN_PAUSE_PERIPHERAL           1
@@ -146,6 +146,7 @@ uint16 MR_WakeupCnt = 0;
 
 // Task ID for internal task/event processing
 uint8 multiRole_TaskId;
+extern uint8 gapMultiRole_TaskID;
 
 //
 //MultiRoleApp_Link_t g_MRLink[MAX_CONNECTION_NUM];
@@ -246,6 +247,7 @@ void multiRoleApp_Init( uint8 task_id )
         {
             LOG("Multi Role advertising scheduler success :%x\n",add_adv_node);
         }
+
         #endif
         // Initialize GATT attributes
         GGS_AddService( GATT_ALL_SERVICES );         // GAP
@@ -270,11 +272,14 @@ void multiRoleApp_Init( uint8 task_id )
         {
             LOG("Multi Role scanning scheduler failure %d\n",ret);
         }
+
         #endif
     }
     #endif
     GAPMultiRole_SetParameter( GAPMULTIROLE_PROFILEROLE,sizeof(uint8),&roleProfile);
     multiRoleAPP_ComInit();
+    llInitFeatureSetDLE(true);
+    llInitFeatureSet2MPHY(TRUE);
     #if( DEFAULT_PAIRING_MODE > GAPBOND_PAIRING_MODE_NO_PAIRING)
     // Setup the GAP Bond Manager
     {
@@ -312,7 +317,14 @@ void multiRoleApp_Init( uint8 task_id )
 
     @return  events not processed
 */
-
+#define CCCD_NUM 4
+struct save_cccd_type
+{
+    uint16_t conn_handle;
+    uint16_t char_handle;
+    bool wr_cccd_flag;
+};
+struct save_cccd_type mater_write_cccd[CCCD_NUM];
 uint16 multiRoleApp_ProcessEvent( uint8 task_id, uint16 events )
 {
     VOID task_id; // OSAL required parameter that isn't used in this function
@@ -343,8 +355,39 @@ uint16 multiRoleApp_ProcessEvent( uint8 task_id, uint16 events )
         else
             LOG("MAX available connection %d\n",numConns);
 
-        // osal_start_reload_timer(multiRole_TaskId,MULTIROLE_PERIOD_EVT,50000);
+        // osal_start_reload_timer(multiRole_TaskId,MULTIROLE_PERIOD_EVT,5000);
         return ( events ^ START_DEVICE_EVT );
+    }
+
+    if( events & MULTIROLE_WRCCCD_EVT )
+    {
+        for (size_t k = 0; k < CCCD_NUM; k++)
+        {
+            if(mater_write_cccd[k].wr_cccd_flag == true)
+            {
+                attWriteReq_t pReq;
+                pReq.sig = 0;
+                pReq.cmd = 0;
+                pReq.handle = mater_write_cccd[k].char_handle;
+                pReq.len = 2;
+                pReq.value[0] = (unsigned char)(GATT_CLIENT_CFG_NOTIFY);
+                pReq.value[1] = (unsigned char)(GATT_CLIENT_CFG_NOTIFY >> 8);
+                bStatus_t status = GATT_WriteCharValue(mater_write_cccd[k].conn_handle,&pReq,multiRole_TaskId);
+
+                if(status == SUCCESS)
+                {
+                    mater_write_cccd[k].wr_cccd_flag = false;
+                    AT_LOG("WR CCCD SUCCESS\n");
+                }
+                else
+                {
+                    AT_LOG("WR CCCD ERROR : %d\n",status);
+                    osal_start_timerEx(multiRole_TaskId,MULTIROLE_WRCCCD_EVT,200);
+                }
+            }
+        }
+
+        return ( events ^ MULTIROLE_WRCCCD_EVT );
     }
 
     if( events & MULTIROLE_PERIOD_EVT )
@@ -403,23 +446,22 @@ static void multiRoleAppProcessGATTMsg( gattMsgEvent_t* pMsg )
     case ATT_WRITE_RSP:
     {
         /// write multi service cccd
-        attWriteReq_t pReq;
-        pReq.sig = 0;
-        pReq.cmd = 0;
-        pReq.handle = 14;//multiRole_wrChar_handle ;
-        pReq.len = 2;
-        pReq.value[0] = (unsigned char)(GATT_CLIENT_CFG_NOTIFY);
-        pReq.value[1] = (unsigned char)(GATT_CLIENT_CFG_NOTIFY >> 8);
-        bStatus_t status = GATT_WriteCharValue(pMsg->connHandle,&pReq,multiRole_TaskId);
-
-        if(status == SUCCESS)
-        {
-//              LOG("GATT_WriteCharValue success handle %d\n",pMsg->connHandle);
-        }
-        else
-        {
-            LOG("GATT_WriteCharValue ERROR %d\r\n",status);
-        }
+        // attWriteReq_t pReq;
+        // pReq.sig = 0;
+        // pReq.cmd = 0;
+        // pReq.handle = 14;//multiRole_wrChar_handle ;
+        // pReq.len = 2;
+        // pReq.value[0] = (unsigned char)(GATT_CLIENT_CFG_NOTIFY);
+        // pReq.value[1] = (unsigned char)(GATT_CLIENT_CFG_NOTIFY >> 8);
+        // bStatus_t status = GATT_WriteCharValue(pMsg->connHandle,&pReq,multiRole_TaskId);
+        // if(status == SUCCESS)
+        // {
+        //     LOG("GATT_WriteCharValue success handle %d\n",pMsg->connHandle);
+        // }
+        // else
+        // {
+        //     LOG("GATT_WriteCharValue ERROR %d\r\n",status);
+        // }
     }
     break;
 
@@ -432,10 +474,12 @@ static void multiRoleEstablishCB( uint8 status,uint16 connHandle,GAPMultiRole_St
 {
     if( status == SUCCESS )
     {
+        at_parameters.conn_param[connHandle].con_role_state = role;
         AT_LOG("\r\n+EST_OK=%d %d %02x%02x%02x%02x%02x%02x\r\n",connHandle,role,at_parameters.conn_param[connHandle].at_conn_params.peer_addr[0],\
-                at_parameters.conn_param[connHandle].at_conn_params.peer_addr[1],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[2],\
-                at_parameters.conn_param[connHandle].at_conn_params.peer_addr[3],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[4],\
-                at_parameters.conn_param[connHandle].at_conn_params.peer_addr[5]);
+               at_parameters.conn_param[connHandle].at_conn_params.peer_addr[1],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[2],\
+               at_parameters.conn_param[connHandle].at_conn_params.peer_addr[3],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[4],\
+               at_parameters.conn_param[connHandle].at_conn_params.peer_addr[5]);
+
         // AT_LOG("Establish success connHandle %d,role %d\n",connHandle,role);
         // LOG("Establish success connHandle %d,perIdx %d\n",connHandle,perIdx);
         if( role == Master_Role )
@@ -444,6 +488,10 @@ static void multiRoleEstablishCB( uint8 status,uint16 connHandle,GAPMultiRole_St
             ///del the current node when the establishment is successful in multi_schedule.c
             // muliSchedule_config( MULTI_SCH_INITIATOR_MODE, 0x00 );
             at_parameters.conn_master_counter++;
+            // ///version ind
+            // HCI_ReadRemoteVersionInfoCmd(connHandle);
+            // ///feature exchange
+            // HCI_LE_ReadRemoteUsedFeaturesCmd(connHandle);
 
             if( multiGetSlaveConnList() != NULL )
             {
@@ -461,9 +509,18 @@ static void multiRoleEstablishCB( uint8 status,uint16 connHandle,GAPMultiRole_St
                     muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
                 }
             }
-            else if( multiLinkGetMasterConnNum() < MAX_CONNECTION_MASTER_NUM )
+            // else if( multiLinkGetMasterConnNum() < MAX_CONNECTION_MASTER_NUM )
+            // {
+            //     muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
+            // }
+            else
             {
-                muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
+                ///2023 04 25 add: restart multi schedule state machine
+                if(osal_get_timeoutEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT) == 0)
+                {
+                    AT_LOG("restart multi schedule state machine\n");
+                    osal_start_timerEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT,MULTI_SCH_DELAY);
+                }
             }
 
             #endif
@@ -506,12 +563,13 @@ static void multiRoleEstablishCB( uint8 status,uint16 connHandle,GAPMultiRole_St
 
 static void multiRoleTerminateCB( uint16 connHandle,GAPMultiRole_State_t role,uint8 perIdx,uint8 reason )
 {
-    AT_LOG("\r\n+Disconnect=%d %d %02x%02x%02x%02x%02x%02x\r\n",connHandle,role,reason,at_parameters.conn_param[connHandle].at_conn_params.peer_addr[0],\
-                      at_parameters.conn_param[connHandle].at_conn_params.peer_addr[1],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[2],\
-                      at_parameters.conn_param[connHandle].at_conn_params.peer_addr[3],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[4],\
-                      at_parameters.conn_param[connHandle].at_conn_params.peer_addr[5]);
-    // LOG("Terminate connHandle %d,role %d,perIdx %d, reason %d\n",connHandle,role,perIdx,reason );
-    osal_memset((void *)&at_parameters.conn_param[connHandle],0,sizeof(struct at_conn_param));
+    at_parameters.conn_param[connHandle].con_role_state = Idle_Role;
+    AT_LOG("\r\n+Disconnect=%d %d %x %02x%02x%02x%02x%02x%02x\r\n",connHandle,role,reason,at_parameters.conn_param[connHandle].at_conn_params.peer_addr[0],\
+           at_parameters.conn_param[connHandle].at_conn_params.peer_addr[1],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[2],\
+           at_parameters.conn_param[connHandle].at_conn_params.peer_addr[3],at_parameters.conn_param[connHandle].at_conn_params.peer_addr[4],\
+           at_parameters.conn_param[connHandle].at_conn_params.peer_addr[5]);
+    LOG("Terminate connHandle %d,role %d,perIdx %d, reason %x\n",connHandle,role,perIdx,reason );
+    osal_memset((void*)&at_parameters.conn_param[connHandle],0,sizeof(struct at_conn_param));
     at_parameters.conn_param[connHandle].con_role_state = Idle_Role;
     #if ( MAX_CONNECTION_SLAVE_NUM > 0 )
 
@@ -533,6 +591,7 @@ static void multiRoleTerminateCB( uint16 connHandle,GAPMultiRole_State_t role,ui
     if( role == Master_Role )
     {
         at_parameters.conn_master_counter--;
+
         if( multiGetSlaveConnList() != NULL )
         {
             ///bugfix: multi add init node 2022 08 05
@@ -542,6 +601,15 @@ static void multiRoleTerminateCB( uint16 connHandle,GAPMultiRole_State_t role,ui
 
             if(scan_init_node_num < (MAX_CONNECTION_MASTER_NUM - curr_master_conn_num))
                 muliSchedule_config( MULTI_SCH_INITIATOR_MODE, 0x01 );
+            else
+            {
+                ///2023 04 25 add: restart multi schedule state machine
+                if(osal_get_timeoutEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT) == 0)
+                {
+                    AT_LOG("restart multi schedule state machine\n");
+                    osal_start_timerEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT,MULTI_SCH_DELAY);
+                }
+            }
         }
         else
             AT_LOG("SlaveConnList NULL\n");
@@ -584,13 +652,14 @@ static void multiRoleAPP_AdvInit(void)
 }
 void multiRoleProfileChangeCB( uint16 connHandle,uint16 paramID, uint16 len )
 {
+    AT_LOG("\r\n+WRITE=connHandle %d paramID %d\n",connHandle,paramID);
     uint8 newValue[ATT_MTU_SIZE];
 
     switch( paramID )
     {
     case MULTIPROFILE_CHAR1: //write
         MultiProfile_GetParameter( connHandle,MULTIPROFILE_CHAR1, newValue );
-        MultiProfile_Notify(connHandle,MULTIPROFILE_CHAR2,len,newValue);
+        // MultiProfile_Notify(connHandle,MULTIPROFILE_CHAR2,len,newValue);
         break;
 
     case MULTIPROFILE_CHAR2: //notify
@@ -664,6 +733,7 @@ static void multiRoleAPP_ScIn_Init(void)
         addr[0] = 0x66 + i;
         multiConfigSlaveList(addrType,addr);
     }
+
     #endif
     LOG("multi-role as master add slave MAC address\n");
 }
@@ -678,6 +748,7 @@ static void multiRoleSDPCB( void* msg )
         LOG("connHandle = %d\n",sdp_info->connHandle);
         GATTReadGroupRsp* primservice = sdp_info->service.PrimServ;
         LOG("primary service \n" );
+        uint8_t cccd_cnt = 0;
 
         while( primservice )
         {
@@ -727,11 +798,16 @@ static void multiRoleSDPCB( void* msg )
 
                 if(status == SUCCESS)
                 {
-                    LOG("GATT_WriteCharValue Notify success handle %d\n",sdp_info->connHandle);
+                    AT_LOG("GATT_WriteCharValue Notify success handle %d\n",sdp_info->connHandle);
                 }
                 else
                 {
-                    LOG("GATT_WriteCharValue Notify ERROR %d\r\n",status);
+                    AT_LOG("GATT_WriteCharValue Notify ERROR %d\r\n",status);
+                    mater_write_cccd[cccd_cnt].conn_handle = sdp_info->connHandle;
+                    mater_write_cccd[cccd_cnt].char_handle = charac->valueHandle + 1 ;
+                    mater_write_cccd[cccd_cnt].wr_cccd_flag = true;
+                    cccd_cnt++;
+                    osal_start_timerEx(multiRole_TaskId,MULTIROLE_WRCCCD_EVT,200);
                 }
             }
 
@@ -744,14 +820,13 @@ static void multiRoleSDPCB( void* msg )
 
 static void multiRoleNotifyCB(uint16 connHandle,uint16 len,uint8* data )
 {
-    LOG("Notify success connHanle %d,len %d\n",connHandle,len);
-
-    for(unsigned char i = 0; i < len; i++)
-    {
-        LOG( "0x%02X,",data[i]);
-    }
-
-    LOG("\n");
+    LOG("\r\n+NTF=Notify success connHanle %d,len %d\n",connHandle,len);
+    /// write rsp
+    // for(unsigned char i = 0; i < len; i++)
+    // {
+    //     LOG( "0x%02X,",data[i]);
+    // }
+    // LOG("\n");
 }
 
 static void multiRoleEachScanCB( gapDeviceInfoEvent_t* pPkt )
@@ -772,12 +847,13 @@ static void multiRoleScanDoneCB( GAPMultiRolScanner_t* node )
     while( node )
     {
         #ifndef BLE_AT_ENABLE
+
         if( ( multiDevInConfSlaveList( node->addr ) ) && ( multi_devInLinkList( node->addr ) == FALSE) )
         {
             multiAddSlaveConnList( node->addrtype,node->addr );
         }
-        #endif
 
+        #endif
         LOG("node %p\n",node);
         LOG( bdAddr2Str( node->addr ) );
         LOG("--addrtype %d\n",node->addrtype);
@@ -805,6 +881,7 @@ static void multiRoleScanDoneCB( GAPMultiRolScanner_t* node )
         LOG("\n");
         node = node->next;
     }
+
     // #ifndef BLE_AT_ENABLE
     if( multiGetSlaveConnList() != NULL )
     {
@@ -819,11 +896,14 @@ static void multiRoleScanDoneCB( GAPMultiRolScanner_t* node )
     else
     {
         #ifdef BLE_AT_ENABLE
+
         if(!at_parameters.scan_param.scan_mode)
-        return;
+            return;
+
         #endif
         muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
     }
+
     // #endif
 }
 

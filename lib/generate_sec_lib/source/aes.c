@@ -575,20 +575,20 @@ bool is_crypto_app(void)
 
 int flash_load_parition(unsigned char* pflash, int size, unsigned char* micIn,unsigned char* run_addr)
 {
-	int ret ;
-	AP_PCR->SW_CLK    |= BIT(MOD_AES);
+    int ret ;
+    AP_PCR->SW_CLK    |= BIT(MOD_AES);
     ret = phy_sec_decrypt((unsigned char*)g_ota_sec_key,(unsigned char*)0x11002830, pflash, size, micIn, run_addr);
-	AP_PCR->SW_CLK    &= ~BIT(MOD_AES);
-	return ret;
+    AP_PCR->SW_CLK    &= ~BIT(MOD_AES);
+    return ret;
 }
 
 int flash_check_parition(unsigned char* pflash, int size, unsigned char* run_addr,unsigned char* micOut)
 {
-	int ret ;
-	AP_PCR->SW_CLK    |= BIT(MOD_AES);
+    int ret ;
+    AP_PCR->SW_CLK    |= BIT(MOD_AES);
     ret = phy_sec_encrypt((unsigned char*)g_ota_sec_key,(unsigned char*)0x11002830,pflash,size,run_addr,micOut);
-	AP_PCR->SW_CLK    &= ~BIT(MOD_AES);
-	return ret;
+    AP_PCR->SW_CLK    &= ~BIT(MOD_AES);
+    return ret;
 }
 
 

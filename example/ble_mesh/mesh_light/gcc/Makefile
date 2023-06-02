@@ -17,6 +17,7 @@ include $(ROOT)/components/gcc/components.mk
 
 DEF += -DMAX_NUM_LL_CONN=1
 DEF += -DGATT_MAX_NUM_CONN=MAX_NUM_LL_CONN+1
+#DEF += -DCFG_MESH_FAST_PRO=1
 DEF += -DHOST_CONFIG=0x0c
 
 FLASH_LD = $(PROJ_ROOT)/gcc/meshlight.ld
@@ -47,7 +48,7 @@ INC += -I$(PROJ_ROOT)/source/bleMesh/
 
 
 
-CFLAGS += -O0
+CFLAGS += -Os
 CFLAGS += -g3
 CFLAGS += --specs=nosys.specs
 CFLAGS += -mcpu=cortex-m0

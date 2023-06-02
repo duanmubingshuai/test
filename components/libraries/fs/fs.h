@@ -45,9 +45,27 @@
 
 #include "types.h"
 
-#define FS_SECTOR_NUM_MAX                         (16)    //macro need user re-define if sector num > 16
+#define FS_SECTOR_NUM_MAX                         (15)    //macro need user re-define if sector num > 16
+
+#define FS_CACHE_NUM_MAX                          (64)
 
 
+#define FS_ID_NULL                                (0xFFFF)  //NULL FS ID for FS CACHE ID 
+
+/*
+    fs cache addr need 32bit when FS_SECTOR_NUM_MAX>15
+*/
+#if(FS_SECTOR_NUM_MAX>15)
+    #define FS_ADDR_NULL                              (0xFFFFFFFF)  //NULL FS ID for FS CACHE addr
+#else
+    #define FS_ADDR_NULL                              (0xFFFF)  //NULL FS ID for FS CACHE addr
+#endif
+
+#if(FS_SECTOR_NUM_MAX>15)
+    typedef uint32_t fsCachAddr_t;
+#else
+    typedef uint16_t fsCachAddr_t;
+#endif
 /**************************************************************************************
     @fn          hal_fs_init
 
@@ -332,5 +350,12 @@ bool hal_fs_initialized(void);
 
 // set fs psr protection
 void fs_set_psr_protection(bool enable);
+int hal_fs_item_find_id(uint16_t id, uint32_t* id_addr);
+int hal_fs_item_id_fading(uint16_t id, uint16_t new_id);
+int hal_fs_item_assert(uint16_t id);
+
+
+
+
 
 #endif

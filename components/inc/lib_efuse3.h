@@ -58,6 +58,6 @@ unsigned int lib_efuse_mesh(void);
 unsigned int lib_efuse_multirole(void);
 unsigned int lib_efuse_pass_flg(void);
 void lib_efuse_load(uint32_t* efuse_data);
-void lib_read_efuse3_data(struct efuse_data_buff* buff);
+void lib_read_hw_version(uint32_t* buff);
 
 #endif // LIB_EFUSE3_H

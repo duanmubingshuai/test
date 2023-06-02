@@ -518,6 +518,9 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     #endif
     LL_PLUS_PerStats_Init(&g_perStatsByChanTest);
     LOG("======================SimpleBLEPeripheral_Init Done====================\n");
+    #ifdef DBG_SPIF_TEST
+    osal_start_timerEx(simpleBLEPeripheral_TaskID, SBP_SPIF_FLASH_TEST_EVT, 500);
+    #endif
 }
 
 /*********************************************************************
@@ -572,6 +575,42 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
         return ( events ^ SBP_ADD_RL_EVT );
     }
 
+    #ifdef DBG_SPIF_TEST
+#define FLASH_TEST_ADDR 0x11070000
+
+    if ( events & SBP_SPIF_FLASH_TEST_EVT )
+    {
+        static int s_flash_loop = 0;
+
+        if((s_flash_loop % 10) == 0)
+        {
+            LOG(">>>>>>>>>>>>>>>>>>>Flash erase\n");
+
+            if(gapProfileState == 5)
+            {
+                LOG("break\n");
+            }
+
+            hal_flash_erase_sector(FLASH_TEST_ADDR);
+        }
+        else
+        {
+            int icnt;
+            static uint32_t s_fwrite_buf[64];
+
+            for(icnt = 0; icnt< 64; icnt++)
+                s_fwrite_buf[icnt] = icnt + 0x12340000;
+
+            LOG(">>>>>>>>>>>>>>>>>>>Flash write\n");
+            hal_flash_write(FLASH_TEST_ADDR + 64*4 * ((icnt-1)%10), (uint8_t*)s_fwrite_buf, 64*4);
+        }
+
+        s_flash_loop ++;
+        osal_start_timerEx(simpleBLEPeripheral_TaskID, SBP_SPIF_FLASH_TEST_EVT, 500);
+        return ( events ^ SBP_SPIF_FLASH_TEST_EVT );
+    }
+
+    #endif /*DBG_SPIF_TEST*/
     #if (1==DBG_RTC_TEST)
 
     if (events & SBP_RTC_TEST_EVT)

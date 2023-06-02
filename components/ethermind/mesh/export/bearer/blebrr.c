@@ -176,7 +176,7 @@ typedef struct _BLEBRR_GAP_ADV_DATA
 
 BRR_BEARER_INFO blebrr_adv;  //HZF
 #ifdef BLE_CLIENT_ROLE
-BRR_BEARER_SERVICE_INFO blebrr_service_info;  //HZF
+    BRR_BEARER_SERVICE_INFO blebrr_service_info;  //HZF
 #endif
 
 DECL_STATIC BRR_HANDLE blebrr_advhandle;
@@ -303,7 +303,7 @@ BLEBRR_GAP_ADV_DATA private_gap_adv_data =
 };
 #endif
 #ifndef BLE_CLIENT_ROLE
-DECL_STATIC UCHAR pl_advdata_offset;
+    DECL_STATIC UCHAR pl_advdata_offset;
 #endif
 UCHAR blebrr_sleep;
 
@@ -862,9 +862,9 @@ DECL_STATIC API_RESULT blebrr_bcon_send(BRR_HANDLE* handle, void* pdata, UINT16 
                         in the global data strucutre blebrr_gap_adv_data[0].
                     */
                     /* Disable Interleaving */
-					#ifndef MS_PRIVATE_SUPPORT
+                    #ifndef MS_PRIVATE_SUPPORT
                     blebrr_scan_interleave = MS_FALSE;
-					#endif
+                    #endif
                     /* Re-assign updated ADV data to Info Structure */
                     info->bcon_data    = blebrr_gap_adv_data[abs_index].data + pl_advdata_offset;
                     info->bcon_datalen = blebrr_gap_adv_data[abs_index].datalen - pl_advdata_offset;
@@ -1362,9 +1362,9 @@ void blebrr_timer_stop (void)
     {
         if(EM_stop_timer(&blebrr_timer_handle) != API_SUCCESS)
             return;
-    }
 
-    BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+        BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+    }
 }
 
 
@@ -1432,6 +1432,7 @@ void blebrr_pl_scan_setup (UCHAR enable)
                     blebrr_scan_pl(MS_FALSE);
 
                 blebrr_timer_stop();
+                BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
             }
         }
 
@@ -1526,6 +1527,8 @@ void blebrr_pl_advertise_setup (UCHAR enable)
             /* Update state */
             blebrr_adv_restart = MS_FALSE;
             blebrr_timer_stop();
+            /*clear mesh state*/
+            BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
             return;
         }
 
@@ -1757,7 +1760,7 @@ void blebrr_pl_recv_service_packet (UCHAR type, UCHAR* pdata, UINT16 pdatalen, U
     if (NULL != blebrr_service_info.bearer_recv)
     {
         /*  BLEBRR_LOG("[ADV-Rx <]: ");
-            BLEBRR_dump_bytes(pdata, pdatalen); */ 
+            BLEBRR_dump_bytes(pdata, pdatalen); */
         blebrr_service_info.bearer_recv(&blebrr_advhandle, pdata, pdatalen, &info);
     }
     else
@@ -1829,7 +1832,7 @@ void blebrr_register(void)
     /* Update state */
 //    BLEBRR_SET_STATE(BLEBRR_STATE_IN_SCAN_ENABLE);
     #else /* 0 */
-    BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+//    BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
     #endif /* 0 */
 }
 

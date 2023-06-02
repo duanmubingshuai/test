@@ -19,13 +19,13 @@
 
 /* --------------------------------------------- Static Global Variables */
 #if 0
-static const char main_time_server_options[] = "\n\
-======== Time Server Menu ========\n\
-     0. Exit. \n\
-     1. Refresh. \n\
- \n\
- \n\
-Your Option ? \0";
+    static const char main_time_server_options[] = "\n\
+    ======== Time Server Menu ========\n\
+    0. Exit. \n\
+    1. Refresh. \n\
+    \n\
+    \n\
+    Your Option ? \0";
 #endif
 
 
@@ -114,17 +114,16 @@ void main_time_server_operations(/* IN */ UINT8 have_menu)
 API_RESULT appl_time_server_init(MS_ACCESS_ELEMENT_HANDLE ehdl)
 {
     API_RESULT rslt;
-
     rslt = MS_time_server_init(
-                ehdl,
-                &appl_time_server_model_handle,
-                &appl_time_setup_server_model_handle,
-                appl_time_server_cb
+               ehdl,
+               &appl_time_server_model_handle,
+               &appl_time_setup_server_model_handle,
+               appl_time_server_cb
            );
 
-    if (API_SUCCESS == rslt) {
+    if (API_SUCCESS == rslt)
+    {
         appl_time_states_initialization();
-
         CONSOLE_OUT(
             "Time Server Initialized. Model Handle: 0x%04X\n",
             appl_time_server_model_handle);
@@ -132,7 +131,8 @@ API_RESULT appl_time_server_init(MS_ACCESS_ELEMENT_HANDLE ehdl)
             "Time Setup Server Initialized. Model Handle: 0x%04X\n",
             appl_time_setup_server_model_handle);
     }
-    else {
+    else
+    {
         CONSOLE_OUT(
             "[ERR] Time Server Initialization Failed. Result: 0x%04X\n",
             rslt);

@@ -168,9 +168,9 @@ static uint8 notifyPktNum = 0;
 static uint8 connEvtEndNotify =0;
 static uint16 notifyCnt = 0;
 static uint8 nrf_tx_intv=0;
-static uint8 nrf_tx_cnt=0;
 static uint8 nrf_rx_intv=0;
 static uint8 nrf_rx_cnt=0;
+static uint8 s_rf_dlen = 0;
 
 #if(LATENCY_TEST==1)
     static uint16 disLatInterval = 0;
@@ -279,8 +279,8 @@ static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void simpleProfileChangeCB( uint8 paramID );
 static void updateAdvData(void);
 static void peripheralStateReadRssiCB( int8 rssi  );
-static uint8_t Smart_nRF_data_process(phy_comm_evt_t *pdata);
-static uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t *packbuf);
+static uint8_t Smart_nRF_data_process(phy_comm_evt_t* pdata);
+uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t* packbuf);
 
 #if(APP_CFG_RPA_TEST==1)
     static void initResolvingList(void);
@@ -337,8 +337,8 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     simpleBLEPeripheral_TaskID = task_id;
     // Setup the GAP
     phy_cbfunc_regist(PHY_DATA_CB,Smart_nRF_data_process);
-	#if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)    
-    phy_cbfunc_regist(PHY_OPCODE_CB,Smart_nRF_generate_ackpdu);
+    #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)
+    // phy_cbfunc_regist(PHY_OPCODE_CB,Smart_nRF_generate_ackpdu);
     #endif
     VOID GAP_SetParamValue( TGAP_CONN_PAUSE_PERIPHERAL, DEFAULT_CONN_PAUSE_PERIPHERAL );
     // Setup the GAP Peripheral Role Profile
@@ -674,28 +674,47 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 
     if ( events & SBP_NRF_PERIODIC_TX_EVT )
     {
-        if(nrf_tx_cnt)
+        static uint16_t advCnt=1;
+        // advert data for iBeacon
+        static uint8 advdata[] =
         {
-            extern uint8_t phy_rf_start_tx(uint8_t* din, uint8_t dLen, uint32_t txintv, uint16_t targetnetid);
-            advertData[2]=nrf_tx_cnt;
-            advertData[1]=nrf_tx_intv;
-            uint8_t ret = phy_rf_start_tx(advertData,31,0,0);
-
-            if(ret==PPlus_SUCCESS)
-            {
-                LOG("[PPP Tx Evt] Ok cnt %d\n",nrf_tx_cnt);
-                nrf_tx_cnt--;
-            }
-            else
-            {
-                LOG("[PPP Tx Evt] Err ret %x status %x\n",ret,phy_rf_get_current_status());
-            }
-
-            osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_NRF_PERIODIC_TX_EVT, nrf_tx_intv*10 );
+            0x02,   // length of this data
+            0x01,//GAP_ADTYPE_FLAGS,
+            0x06,//DEFAULT_DISCOVERABLE_MODE | GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
+            // complete name
+            0x09,   // length of this data
+            0x09,//GAP_ADTYPE_LOCAL_NAME_COMPLETE,
+            0x53,0x6D,0x61,0x72,0x54,0x6E,0x52,0x46,//SmarTnRF
+            0x07, // length of this data including the data type byte
+            0xff,//GAP_ADTYPE_MANUFACTURER_SPECIFIC, // manufacturer specific adv data type
+            0x04, // Company ID - Fixed
+            0x05, // Company ID - Fixed
+            0x02, // Data Type - Fixed
+            0x02, // Data Length - Fixed
+            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x00, // cnt
+            0x00, // cnt
+        };
+        uint8_t dlen = s_rf_dlen;
+        uint8_t ret = 0;
+        advdata[dlen-2]=advCnt>>8;
+        advdata[dlen-1]=advCnt&0xff;
+        // if(advCnt&0x01)
+        {
+            // phy_adv_opcode_update(advCnt % 9);
+            ret=phy_rf_start_tx(advdata,dlen, 0, 0);
         }
-        else
-            osal_stop_timerEx( simpleBLEPeripheral_TaskID, SBP_NRF_PERIODIC_TX_EVT );
 
+        // else
+        // {
+        //     phy_rf_stop_tx();
+        //     ret=PPlus_SUCCESS;
+        // }
+        if(ret==PPlus_SUCCESS)
+            advCnt++;
+
+        LOG_DEBUG("%d %d %d\n",ret,advCnt,phy_rf_get_current_status());
+        osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_NRF_PERIODIC_TX_EVT, nrf_tx_intv*10 );
         return ( events ^ SBP_NRF_PERIODIC_TX_EVT );
     }
 
@@ -1087,47 +1106,48 @@ static void simpleProfileChangeCB( uint8 paramID )
         }
 
         #endif
-        #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)    
+        #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)
         else if(newValue[0]==0x12)
         {
             uint8_t ret;
 
             if(newValue[1]==0x00)
             {
-
                 ret= phy_rf_stop_rx();
-                LOG("[PPP RX] Stop ret %d\n", ret);
-
-
+                LOG("Stop 2.4G RX ret %d\n", ret);
             }
             else
             {
                 ret= phy_rf_start_rx(newValue[1]*1000);
-                LOG("[PPP RX] Start RX  ret %d\n", ret);
+                LOG("[PPP RX] rxTO %dms   ret %d\n",newValue[1], ret);
+
+                if(ret == 0)
+                {
+                    LOG("start 2.4G RX\n");
+                }
             }
         }
+
         #endif
-        #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_TX)    
+        #if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_TX)
         else if(newValue[0]==0x11)
         {
-            uint8_t ret = 0;
             if(newValue[1] == 0)
             {
-                ret = phy_rf_stop_tx();
+                phy_rf_stop_tx();
+                osal_stop_timerEx(simpleBLEPeripheral_TaskID, SBP_NRF_PERIODIC_TX_EVT);
+                LOG("Stop 2.4G TX\n");
             }
             else
             {
-                uint8_t dlen = newValue[2];
-                uint8_t d[32];
-                for(uint8 i=1;i<32;i++){d[i]=i;};
-                extern uint32_t rtc_get_counter(void);
-                d[0]=0xff&(rtc_get_counter());
-                ret = phy_rf_start_tx(d,dlen,(newValue[1]),0);
-                LOG("[PPP TX] Intv: %04d ms ret%d\n", (newValue[1]),ret);
+                nrf_tx_intv = newValue[1] * 10;
+                s_rf_dlen = newValue[2];
+                osal_set_event(simpleBLEPeripheral_TaskID, SBP_NRF_PERIODIC_TX_EVT);
+                LOG("start 2.4G TX\n");
             }
         }
-        #endif
 
+        #endif
         // else if(newValue[0]==0x89)
         // {
         //     LIGHT_ON_OFF(newValue[1],newValue[2],newValue[3]);
@@ -1286,13 +1306,13 @@ void check_PerStatsProcess(void)
     LL_PLUS_PerStatsReset();
 }
 
-uint8_t Smart_nRF_data_process(phy_comm_evt_t *pdata)
+uint8_t Smart_nRF_data_process(phy_comm_evt_t* pdata)
 {
     #if(DEF_PHYPLUS_AUTOACK_SUPPORT==1)
     LOG_DEBUG("OPCODE=%x  datalen=%d\n",pdata->type,pdata->len);
-
     #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
     uint8_t status = phy_rf_get_current_status();
+
     if(status == PHYPLUS_RFPHY_RX_ONLY)
     {
         LOG_DEBUG("It's nrf CB ack:");
@@ -1320,21 +1340,29 @@ uint8_t Smart_nRF_data_process(phy_comm_evt_t *pdata)
         LOG_DEBUG("It's rf CB data:");
         my_dump_byte(pdata->data,pdata->len);
     }
-    else if(pdata->len != NULL)       
+    else if(pdata->len != NULL)
     {
         LOG_DEBUG("It's rf broadcast data:");
         my_dump_byte(pdata->data,pdata->len);
     }
+
+    #endif
+    #else
+    #if(DEF_PHYPLUS_NRF_SUPPORT==PHYPLUS_NRF_ENABLE)
+    LOG_DEBUG("It's noack nrf data:");
+    my_dump_byte(pdata->data,pdata->len);
+    #else
+    LOG_DEBUG("It's noack rf data:");
+    my_dump_byte(pdata->data,pdata->len);
     #endif
     #endif
-	return PPlus_SUCCESS;
+    return PPlus_SUCCESS;
 }
 
-#if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)    
-uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t *packbuf)
+#if(DEF_PHYPLUS_TRX_SUPPORT & PHYPLUS_CONFIG_RX)
+uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t* packbuf)
 {
     uint8_t test_prepared_ackpdu[32] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
-
 //    uint8_t opcode = PHYPLUS_GET_OPCODE(packbuf->type);
 //    if((opcode > SNRF_PREPARED_ACKPDU_NUM) || (s_prepared_ackpdu[opcode-1].len > PHYPLUS_ACK_DATA_MAX_NUM))
 //    {
@@ -1349,7 +1377,7 @@ uint8_t Smart_nRF_generate_ackpdu(phy_comm_evt_t *packbuf)
 //        packbuf->len = s_prepared_ackpdu[opcode-1].len;
         osal_memcpy(packbuf->data, test_prepared_ackpdu, 31);
     }
-		return PPlus_SUCCESS;
+    return PPlus_SUCCESS;
 }
 #endif
 

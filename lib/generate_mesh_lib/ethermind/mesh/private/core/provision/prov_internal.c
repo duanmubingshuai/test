@@ -1,4 +1,4 @@
-
+﻿
 /**
     \file prov_internal.c
 
@@ -283,7 +283,8 @@ API_RESULT prov_gatt_recv_cb(BRR_HANDLE* handle, UCHAR pevent, UCHAR* pdata, UIN
         }
 
         /* Update state */
-        PROV_SET_STATE(PROV_STATE_SCANNING);
+        if(prov_role == PROV_ROLE_PROVISIONER)
+            PROV_SET_STATE(PROV_STATE_SCANNING);
 
         break;
 

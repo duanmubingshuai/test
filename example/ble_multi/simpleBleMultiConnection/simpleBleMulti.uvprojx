@@ -10,13 +10,12 @@
       <TargetName>Target 1</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060750::V5.06 update 6 (build 750)::.\ARMCC</pCCUsed>
-      <uAC6>0</uAC6>
+      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>ARMCM0</Device>
           <Vendor>ARM</Vendor>
-          <PackID>ARM.CMSIS.5.7.0</PackID>
+          <PackID>ARM.CMSIS.5.6.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000,0x20000) IROM(0x00000000,0x40000) CPUTYPE("Cortex-M0") CLOCK(12000000) ESEL ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -184,8 +183,6 @@
             <hadXRAM>0</hadXRAM>
             <uocXRam>0</uocXRam>
             <RvdsVP>0</RvdsVP>
-            <RvdsMve>0</RvdsMve>
-            <RvdsCdeCp>0</RvdsCdeCp>
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -326,7 +323,6 @@
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <uC99>1</uC99>
-            <uGnu>0</uGnu>
             <useXO>0</useXO>
             <v6Lang>1</v6Lang>
             <v6LangP>1</v6LangP>
@@ -337,9 +333,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-DADV_NCONN_CFG=0x01  -DADV_CONN_CFG=0x02  -DSCAN_CFG=0x04   -DINIT_CFG=0x08   -DBROADCASTER_CFG=0x01 -DOBSERVER_CFG=0x02  -DPERIPHERAL_CFG=0x04  -DCENTRAL_CFG=0x08 -DHOST_CONFIG=0xc</MiscControls>
-              <Define>OSALMEM_METRICS=0 DBG_ROM_MAIN=0 MTU_SIZE=247 DEBUG_INFO=1 _BUILD_FOR_DTM_=0 ENABLE_LOG_ROM_=0 HOST_CONFIG=0xC HCI_TL_NONE=1 OSAL_CBTIMER_NUM_TASKS=1 CFG_CP PHY_MCU_TYPE=MCU_BUMBEE_M0 CFG_SLEEP_MODE=PWR_MODE_NO_SLEEP MULTI_DEBUG MAX_NUM_LL_CONN=2 GATT_MAX_NUM_CONN = MAX_NUM_LL_CONN+1</Define>
+              <Define>OSALMEM_METRICS=0 DBG_ROM_MAIN=0 MTU_SIZE=247 DEBUG_INFO=1 _BUILD_FOR_DTM_=0 ENABLE_LOG_ROM_=0 HOST_CONFIG=0xC HCI_TL_NONE=1 OSAL_CBTIMER_NUM_TASKS=1 CFG_CP PHY_MCU_TYPE=MCU_BUMBEE_M0 CFG_SLEEP_MODE=PWR_MODE_NO_SLEEP MULTI_DEBUG MAX_NUM_LL_CONN=2 GATT_MAX_NUM_CONN = MAX_NUM_LL_CONN+1 PHY_SLB_OTA_ENABLE</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\components\inc;..\..\..\components\ble\host;..\..\..\components\ble\hci;..\..\..\components\ble\controller;..\..\..\components\ble\include;..\..\..\components\osal\include;..\..\..\components\profiles\Roles;..\..\..\components\driver\uart;..\..\..\components\profiles\DevInfo;..\..\..\components\profiles\ota;..\..\..\components\profiles\ota_app;..\..\..\components\profiles\SimpleProfile;..\..\..\components\driver\log;..\..\..\components\driver\pwrmgr;..\..\..\components\driver\uart;..\..\..\components\driver\clock;..\..\..\components\driver\gpio;..\..\..\components\driver\adc;..\..\..\components\driver\kscan;..\..\..\components\driver\flash;..\..\..\components\driver\spi;..\..\..\components\driver\i2c;..\..\..\components\driver\i2s;..\..\..\components\driver\timer;..\..\..\components\driver\watchdog;..\..\..\components\driver\kscan;..\..\..\components\libraries\crc16;..\..\..\components\arch\cm0;..\..\..\lib;..\..\..\misc;.\source\multi_role;..\..\..\components\profiles\multiRole;..\..\..\components\libraries\fs</IncludePath>
+              <IncludePath>..\..\..\components\inc;..\..\..\components\ble\host;..\..\..\components\ble\hci;..\..\..\components\ble\controller;..\..\..\components\ble\include;..\..\..\components\osal\include;..\..\..\components\profiles\Roles;..\..\..\components\driver\uart;..\..\..\components\profiles\DevInfo;..\..\..\components\profiles\ota;..\..\..\components\profiles\ota_app;..\..\..\components\profiles\SimpleProfile;..\..\..\components\driver\log;..\..\..\components\driver\pwrmgr;..\..\..\components\driver\uart;..\..\..\components\driver\clock;..\..\..\components\driver\gpio;..\..\..\components\driver\adc;..\..\..\components\driver\kscan;..\..\..\components\driver\flash;..\..\..\components\driver\spi;..\..\..\components\driver\i2c;..\..\..\components\driver\i2s;..\..\..\components\driver\timer;..\..\..\components\driver\watchdog;..\..\..\components\driver\kscan;..\..\..\components\libraries\crc16;..\..\..\components\arch\cm0;..\..\..\lib;..\..\..\misc;.\source\multi_role;..\..\..\components\profiles\multiRole;..\..\..\components\libraries\fs;..\..\..\components\profiles\ppsp;..\..\..\components\profiles\slb</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -352,7 +348,7 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <ClangAsOpt>4</ClangAsOpt>
+            <uClangAs>0</uClangAs>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -373,7 +369,7 @@
             <ScatterFile>.\scatter_load.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
-            <Misc>..\..\..\misc\bb_rom_sym_m0.txt  --keep=jump_table_base  --keep=global_config</Misc>
+            <Misc>..\..\..\misc\bb_rom_sym_m0.txt  --keep=jump_table_base  --keep=global_config --info=summarystack --info=stack</Misc>
             <LinkerInputFile></LinkerInputFile>
             <DisabledWarnings></DisabledWarnings>
           </LDads>
@@ -438,6 +434,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\osal\snv\osal_snv.c</FilePath>
             </File>
+            <File>
+              <FileName>watchdog.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\driver\watchdog\watchdog.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -478,6 +479,21 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\profiles\multiRole\multiRoleProfile.c</FilePath>
             </File>
+            <File>
+              <FileName>ota_app_service.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\profiles\ota_app\ota_app_service.c</FilePath>
+            </File>
+            <File>
+              <FileName>ppsp_serv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\profiles\ppsp\ppsp_serv.c</FilePath>
+            </File>
+            <File>
+              <FileName>ppsp_impl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\profiles\ppsp\ppsp_impl.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -517,6 +533,11 @@
               <FileName>multi_schedule.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\source\multi_role\multi_schedule.c</FilePath>
+            </File>
+            <File>
+              <FileName>slb_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\profiles\slb\slb_app.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -580,7 +601,6 @@
                 <uThumb>2</uThumb>
                 <uSurpInc>2</uSurpInc>
                 <uC99>2</uC99>
-                <uGnu>2</uGnu>
                 <useXO>2</useXO>
                 <v6Lang>0</v6Lang>
                 <v6LangP>0</v6LangP>
@@ -606,7 +626,7 @@
                 <NoWarn>2</NoWarn>
                 <uSurpInc>2</uSurpInc>
                 <useXO>2</useXO>
-                <ClangAsOpt>0</ClangAsOpt>
+                <uClangAs>2</uClangAs>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -662,7 +682,6 @@
                 <uThumb>2</uThumb>
                 <uSurpInc>2</uSurpInc>
                 <uC99>2</uC99>
-                <uGnu>2</uGnu>
                 <useXO>2</useXO>
                 <v6Lang>0</v6Lang>
                 <v6LangP>0</v6LangP>
@@ -688,7 +707,7 @@
                 <NoWarn>2</NoWarn>
                 <uSurpInc>2</uSurpInc>
                 <useXO>2</useXO>
-                <ClangAsOpt>0</ClangAsOpt>
+                <uClangAs>2</uClangAs>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -722,16 +741,16 @@
     <files>
       <file attr="config" category="sourceAsm" condition="ARMCC" name="Device\ARM\ARMCM0\Source\ARM\startup_ARMCM0.s" version="1.0.0">
         <instance index="0">RTE\Device\ARMCM0\startup_ARMCM0.s</instance>
-        <component Cclass="Device" Cgroup="Startup" Cvendor="ARM" Cversion="1.2.2" condition="ARMCM0 CMSIS"/>
-        <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="5.7.0"/>
+        <component Cclass="Device" Cgroup="Startup" Cvendor="ARM" Cversion="1.2.0" condition="ARMCM0 CMSIS"/>
+        <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="5.6.0"/>
         <targetInfos>
           <targetInfo name="Target 1"/>
         </targetInfos>
       </file>
       <file attr="config" category="sourceC" name="Device\ARM\ARMCM0\Source\system_ARMCM0.c" version="1.0.0">
         <instance index="0">RTE\Device\ARMCM0\system_ARMCM0.c</instance>
-        <component Cclass="Device" Cgroup="Startup" Cvendor="ARM" Cversion="1.2.2" condition="ARMCM0 CMSIS"/>
-        <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="5.7.0"/>
+        <component Cclass="Device" Cgroup="Startup" Cvendor="ARM" Cversion="1.2.0" condition="ARMCM0 CMSIS"/>
+        <package name="CMSIS" schemaVersion="1.3" url="http://www.keil.com/pack/" vendor="ARM" version="5.6.0"/>
         <targetInfos>
           <targetInfo name="Target 1"/>
         </targetInfos>
@@ -762,20 +781,5 @@
       </file>
     </files>
   </RTE>
-
-  <LayerInfo>
-    <Layers>
-      <Layer>
-        <LayName>simpleBleMulti</LayName>
-        <LayDesc></LayDesc>
-        <LayUrl></LayUrl>
-        <LayKeys></LayKeys>
-        <LayCat></LayCat>
-        <LayLic></LayLic>
-        <LayTarg>0</LayTarg>
-        <LayPrjMark>1</LayPrjMark>
-      </Layer>
-    </Layers>
-  </LayerInfo>
 
 </Project>

@@ -620,10 +620,10 @@ static void ms_scene_frame_status_response(UINT16 status_code, UINT8* buffer, UI
                     buffer[marker] = transition_time;
                     marker += 1;
                 }
-				else
-				{
-					printf("Get remain time failed. Return 0x%04X\n",ret);
-				}
+                else
+                {
+                    printf("Get remain time failed. Return 0x%04X\n",ret);
+                }
             }
             else
             {

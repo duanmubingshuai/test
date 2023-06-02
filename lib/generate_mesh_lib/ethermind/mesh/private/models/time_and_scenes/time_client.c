@@ -127,6 +127,7 @@ API_RESULT MS_time_client_send_reliable_pdu
         printf("MS_ACCESS_TIME_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TIME_SET_OPCODE:
     {
         MS_STATE_TIME_STRUCT* param_p;
@@ -136,6 +137,7 @@ API_RESULT MS_time_client_send_reliable_pdu
         param_p = (MS_STATE_TIME_STRUCT*) param;
         MS_PACK_LE_N_BYTE(&buffer[marker], param_p->tai_seconds,5);
         marker += 5;
+
         if(EM_mem_cmp(param_p->tai_seconds,tai_seconds_com,5) != 0)
         {
             buffer[marker] = param_p->subsecond;
@@ -150,11 +152,13 @@ API_RESULT MS_time_client_send_reliable_pdu
         }
     }
     break;
+
     case MS_ACCESS_TIME_ZONE_GET_OPCODE:
     {
         printf("MS_ACCESS_TIME_ZONE_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TIME_ZONE_SET_OPCODE:
     {
         MS_TIME_ZONE_SET_STRUCT* param_p;
@@ -173,6 +177,7 @@ API_RESULT MS_time_client_send_reliable_pdu
         printf("MS_ACCESS_TAI_UTC_DELTA_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TAI_UTC_DELTA_SET_OPCODE:
     {
         MS_TAI_UTC_DELTA_SET_STRUCT* param_p;
@@ -193,6 +198,7 @@ API_RESULT MS_time_client_send_reliable_pdu
         printf("MS_ACCESS_TIME_ROLE_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TIME_ROLE_SET_OPCODE:
     {
         MS_STATE_TIME_ROLE_STRUCT* param_p;
@@ -205,8 +211,8 @@ API_RESULT MS_time_client_send_reliable_pdu
 
     default:
         printf("[TIME ERROR]CANNOT FIND OPCODE\n");
-    break;
-    }    
+        break;
+    }
 
     /* Publish - reliable */
     if (0 == marker)
@@ -291,7 +297,8 @@ API_RESULT time_client_cb
 
     switch(opcode)
     {
-    #if 0
+        #if 0
+
     case MS_ACCESS_SCENE_REGISTER_STATUS_OPCODE:
     {
         SCENE_CLIENT_TRC(

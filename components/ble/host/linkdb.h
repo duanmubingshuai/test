@@ -82,7 +82,7 @@ extern "C"
 #define LINKDB_ERR_INSUFFICIENT_ENCRYPTION  0x0f  // Link is encrypted but it's not authenticated
 
 // Link Database call backs
-#define LINKDB_STACK_CALLBACK_NUM       4
+#define LINKDB_STACK_CALLBACK_NUM       6
 /*********************************************************************
     TYPEDEFS
 */

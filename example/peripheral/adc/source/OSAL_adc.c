@@ -51,6 +51,7 @@
 #include "adc_poilling_demo.h"
 #include "adc_compare_demo.h"
 #include "voice_demo.h"
+#include "adc_config.h"
 /*********************************************************************
     GLOBAL VARIABLES
 */
@@ -59,10 +60,15 @@
 __ATTR_SECTION_SRAM__ const pTaskEventHandlerFn tasksArr[] =
 {
     LL_ProcessEvent,
+    #if (APP_RUN_MODE == ADC_RUNMODE_INTERRUPT)
     adc_ProcessEvent,
+    #elif (APP_RUN_MODE == ADC_RUNMODE_POLLING)
     adc_Poilling_ProcessEvent,
+    #elif (APP_RUN_MODE == ADC_RUNMODE_COMPARE)
     adc_Compare_ProcessEvent,
+    #elif (APP_RUN_MODE == VOICE_RUNMODE)
     voice_ProcessEvent
+    #endif
 };
 
 __ATTR_SECTION_SRAM__ const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -90,10 +96,15 @@ void osalInitTasks( void )
     /*
         Application
     */
+    #if(APP_RUN_MODE == ADC_RUNMODE_INTERRUPT)
     adc_Init( taskID++ );
+    #elif (APP_RUN_MODE == ADC_RUNMODE_POLLING)
     adc_Poilling_Init( taskID++ );
+    #elif (APP_RUN_MODE == ADC_RUNMODE_COMPARE)
     adc_Compare_Init( taskID++ );
+    #elif (APP_RUN_MODE == VOICE_RUNMODE)
     voice_Init(taskID);
+    #endif
 }
 
 /*********************************************************************

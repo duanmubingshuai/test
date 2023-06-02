@@ -80,8 +80,8 @@ typedef enum
 
 typedef enum
 {
-    
-    
+
+
     SPI_4BIT = 0x03,
     SPI_5BIT = 0x04,
     SPI_6BIT = 0x05,

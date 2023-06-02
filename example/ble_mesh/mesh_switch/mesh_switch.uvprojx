@@ -337,9 +337,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-DADV_NCONN_CFG=0x01  -DADV_CONN_CFG=0x02  -DSCAN_CFG=0x04   -DINIT_CFG=0x08   -DBROADCASTER_CFG=0x01 -DOBSERVER_CFG=0x02  -DPERIPHERAL_CFG=0x04  -DCENTRAL_CFG=0x08 -DHOST_CONFIG=0x0c</MiscControls>
-              <Define>CFG_CP, OSAL_CBTIMER_NUM_TASKS=1, MTU_SIZE=247 OSALMEM_METRICS=0 DEBUG_INFO=1 CFG_SLEEP_MODE = PWR_MODE_SLEEP CFG_HEARTBEAT_MODE=0 PHY_MCU_TYPE=MCU_BUMBEE_M0 USE_FS=0 MAX_NUM_LL_CONN=1 BLEBRR_LP_SUPPORT GATT_MAX_NUM_CONN = MAX_NUM_LL_CONN+1</Define>
+              <Define>CFG_CP, OSAL_CBTIMER_NUM_TASKS=1, MTU_SIZE=247 OSALMEM_METRICS=0 DEBUG_INFO=1 CFG_SLEEP_MODE = PWR_MODE_SLEEP CFG_HEARTBEAT_MODE=0 PHY_MCU_TYPE=MCU_BUMBEE_M0 USE_FS=0 MAX_NUM_LL_CONN=1 BLEBRR_LP_SUPPORT GATT_MAX_NUM_CONN = MAX_NUM_LL_CONN+1 MESH_HEAP=0</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\components\inc;..\..\..\components\ble\controller\include;..\..\..\components\osal\include;..\..\..\components\common;..\..\..\components\ble\include;..\..\..\components\ble\hci;..\..\..\components\ble\host;..\..\..\components\Profiles\DevInfo;..\..\..\components\Profiles\SimpleProfile;..\..\..\components\Profiles\Roles;..\..\..\components\driver\common;..\..\..\components\driver\clock;..\..\..\components\driver\gpio;..\..\..\components\driver\pwrmgr;..\..\..\components\driver\log;..\..\..\components\driver\uart;..\..\..\components\driver\flash;..\..\..\components\driver\pwm;.\source;.\source\bleMesh;..\..\..\components\ethermind\external\crypto\aes;..\..\..\components\ethermind\mesh\export\include;..\..\..\components\ethermind\mesh\export\bearer;..\..\..\components\ethermind\mesh\export\platforms\ext;..\..\..\components\ethermind\osal\src\phyos;..\..\..\components\ethermind\utils\include;..\..\..\components\ethermind\mesh\export\appl;..\..\..\components\driver\pwrmgr;..\..\..\components\osal\snv;..\..\..\components\ethermind\external\crypto\asm_ecdh_p256;..\..\..\components\ethermind\lib;..\..\..\components\driver\kscan;..\..\..\components\ethermind\mesh\export\cbtimer;..\..\..\components\arch\cm0;..\..\..\components\driver\timer;..\..\..\components\ble\controller;..\..\..\components\libraries\crc16;..\..\..\components\libraries\cli;..\..\..\components\ethermind\mesh\export\climodel;..\..\..\misc;..\..\..\components\libraries\fs;..\..\..\components\ethermind\mesh\export\vendormodel;..\..\..\components\ethermind\mesh\export\vendormodel\server;..\..\..\components\ethermind\platforms;..\..\..\components\ethermind\platforms\interfaces\crypto;..\..\..\components\ethermind\platforms\mesh;..\..\..\components\driver\led_light</IncludePath>
+              <IncludePath>..\..\..\components\inc;..\..\..\components\ble\controller\include;..\..\..\components\osal\include;..\..\..\components\common;..\..\..\components\ble\include;..\..\..\components\ble\hci;..\..\..\components\ble\host;..\..\..\components\Profiles\DevInfo;..\..\..\components\Profiles\SimpleProfile;..\..\..\components\Profiles\Roles;..\..\..\components\driver\common;..\..\..\components\driver\clock;..\..\..\components\driver\gpio;..\..\..\components\driver\pwrmgr;..\..\..\components\driver\log;..\..\..\components\driver\uart;..\..\..\components\driver\flash;..\..\..\components\driver\pwm;.\source;.\source\bleMesh;..\..\..\components\ethermind\external\crypto\aes;..\..\..\components\ethermind\mesh\export\include;..\..\..\components\ethermind\mesh\export\bearer;..\..\..\components\ethermind\mesh\export\platforms\ext;..\..\..\components\ethermind\osal\src\phyos;..\..\..\components\ethermind\utils\include;..\..\..\components\ethermind\mesh\export\appl;..\..\..\components\driver\pwrmgr;..\..\..\components\osal\snv;..\..\..\components\ethermind\external\crypto\asm_ecdh_p256;..\..\..\components\ethermind\lib;..\..\..\components\driver\kscan;..\..\..\components\ethermind\mesh\export\cbtimer;..\..\..\components\arch\cm0;..\..\..\components\driver\timer;..\..\..\components\ble\controller;..\..\..\components\libraries\crc16;..\..\..\components\libraries\cli;..\..\..\components\ethermind\mesh\export\climodel;..\..\..\misc;..\..\..\components\libraries\fs;..\..\..\components\ethermind\mesh\export\vendormodel;..\..\..\components\ethermind\mesh\export\vendormodel\server;..\..\..\components\ethermind\platforms;..\..\..\components\ethermind\platforms\interfaces\crypto;..\..\..\components\ethermind\platforms\mesh;..\..\..\components\driver\led_light;..\..\..\components\driver\bsp_button;..\..\..\components\driver\keyboard</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -443,6 +443,21 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\components\libraries\crc16\crc16.c</FilePath>
             </File>
+            <File>
+              <FileName>keyboard.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\driver\keyboard\keyboard.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_button_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\driver\bsp_button\bsp_button_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_button.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\driver\bsp_button\bsp_button.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -527,11 +542,6 @@
               <FileName>OSAL_bleMesh.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\source\bleMesh\OSAL_bleMesh.c</FilePath>
-            </File>
-            <File>
-              <FileName>hal_keyboard_matrix.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\source\bleMesh\hal_keyboard_matrix.c</FilePath>
             </File>
             <File>
               <FileName>cli_model.c</FileName>

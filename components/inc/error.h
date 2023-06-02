@@ -69,6 +69,7 @@
 #define PPlus_ERR_NOT_IMPLEMENTED               (22) /*Function is not provide now*/
 #define PPlus_ERR_SPI_FLASH                     (23) /*spi falsh operation error*/
 #define PPlus_ERR_UNINITIALIZED                 (24)
+#define PPlus_ERR_FS_CRC                        (30) /*FS CRC error*/
 #define PPlus_ERR_FS_WRITE_FAILED               (31)
 #define PPlus_ERR_FS_CONTEXT                    (32)
 #define PPlus_ERR_FS_FULL                       (33)
@@ -83,6 +84,11 @@
 #define PPlus_ERR_FS_RESERVED_ERROR             (42)
 #define PPlus_ERR_VERSION                       (43)
 #define PPlus_ERR_NO_DEV                        (44)
+#define PPlus_ERR_DATA_CORRUPTION               (45) /*data boundary corruption*/
+#define PPlus_ERR_FSCACHE_ID_NOT_FOUND          (46)
+#define PPlus_ERR_FSCACHE_INVALID_ID            (47)
+#define PPlus_ERR_FSCACHE_SYNC_ID_FAIL          (48)
+
 
 #define PPlus_ERR_SECURE_CRYPTO                 (50)
 #define PPlus_ERR_ACCESS_REJECTED               (51)

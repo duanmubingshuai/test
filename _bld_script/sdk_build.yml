@@ -102,11 +102,11 @@ wrist:
 pwmLight:
 - example\ble_peripheral\pwmLight\pwmLight.uvprojx
 
-ppsp_demo:
-- example\ble_peripheral\ppsp_demo\bleSmartPeripheral.uvprojx
-
 hidkb:
 - example\ble_peripheral\HIDKeyboard\HIDKeyBoard.uvprojx
+
+bleUart_AT:
+- example\ble_peripheral\bleUart_AT\bleUart_AT.uvprojx
 
 hidvr:
 - example\ble_peripheral\HIDAdvRemote\HIDAdvRemote.uvprojx
@@ -149,6 +149,12 @@ ota_sbk:
 
 slb:
 - example\OTA\slboot\slboot.uvprojx
+
+otadongle:
+- example\OTA\otadongle\otadongle.uvprojx
+
+ppsp_demo:
+- example\ble_peripheral\ppsp_demo\simpleBlePeripheral.uvprojx
 
 mesh_ali_light:
 - example\ble_mesh\aliGenie_mesh_light\aliGenie_mesh_light.uvprojx

@@ -50,7 +50,10 @@
 #include "voice.h"
 #include "Voice_Queue.h"
 #include "adc_compare_demo.h"
+#include "adc_config.h"
 
+
+#if (APP_RUN_MODE == ADC_RUNMODE_POLLING)
 
 /*********************************************************************
     TYPEDEFS
@@ -76,7 +79,7 @@ static uint8_t channel_done_flag = 0;
     LOCAL VARIABLES
 */
 
-uint8 adcDemo_Poilling_TaskID;   // Task ID for internal task/event processing
+static uint8 adcDemo_Poilling_TaskID;   // Task ID for internal task/event processing
 /*
     channel:
     is_differential_mode:
@@ -116,6 +119,7 @@ static void adcPoilling_MeasureTask( void );
 void adc_Poilling_Init( uint8 task_id )
 {
     adcDemo_Poilling_TaskID = task_id;
+    adcPoilling_MeasureTask();
 }
 
 uint16 adc_Poilling_ProcessEvent( uint8 task_id, uint16 events )
@@ -157,7 +161,6 @@ static void adc_Poilling_ProcessOSALMsg( osal_event_hdr_t* pMsg )
 
 static void adc_Poilling_evt(adc_Evt_t* pev)
 {
-    static unsigned char adc_cnt = 0 ;
     float value = 0;
     int i = 0;
     bool is_high_resolution = FALSE;
@@ -226,18 +229,7 @@ static void adc_Poilling_evt(adc_Evt_t* pev)
 
         if(adc_cfg.is_continue_mode == FALSE)
         {
-            adc_cnt++;
-
-            if( adc_cnt <= 0x09)
-            {
-                osal_start_timerEx(adcDemo_Poilling_TaskID, adcMeasureTask_Poilling_EVT,1000);
-            }
-            else
-            {
-                osal_start_timerEx(adcDemo_Compare_TaskID, adcMeasureTask_Compare_EVT,1000);
-                // osal_start_timerEx(adcDemo_Poilling_TaskID, VOICE_VOICE_RECORD_STOP_EVT,3000);
-                adc_cnt = 0 ;
-            }
+            osal_start_timerEx(adcDemo_Poilling_TaskID, adcMeasureTask_Poilling_EVT,1000);
         }
     }
 }
@@ -254,7 +246,6 @@ static void adcPoilling_MeasureTask( void )
         return;
     }
 
-//WaitMs(1);
     hal_adc_start(POLLING_MODE);
     hal_adc_value_read(ADC_CH3P_P20);
     hal_adc_value_read(ADC_CH2P_P14);
@@ -262,3 +253,5 @@ static void adcPoilling_MeasureTask( void )
     hal_poilling_adc_stop();
 }
 
+
+#endif

@@ -45,14 +45,15 @@
 extern "C"
 {
 #endif
-#include "voice.h"
-#include "voice_circ_buff.h"
-#include "adc.h"
-#include "adc_poilling_demo.h"
 
 /*********************************************************************
     INCLUDES
 */
+#include "types.h"
+#include "adc_config.h"
+
+#if (APP_RUN_MODE == ADC_RUNMODE_COMPARE)
+
 
 /*********************************************************************
     CONSTANTS
@@ -62,22 +63,17 @@ extern "C"
     MACROS
 */
 
-
-
-
 /*********************************************************************
     FUNCTIONS
 */
 
 extern void adc_Compare_Init( uint8 task_id );
-uint16 adc_Compare_ProcessEvent( uint8 task_id, uint16 events );
-
-extern uint8 adcDemo_Compare_TaskID;   // Task ID for internal task/event processing
 
 
-extern uint8 adcDemo_Poilling_TaskID;
+extern uint16 adc_Compare_ProcessEvent( uint8 task_id, uint16 events );
 
 
+#endif
 
 /*********************************************************************
 *********************************************************************/

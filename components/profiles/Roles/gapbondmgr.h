@@ -68,7 +68,7 @@ extern "C"
 #endif
 
 #if !defined ( GAP_CHAR_CFG_MAX )
-#define GAP_CHAR_CFG_MAX    4    //!< Maximum number of characteristic configuration that can be saved in NV.
+#define GAP_CHAR_CFG_MAX    10    //!< Maximum number of characteristic configuration that can be saved in NV.
 #endif
 /** @defgroup GAPBOND_CONSTANTS_NAME GAP Bond Manager Constants
     @{

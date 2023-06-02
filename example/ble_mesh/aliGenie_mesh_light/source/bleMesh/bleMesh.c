@@ -65,6 +65,7 @@
 #include "sha256.h"
 #include "ali_genie_profile.h"
 #include "led_light.h"
+#include "global_config.h"
 
 #ifdef ETHERMIND
     #include "EM_os.h"
@@ -109,7 +110,7 @@
     GLOBAL VARIABLES
 */
 
-UCHAR cmdstr[64];
+UCHAR cmdstr[CLI_MAX_ARGS];
 UCHAR cmdlen;
 
 API_RESULT cli_internal_status(UINT32 argc, UCHAR* argv[]);
@@ -124,7 +125,6 @@ DECL_CONST CLI_COMMAND cli_cmd_list[] =
     EXTERNAL VARIABLES
 */
 extern PROV_DEVICE_S UI_lprov_device;
-
 
 /*********************************************************************
     EXTERNAL FUNCTIONS
@@ -676,9 +676,18 @@ void BLE_ecdh_yield (void)
 
 static void ProcessUartData(uart_Evt_t* evt)
 {
-    osal_memcpy((cmdstr + cmdlen), evt->data, evt->len);
-    cmdlen += evt->len;
-    osal_set_event( bleMesh_TaskID, BLEMESH_UART_RX_EVT );
+    UCHAR c_len = cmdlen + evt->len;
+
+    if(c_len < sizeof(cmdstr))
+    {
+        osal_memcpy((cmdstr + cmdlen), evt->data, evt->len);
+        cmdlen += evt->len;
+        osal_set_event( bleMesh_TaskID, BLEMESH_UART_RX_EVT );
+    }
+    else
+    {
+        cmdlen = 0;
+    }
 }
 
 void bleMesh_uart_init(void)

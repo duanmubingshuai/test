@@ -27,6 +27,9 @@ CSRCS += ppsp_serv.c
 CSRCS += list_slst.c
 CSRCS += core_queu.c
 
+INC   += -I$(ROOT)/components/profiles/slb
+VPATH += $(ROOT)/components/profiles/slb
+CSRCS += slb_app.c
 
 
 #project src

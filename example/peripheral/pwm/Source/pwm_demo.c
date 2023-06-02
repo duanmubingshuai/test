@@ -87,41 +87,39 @@ static uint8 pwm_TaskID;
 static uint32_t timer_cycle;
 
 static gpio_pin_e led_pins[3] = {GPIO_GREEN,GPIO_BLUE,GPIO_RED};
-
+static pwm_complement_deadzone_cfg_t pwm_deadzone_cfg   = {0};
+static pwm_complement_deadzone_cfg_t pwm_complement_cfg = {0};
 
 static void pwm_complement_demo(void)
 {
-    pwm_complement_deadzone_cfg_t pwm_complement_cfg = {0};
     pwm_complement_cfg.cmpVal       = 499;
     pwm_complement_cfg.cntTopVal    = 999;
     pwm_complement_cfg.dead_ratio   = 0;
     pwm_complement_cfg.pwmDiv       = PWM_CLK_DIV_16;
     pwm_complement_cfg.pwmMode      = PWM_CNT_UP;
-    pwm_complement_cfg.pwmN1        = PWM_CH0;
-    pwm_complement_cfg.pwmN2        = PWM_CH1;
-    pwm_complement_cfg.pwmPin1      = P31;
-    pwm_complement_cfg.pwmPin2      = P32;
-    pwm_complement_cfg.pwmPolarity1 = PWM_POLARITY_RISING;
-    pwm_complement_cfg.pwmPolarity2 = PWM_POLARITY_FALLING;
+    pwm_complement_cfg.pwmN[0]      = PWM_CH3;
+    pwm_complement_cfg.pwmN[1]      = PWM_CH4;
+    pwm_complement_cfg.pwmPin[0]    = P31;
+    pwm_complement_cfg.pwmPin[1]    = P32;
+    pwm_complement_cfg.pwmPolarity[0] = PWM_POLARITY_RISING;
+    pwm_complement_cfg.pwmPolarity[1] = PWM_POLARITY_FALLING;
     hal_pwm_module_init();
     pwm_complement_start(pwm_complement_cfg);
 }
 
-
 static void pwm_deadzone_demo(void)
 {
-    pwm_complement_deadzone_cfg_t pwm_deadzone_cfg = {0};
     pwm_deadzone_cfg.cmpVal         = 499;
     pwm_deadzone_cfg.cntTopVal      = 999;
     pwm_deadzone_cfg.dead_ratio     = 10;
     pwm_deadzone_cfg.pwmDiv         = PWM_CLK_DIV_16;
     pwm_deadzone_cfg.pwmMode        = PWM_CNT_UP;
-    pwm_deadzone_cfg.pwmN1          = PWM_CH2;
-    pwm_deadzone_cfg.pwmN2          = PWM_CH3;
-    pwm_deadzone_cfg.pwmPin1        = P33;
-    pwm_deadzone_cfg.pwmPin2        = P34;
-    pwm_deadzone_cfg.pwmPolarity1   = PWM_POLARITY_RISING;
-    pwm_deadzone_cfg.pwmPolarity2   = PWM_POLARITY_FALLING;
+    pwm_deadzone_cfg.pwmN[0]        = PWM_CH0;
+    pwm_deadzone_cfg.pwmN[1]        = PWM_CH5;
+    pwm_deadzone_cfg.pwmPin[0]      = P33;
+    pwm_deadzone_cfg.pwmPin[1]      = P34;
+    pwm_deadzone_cfg.pwmPolarity[0] = PWM_POLARITY_RISING;
+    pwm_deadzone_cfg.pwmPolarity[1] = PWM_POLARITY_FALLING;
     hal_pwm_module_init();
     pwm_deadzone_start(pwm_deadzone_cfg);
 }
@@ -157,7 +155,7 @@ uint16 pwm_ProcessEvent( uint8 task_id, uint16 events )
     if(events & PWM_LIGHT_CONTROL)
     {
         #if (PWM_DEMO_TYPE == PIN_ALWAYS_FULLMUX_PWM)
-
+        
         if((timer_cycle&0x03) == 0)
         {
             LIGHT_ONLY_RED_ON;

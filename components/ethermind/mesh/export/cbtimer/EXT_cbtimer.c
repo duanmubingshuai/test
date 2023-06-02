@@ -48,8 +48,8 @@ EXT_CBTIMER_ENTITY* ext_cbtimer_q_end   = NULL;
 // Total number of callback timers
 #define EXT_NUM_CBTIMERS                   ( CBTIMER_NUM_TASKS * EXT_NUM_CBTIMERS_PER_TASK )
 
-#define ext_timer_malloc            EM_alloc_mem
-#define ext_timer_free              EM_free_mem
+#define ext_timer_malloc            osal_mem_alloc
+#define ext_timer_free              osal_mem_free
 
 
 typedef struct

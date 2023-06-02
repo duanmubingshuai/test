@@ -47,11 +47,11 @@ extern "C"
 {
 #endif
 
-#include "bus_dev.h"
-
 /*********************************************************************
     INCLUDES
 */
+#include "bus_dev.h"
+#include "log.h"
 
 /*********************************************************************
     CONSTANTS
@@ -62,7 +62,19 @@ extern "C"
 /*********************************************************************
     MACROS
 */
+#define BSP_BTN_EVT_SYSTICK                                 (0x0001)
 
+// ! row gpio
+#define KSCAN_ROW_0_GPIO        GPIO_P00
+#define KSCAN_ROW_1_GPIO        GPIO_P24
+#define KSCAN_ROW_2_GPIO        GPIO_P07
+#define KSCAN_ROW_3_GPIO        GPIO_P34
+
+// ! col gpio
+#define KSCAN_COL_0_GPIO        GPIO_P11
+#define KSCAN_COL_1_GPIO        GPIO_P23
+#define KSCAN_COL_2_GPIO        GPIO_P25
+#define KSCAN_COL_3_GPIO        GPIO_P18
 
 /*
     Task Initialization for the Demo Application

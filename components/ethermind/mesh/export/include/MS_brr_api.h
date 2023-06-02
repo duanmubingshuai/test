@@ -514,7 +514,7 @@ API_RESULT MS_brr_start_proxy_adv
     /* IN */ UINT16     datalen
 );
 
-#ifdef MS_PRIVATE_SUPPORT
+
 /**
     \brief API to send Proxy Device ADV
 
@@ -548,7 +548,6 @@ API_RESULT MS_brr_start_priv_proxy_adv
     /* IN */ UINT16     datalen
 );
 
-#endif
 
 /**
     \brief API to disable broadcast of given beacon type

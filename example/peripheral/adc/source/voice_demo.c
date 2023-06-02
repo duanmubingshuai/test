@@ -50,6 +50,12 @@
 #include "voice.h"
 #include "Voice_Queue.h"
 #include "mcu.h"
+#include "voice_circ_buff.h"
+#include "adc_config.h"
+
+
+#if (APP_RUN_MODE == VOICE_RUNMODE)
+
 
 /*********************************************************************
     TYPEDEFS
@@ -106,6 +112,12 @@ uint8 voiceDemo_TaskID;   // Task ID for internal task/event processing
 */
 static void voice_ProcessOSALMsg( osal_event_hdr_t* pMsg );
 
+
+static void stop_voice_task(void);
+
+
+static void voiceCaptureStart( void );
+
 // !request temp cache buff
 uint8 voice_tmp_buf[ VOICE_REQUEST_CACHE_BUFF_SIZE ]= { 0x00 };
 
@@ -152,6 +164,7 @@ void voice_Init( uint8 task_id )
     hal_gpio_pull_set(P1,GPIO_PULL_UP_S);
     hal_gpio_pull_set(P0,GPIO_PULL_DOWN);
     hal_gpioin_register(P0,pin_voice_stop_event,NULL);
+    voiceCaptureStart();
 }
 static void voice_evt_handler_adpcm(voice_Evt_t* pev)
 {
@@ -269,7 +282,7 @@ static void voiceCaptureStop( void )
     osal_start_timerEx(voiceDemo_TaskID, adcMeasureTask_EVT, 5 * 1000);
 }
 
-void stop_voice_task(void)
+static void stop_voice_task(void)
 {
     osal_stop_timerEx(voiceDemo_TaskID, VOICE_OUTQUEUE_EVT);
     voiceCaptureStop();
@@ -500,6 +513,6 @@ uint16 voice_ProcessEvent( uint8 task_id, uint16 events )
     return 0;
 }
 
-
+#endif
 
 

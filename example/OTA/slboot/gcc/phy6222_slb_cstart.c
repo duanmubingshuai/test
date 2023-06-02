@@ -44,16 +44,15 @@ extern int  main(void);
 void c_start(void)
 {
     //const uint8_t *src;
-    uint8_t *dest;
-    uint8_t *edest;
+    uint8_t* dest;
+    uint8_t* edest;
     AP_PCR->CACHE_BYPASS = 1; //just bypass cache
     /*  Clear .bss.  We'll do this inline (vs. calling memset) just to be
         certain that there are no issues with the state of global variables.
     */
-    dest = (uint8_t *)&_sbss;
-    edest = (uint8_t *)&_ebss;
+    dest = (uint8_t*)&_sbss;
+    edest = (uint8_t*)&_ebss;
     osal_memset(dest, 0, edest - dest);
-
     /*  Move the initialized data section from his temporary holding spot in
         FLASH into the correct place in SRAM.  The correct place in SRAM is
         give by _sdata and _edata.  The temporary location is in FLASH at the

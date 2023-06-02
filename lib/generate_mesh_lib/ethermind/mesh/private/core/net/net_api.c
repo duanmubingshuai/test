@@ -965,6 +965,7 @@ void MS_net_iv_update_rcv_pro
 {
     API_RESULT retval;
     UINT8   should_start_timer;
+    UINT8      snb;
     UINT8   iv_update_change_state_to,should_init_seq_number;
     should_start_timer = MS_FALSE;
     should_init_seq_number = MS_FALSE;
@@ -1109,6 +1110,14 @@ void MS_net_iv_update_rcv_pro
     }
     else
     {
+    }
+
+    //receive valid iv update,start snb
+    MS_access_cm_get_features_field(&snb, MS_FEATURE_SEC_NET_BEACON);
+
+    if(MS_TRUE != snb)
+    {
+        MS_net_start_snb_timer(0);
     }
 
 //    if(should_start_timer == MS_TRUE)

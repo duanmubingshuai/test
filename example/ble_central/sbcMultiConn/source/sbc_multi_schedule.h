@@ -179,7 +179,7 @@ extern uint8 multiLinkGetMasterConnNum(void);
 uint8 multiRole_find_node(uint8 mode,uint8* data);
 uint8_t sbcmc_multiRole_findInitScanNode( void );
 #ifndef BLE_AT_ENABLE
-uint8_t multiRole_findInitScanNode( void );
+    uint8_t multiRole_findInitScanNode( void );
 #endif
 
 #endif

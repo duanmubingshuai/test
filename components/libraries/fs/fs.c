@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************
+/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -47,6 +47,20 @@
 #include "error.h"
 #include "log.h"
 
+#ifndef FS_CRC_EN
+    #define FS_CRC_EN 0
+#endif
+
+#if(FS_CRC_EN==1)
+    #include "crc16.h"
+#endif
+
+#if(FS_CRC_EN == 1)
+    #define FS_CRC_FIELD 2
+#else
+    #define FS_CRC_FIELD 0
+#endif
+
 //#define FS_DBBUG
 #ifdef FS_DBBUG
     #define FS_LOG  LOG
@@ -54,6 +68,12 @@
     #define FS_LOG(...)
 #endif
 
+//#define FS_CACHE_DBBUG
+#ifdef FS_CACHE_DBBUG
+    #define FS_CACH_LOG(...)  {LOG("[FS_CACHE]");LOG(__VA_ARGS__);};
+#else
+    #define FS_CACH_LOG(...)
+#endif
 
 static uint8_t  fs_sector_num;
 static uint32_t fs_offset_address;
@@ -142,7 +162,8 @@ typedef struct
     uint8_t  sector_num;//fs sector number
     uint8_t  item_len;//item length
     uint8_t  index;//sector index
-    uint8_t  reserved[FS_ITEM_LEN-7];
+    uint8_t  crc_en;//0xff: None; 0x01: CRC en
+    uint8_t  reserved[FS_ITEM_LEN-8];
 } fs_cfg_t;
 
 typedef struct
@@ -152,6 +173,16 @@ typedef struct
     uint8_t exchange_sector;//exchange sector,only use it when garbage collect
     uint16_t offset;//free position in free sector index
 } fs_t;
+
+#if(FS_CACHE_NUM_MAX>0)
+
+typedef struct
+{
+    uint16_t id[FS_CACHE_NUM_MAX];//fs cache id
+    fsCachAddr_t addr[FS_CACHE_NUM_MAX];//fs cache addr
+} fs_cache_t;
+static fs_cache_t fs_cache;
+#endif
 
 static fs_t fs;
 static bool fs_init_flag = false;
@@ -195,6 +226,8 @@ static void fs_erase_ucds_one_sector(uint32_t addr_erase)
 
 static int fs_spif_write(uint32_t addr,uint8_t* value,uint16_t len)
 {
+    uint8_t retval;
+
     if(fs_check_psr()&0x3f)
     {
         return PPlus_ERR_FS_IN_INT;
@@ -205,7 +238,8 @@ static int fs_spif_write(uint32_t addr,uint8_t* value,uint16_t len)
         return PPlus_ERR_FS_PARAMETER;
     }
 
-    return(hal_flash_write_by_dma(addr,value,(uint32_t)len));
+    retval = hal_flash_write_by_dma(addr,value,(uint32_t)len);
+    return retval;
 }
 
 static uint32_t fs_spif_read(uint32_t addr,uint8_t* buf,uint32_t len)
@@ -229,10 +263,87 @@ static void check_addr(uint32_t* addr)
     }
 }
 
+#if(FS_CACHE_NUM_MAX>0)
+static void fs_addr_cache_init(void)
+{
+    for(int i=0; i<FS_CACHE_NUM_MAX; i++)
+    {
+        fs_cache.addr[i]=FS_ADDR_NULL;
+        fs_cache.id[i]=FS_ID_NULL;
+    }
+}
+
+static int fs_addr_cache_search(uint32_t id,uint32_t* addr)
+{
+    if(id == FS_ID_NULL)
+        return PPlus_ERR_FSCACHE_INVALID_ID;
+
+    for(int i=0; i<FS_CACHE_NUM_MAX; i++)
+    {
+        if(id==fs_cache.id[i] && fs_cache.addr[i]!=FS_ADDR_NULL)
+        {
+            *addr =(uint32_t)fs_cache.addr[i];
+            FS_CACH_LOG("SCH OK ID %04x %08x\r\n",fs_cache.id[i],fs_cache.addr[i]);
+            return PPlus_SUCCESS;
+        }
+    }
+
+    FS_CACH_LOG("SCH FAIL ID %04x\r\n",id);
+    return PPlus_ERR_FSCACHE_ID_NOT_FOUND;
+}
+static int fs_addr_cache_sync(uint32_t id,uint32_t addr)
+{
+    if(id == FS_ID_NULL)
+        return PPlus_ERR_FSCACHE_INVALID_ID;
+
+    //search for exsited id
+    for(int i=0; i<FS_CACHE_NUM_MAX; i++)
+    {
+        if(id==fs_cache.id[i])
+        {
+            fs_cache.addr[i]=(fsCachAddr_t)addr;
+
+            //del existed id
+            if(addr == FS_ADDR_NULL)
+            {
+                fs_cache.id[i]=FS_ID_NULL;
+            }
+
+            FS_CACH_LOG("SYNC OLD ID %04x %08x\r\n",fs_cache.id[i],fs_cache.addr[i]);
+            return PPlus_SUCCESS;
+        }
+    }
+
+    //add new id
+    for(int i=0; i<FS_CACHE_NUM_MAX; i++)
+    {
+        if(FS_ID_NULL==fs_cache.id[i])
+        {
+            fs_cache.id[i]=id;
+            fs_cache.addr[i]=(fsCachAddr_t)addr;
+            FS_CACH_LOG("SYNC NEW ID %04x %08x\r\n",fs_cache.id[i],fs_cache.addr[i]);
+            return PPlus_SUCCESS;
+        }
+    }
+
+    FS_CACH_LOG("SYNC FAIL ID %04x\r\n",id);
+    return PPlus_ERR_FSCACHE_SYNC_ID_FAIL;
+}
+void dbg_show_fs_cache(void)
+{
+    LOG("-----dbg_show_fs_cache------\n");
+
+    for(int i=0; i<FS_CACHE_NUM_MAX; i++)
+    {
+        LOG("[%03d]%04x:%08x\n",i,fs_cache.id[i],fs_cache.addr[i]);
+    }
+}
+#endif
 static int fs_search_items(search_type type,uint32_t* para1,uint32_t* para2)
 {
     uint8_t m,n;
     uint16_t j,g_offset = 1;
+    uint16_t file_len = 0;
     uint32_t sector_addr,ab_addr;
     fs_item_t i1;
     bool from_last_sector = false;
@@ -241,7 +352,7 @@ static int fs_search_items(search_type type,uint32_t* para1,uint32_t* para2)
     {
         n = (m + fs.exchange_sector) % fs.cfg.sector_num;
 
-        if(g_offset >= FS_SECTOR_ITEM_NUM)
+        if(g_offset > FS_SECTOR_ITEM_NUM)
         {
             g_offset -= FS_SECTOR_ITEM_NUM;
 
@@ -292,8 +403,10 @@ static int fs_search_items(search_type type,uint32_t* para1,uint32_t* para2)
                 case ITEM_DEL:
                 case ITEM_USED:
                 {
+                    file_len = i1.b.len + FS_CRC_FIELD;
+
                     if(i1.b.frame == ITEM_MF_F)
-                        g_offset = (i1.b.len/FS_ITEM_DATA_LEN) + ((i1.b.len%FS_ITEM_DATA_LEN)?1:0);
+                        g_offset = (file_len/FS_ITEM_DATA_LEN) + ((file_len % FS_ITEM_DATA_LEN)?1:0);
                     else
                         g_offset = 1;
                 }
@@ -322,8 +435,10 @@ static int fs_search_items(search_type type,uint32_t* para1,uint32_t* para2)
                     }
                     else
                     {
+                        file_len = i1.b.len + FS_CRC_FIELD;
+
                         if(i1.b.frame == ITEM_MF_F)
-                            g_offset = (i1.b.len/FS_ITEM_DATA_LEN) + ((i1.b.len%FS_ITEM_DATA_LEN)?1:0);
+                            g_offset = (file_len / FS_ITEM_DATA_LEN) + ((file_len % FS_ITEM_DATA_LEN)?1:0);
                         else
                             g_offset = 1;
                     }
@@ -347,7 +462,8 @@ static int fs_search_items(search_type type,uint32_t* para1,uint32_t* para2)
                 {
                     if(i1.b.frame == ITEM_MF_F)
                     {
-                        g_offset = (i1.b.len/FS_ITEM_DATA_LEN) + ((i1.b.len%FS_ITEM_DATA_LEN)?1:0);
+                        file_len = i1.b.len + FS_CRC_FIELD;
+                        g_offset = (file_len/FS_ITEM_DATA_LEN) + ((file_len % FS_ITEM_DATA_LEN)?1:0);
                         *para1 += g_offset*FS_ITEM_DATA_LEN;
                     }
                     else
@@ -364,7 +480,8 @@ static int fs_search_items(search_type type,uint32_t* para1,uint32_t* para2)
                 {
                     if(i1.b.frame == ITEM_MF_F)
                     {
-                        g_offset = (i1.b.len/FS_ITEM_DATA_LEN) + ((i1.b.len%FS_ITEM_DATA_LEN)?1:0);
+                        file_len = i1.b.len + FS_CRC_FIELD;
+                        g_offset = (file_len/FS_ITEM_DATA_LEN) + ((file_len % FS_ITEM_DATA_LEN)?1:0);
                     }
                     else
                     {
@@ -432,6 +549,7 @@ static int fs_init(void)
     fs.cfg.sector_num = fs_sector_num;;
     fs.cfg.index = 0xff;
     fs.cfg.item_len = FS_ITEM_LEN;
+    fs.cfg.crc_en = (FS_CRC_EN==1)? 1: 0xff;
     osal_memset((fs.cfg.reserved),0xff,(FS_ITEM_LEN-7)*sizeof(uint8_t));
     osal_memset((sector_order),0x00,FS_SECTOR_NUM_BUFFER_SIZE);
     FS_LOG("fs_init:\n");
@@ -446,7 +564,8 @@ static int fs_init(void)
 
         if((flash_rd_cfg.sector_addr == fs.cfg.sector_addr) &&
                 (flash_rd_cfg.sector_num == fs.cfg.sector_num) &&
-                (flash_rd_cfg.item_len == fs.cfg.item_len))
+                (flash_rd_cfg.item_len == fs.cfg.item_len) &&
+                (flash_rd_cfg.crc_en == fs.cfg.crc_en) )
         {
             if(flash_rd_cfg.index < (fs_sector_num - 1))
             {
@@ -533,6 +652,9 @@ static int fs_init(void)
         }
     }
 
+    #if(FS_CACHE_NUM_MAX>0)
+    fs_addr_cache_init();
+    #endif
     FS_LOG("PPlus_SUCCESS\n");
     return PPlus_SUCCESS;
 }
@@ -589,17 +711,39 @@ int hal_fs_item_find_id(uint16_t id,uint32_t* id_addr)
         return  PPlus_ERR_FS_UNINITIALIZED;
 
     file_id = id & 0xffff;
+    #if(FS_CACHE_NUM_MAX>0)
+
+    if(PPlus_SUCCESS==fs_addr_cache_search(file_id,id_addr))
+    {
+        return PPlus_SUCCESS;
+    }
+
+    #endif
     ret = fs_search_items(SEARCH_APPOINTED_ITEM,&file_id,id_addr);
+    #if(FS_CACHE_NUM_MAX>0)
+
+    if(ret==PPlus_SUCCESS)
+    {
+        uint32_t addr = *id_addr;
+        fs_addr_cache_sync(file_id, addr);
+    }
+
+    #endif
     return ret;
 }
+
 
 int hal_fs_item_write(uint16_t id,uint8_t* buf,uint16_t len)
 {
     uint8_t frame_len,wr_buf[FS_ITEM_LEN];
-    uint16_t i,item_len;
+    uint16_t i,write_len;
     uint32_t addr;
     fs_item_t i1;
     uint32_t free_size;
+    #if(FS_CRC_EN == 1)
+    uint8_t crc_buf[2*FS_ITEM_DATA_LEN];
+    uint16_t crc = crc16(0, buf, len);
+    #endif
 
     if(fs_check_psr()&0x3f)
     {
@@ -617,7 +761,7 @@ int hal_fs_item_write(uint16_t id,uint8_t* buf,uint16_t len)
 
     hal_fs_get_free_size(&free_size);
 
-    if(len > free_size)
+    if(len + FS_CRC_FIELD > free_size)
         return PPlus_ERR_FS_NOT_ENOUGH_SIZE;
 
     //if(hal_fs_item_find_id(id,&addr) == PPlus_SUCCESS)
@@ -628,7 +772,7 @@ int hal_fs_item_write(uint16_t id,uint8_t* buf,uint16_t len)
             return PPlus_ERR_FATAL;
     }
 
-    item_len = len;
+    write_len = len + FS_CRC_FIELD;
     i1.b.len = len;
     i1.b.id = id;
     i1.b.pro = ITEM_USED;
@@ -637,35 +781,73 @@ int hal_fs_item_write(uint16_t id,uint8_t* buf,uint16_t len)
         i1.b.frame = ITEM_SF;
 
     i = 0;
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_disable_lock(FS_ITEM_WRITE);
+    #endif
 
-    while(len > 0)
+    while(write_len > 0)
     {
-        if(len > FS_ITEM_DATA_LEN)
+        if(write_len > FS_ITEM_DATA_LEN)
         {
-            if(item_len == len)
+            if(write_len == write_len)
                 i1.b.frame = ITEM_MF_F;
             else
                 i1.b.frame = ITEM_MF_C;
 
             frame_len = FS_ITEM_DATA_LEN;
-            len -= FS_ITEM_DATA_LEN;
+            write_len -= FS_ITEM_DATA_LEN;
         }
         else
         {
             if((i1.b.frame == ITEM_MF_C) || (i1.b.frame == ITEM_MF_F))
                 i1.b.frame = ITEM_MF_E;
 
-            frame_len = len;
-            len = 0;
+            frame_len = write_len;
+            write_len = 0;
         }
 
         addr = FS_ABSOLUTE_ADDR((fs.current_sector * 4096) + fs.offset);
         osal_memcpy(wr_buf,(uint8_t*)(&i1.reg),FS_ITEM_HEAD_LEN);
+        #if(FS_CRC_EN == 1)
+
+        if(len <= frame_len)
+        {
+            if( len > 0)
+            {
+                osal_memcpy(crc_buf,(buf + i),frame_len);
+                crc_buf[len] = (uint8_t)(crc & 0xff);
+                crc_buf[len + 1] = (uint8_t)((crc>>8) & 0xff);
+                i = 0;
+            }
+
+            len = 0;
+            osal_memcpy((wr_buf + FS_ITEM_HEAD_LEN),(crc_buf + i),frame_len);
+        }
+        else
+        {
+            osal_memcpy((wr_buf + FS_ITEM_HEAD_LEN),(buf + i),frame_len);
+            len -= frame_len;
+        }
+
+        #else
         osal_memcpy((wr_buf + FS_ITEM_HEAD_LEN),(buf + i),frame_len);
+        #endif
 
         if(PPlus_SUCCESS != fs_spif_write(addr,wr_buf,(frame_len+FS_ITEM_HEAD_LEN)))
+        {
+            #if(FLASH_PROTECT_FEATURE == 1)
+            hal_flash_enable_lock(FS_ITEM_WRITE);
+            #endif
             return PPlus_ERR_FS_WRITE_FAILED;
+        }
 
+        #if(FS_CACHE_NUM_MAX>0)
+
+        //update fs_addr_cache
+        if(i==0 && len > 0)
+            fs_addr_cache_sync(id,(fs.current_sector * 4096) + fs.offset);
+
+        #endif
         i += frame_len;
         fs.offset += FS_ITEM_LEN;
 
@@ -679,6 +861,9 @@ int hal_fs_item_write(uint16_t id,uint8_t* buf,uint16_t len)
         }
     }
 
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_enable_lock(FS_ITEM_WRITE);
+    #endif
     return PPlus_SUCCESS;
 }
 
@@ -718,6 +903,42 @@ int hal_fs_item_read(uint16_t id,uint8_t* buf,uint16_t buf_len,uint16_t* len)
                 rd_len = (temp_len >= FS_ITEM_DATA_LEN) ? FS_ITEM_DATA_LEN : temp_len;
                 fs_spif_read(FS_ABSOLUTE_ADDR(addr + FS_ITEM_HEAD_LEN),(buf + i),rd_len);
                 temp_len -= rd_len;
+                #if(FS_CRC_EN == 1)
+
+                if(temp_len == 0)
+                {
+                    uint8_t rd_offset = rd_len;
+                    uint8_t fs_crc[2];
+                    //figure buf crc
+                    uint16_t buf_crc = crc16(0, buf, i1.b.len);
+
+                    //get fs crc
+                    if(rd_offset == FS_ITEM_DATA_LEN)
+                    {
+                        addr += FS_ITEM_LEN;
+                        check_addr(&addr);
+                        rd_offset = 0;
+                    }
+
+                    fs_spif_read(FS_ABSOLUTE_ADDR(addr + FS_ITEM_HEAD_LEN + rd_offset), fs_crc, 1);
+                    rd_offset ++;
+
+                    if(rd_offset == FS_ITEM_DATA_LEN)
+                    {
+                        addr += FS_ITEM_LEN;
+                        check_addr(&addr);
+                        rd_offset = 0;
+                    }
+
+                    fs_spif_read(FS_ABSOLUTE_ADDR(addr + FS_ITEM_HEAD_LEN + rd_offset), fs_crc+1, 1);
+
+                    if((fs_crc[0] != (buf_crc & 0xff)) || (fs_crc[1] != ((buf_crc>>8) & 0xff)))
+                    {
+                        return PPlus_ERR_FS_CRC;
+                    }
+                }
+
+                #endif /*FS_CRC_EN*/
                 addr += FS_ITEM_LEN;
                 i += rd_len;
                 check_addr(&addr);
@@ -732,10 +953,11 @@ int hal_fs_item_read(uint16_t id,uint8_t* buf,uint16_t buf_len,uint16_t* len)
     return PPlus_ERR_FS_NOT_FIND_ID;
 }
 
-int hal_fs_item_del(uint16_t id)
+int hal_fs_item_set(uint16_t id, uint8_t pro, uint16_t new_id)
 {
     uint16_t i = 0,count = 1;
     uint32_t addr = 0;
+    uint16_t file_len = 0;
     fs_item_t i1;
 
     if(fs_check_psr()&0x3f)
@@ -749,20 +971,34 @@ int hal_fs_item_del(uint16_t id)
     if(hal_fs_item_find_id(id,&addr) == PPlus_SUCCESS)
     {
         fs_spif_read(FS_ABSOLUTE_ADDR(addr),(uint8_t*)&i1,FS_ITEM_HEAD_LEN);
-        count = i1.b.len/FS_ITEM_DATA_LEN + ((i1.b.len % FS_ITEM_DATA_LEN)?1:0);
+        file_len = i1.b.len + FS_CRC_FIELD;
+        //LOG("file_len %d\n", file_len);
+        count = file_len/FS_ITEM_DATA_LEN + ((file_len % FS_ITEM_DATA_LEN)?1:0);
+        #if(FLASH_PROTECT_FEATURE == 1)
+        hal_flash_disable_lock(FS_ITEM_DEL);
+        #endif
 
         for(i = 0; i < count; i++)
         {
             fs_spif_read(FS_ABSOLUTE_ADDR(addr),(uint8_t*)&i1,FS_ITEM_HEAD_LEN);
-            i1.b.pro = ITEM_DEL;
+            i1.b.pro &= pro;
+            i1.b.id  &= new_id;
 
             if(PPlus_SUCCESS != fs_spif_write(FS_ABSOLUTE_ADDR(addr),(uint8_t*)(&i1.reg),FS_ITEM_HEAD_LEN))
+            {
+                #if (FLASH_PROTECT_FEATURE == 1)
+                hal_flash_enable_lock(FS_ITEM_DEL);
+                #endif
                 return PPlus_ERR_FS_WRITE_FAILED;
+            }
 
             addr += FS_ITEM_LEN;
             check_addr(&addr);
         }
 
+        #if (FLASH_PROTECT_FEATURE == 1)
+        hal_flash_enable_lock(FS_ITEM_DEL);
+        #endif
         return PPlus_SUCCESS;
     }
     else
@@ -770,6 +1006,64 @@ int hal_fs_item_del(uint16_t id)
         return PPlus_ERR_FS_NOT_FIND_ID;
     }
 }
+
+//debug interface
+int hal_fs_item_assert(uint16_t id)
+{
+    int ret;
+    uint32_t addr = 0;
+
+    if(fs_check_psr()&0x3f)
+    {
+        return PPlus_ERR_FS_IN_INT;
+    }
+
+    if(fs_init_flag == FALSE)
+        return PPlus_ERR_FS_UNINITIALIZED;
+
+    if(hal_fs_item_find_id(id,&addr) == PPlus_SUCCESS)
+    {
+        #if(FLASH_PROTECT_FEATURE == 1)
+        hal_flash_disable_lock(FS_ITEM_DEL);
+        #endif
+        //just do in 1st item
+        {
+            uint32_t data[3] = {0};
+            ret = fs_spif_write(FS_ABSOLUTE_ADDR(addr + FS_ITEM_HEAD_LEN),(uint8_t*)(data),FS_ITEM_DATA_LEN);
+        }
+        #if (FLASH_PROTECT_FEATURE == 1)
+        hal_flash_enable_lock(FS_ITEM_DEL);
+        #endif
+        return ret;
+    }
+    else
+    {
+        return PPlus_ERR_FS_NOT_FIND_ID;
+    }
+}
+
+
+int hal_fs_item_id_fading(uint16_t id, uint16_t new_id)
+{
+    int ret = hal_fs_item_set(id, 0xff, new_id);
+    #if(FS_CACHE_NUM_MAX>0)
+    fs_addr_cache_sync(id,FS_ADDR_NULL);
+    #endif
+    return ret;
+}
+
+int hal_fs_item_del(uint16_t id)
+{
+    int ret = hal_fs_item_set(id, ITEM_DEL, 0xffff);
+    #if(FS_CACHE_NUM_MAX>0)
+
+    if(ret == PPlus_SUCCESS)
+        fs_addr_cache_sync(id,FS_ADDR_NULL);
+
+    #endif
+    return ret;
+}
+
 
 int hal_fs_garbage_collect(void)
 {
@@ -789,6 +1083,9 @@ int hal_fs_garbage_collect(void)
     to_sector_index = fs.exchange_sector;
     from_sector_index = (fs.exchange_sector + 1) % fs.cfg.sector_num;
     addr_wr = 4096*to_sector_index;
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_disable_lock(FS_GARBAGE_COLLECT);
+    #endif
 
     for(i = 0; i < (fs.cfg.sector_num - 1); i++)
     {
@@ -797,7 +1094,12 @@ int hal_fs_garbage_collect(void)
         fs.cfg.index = i;
 
         if(PPlus_SUCCESS != fs_spif_write(FS_ABSOLUTE_ADDR((4096*((to_sector_index + i) % fs.cfg.sector_num))),(uint8_t*)(&(fs.cfg)),sizeof(fs_cfg_t)))
+        {
+            #if (FLASH_PROTECT_FEATURE == 1)
+            hal_flash_enable_lock(FS_GARBAGE_COLLECT);
+            #endif
             return PPlus_ERR_FS_WRITE_FAILED;
+        }
 
         if(i == 0)
             addr_wr += sizeof(fs_cfg_t);
@@ -813,10 +1115,20 @@ int hal_fs_garbage_collect(void)
                 fs_spif_read(FS_ABSOLUTE_ADDR(addr_rd + FS_ITEM_HEAD_LEN),buf,FS_ITEM_DATA_LEN);
 
                 if(PPlus_SUCCESS != fs_spif_write(FS_ABSOLUTE_ADDR(addr_wr),(uint8_t*)(&i1.reg),FS_ITEM_HEAD_LEN))
+                {
+                    #if (FLASH_PROTECT_FEATURE == 1)
+                    hal_flash_enable_lock(FS_GARBAGE_COLLECT);
+                    #endif
                     return PPlus_ERR_FS_WRITE_FAILED;
+                }
 
                 if(PPlus_SUCCESS != fs_spif_write(FS_ABSOLUTE_ADDR(addr_wr + FS_ITEM_HEAD_LEN),buf,FS_ITEM_DATA_LEN))
+                {
+                    #if (FLASH_PROTECT_FEATURE == 1)
+                    hal_flash_enable_lock(FS_GARBAGE_COLLECT);
+                    #endif
                     return PPlus_ERR_FS_WRITE_FAILED;
+                }
 
                 addr_wr += FS_ITEM_LEN;
                 check_addr(&addr_wr);
@@ -832,7 +1144,11 @@ int hal_fs_garbage_collect(void)
         fs_erase_ucds_one_sector(addr_erase);
     }
 
-    return fs_init();
+    int ret = fs_init();
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_enable_lock(FS_GARBAGE_COLLECT);
+    #endif
+    return (ret);
 }
 
 int hal_fs_format(uint32_t fs_start_address,uint8_t sector_num)
@@ -851,12 +1167,22 @@ int hal_fs_format(uint32_t fs_start_address,uint8_t sector_num)
 
     fs_sector_num = sector_num;
     fs_offset_address = fs_start_address;
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_disable_lock(FS_FORMAT);
+    #endif
     fs_erase_ucds_all_sector();
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_enable_lock(FS_FORMAT);
+    #endif
     return hal_fs_init(fs_start_address,sector_num);
 }
 
 int hal_fs_init(uint32_t fs_start_address,uint8_t sector_num)
 {
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_disable_lock(FS_INIT);
+    #endif
+
     if(fs_init_flag == TRUE)
     {
         return PPlus_ERR_FS_UNINITIALIZED;
@@ -869,7 +1195,11 @@ int hal_fs_init(uint32_t fs_start_address,uint8_t sector_num)
 
     fs_sector_num = sector_num;
     fs_offset_address = fs_start_address;
-    return fs_init();
+    int ret = fs_init();
+    #if(FLASH_PROTECT_FEATURE == 1)
+    hal_flash_enable_lock(FS_INIT);
+    #endif
+    return (ret);
 }
 
 

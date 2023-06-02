@@ -126,7 +126,7 @@
     Minimum Value: 2
     Maximum Value: can be anything.
 */
-#define MS_REPLAY_CACHE_SIZE                           30
+#define MS_REPLAY_CACHE_SIZE                           48
 
 /*
     Reassembled SAR Rx cache is to avoid handling of segmented frames

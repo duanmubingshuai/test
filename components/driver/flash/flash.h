@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************
+/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -49,12 +49,14 @@
 #include "gpio.h"
 #include "version.h"
 
-//#define FLASH_PROTECT_FEATURE
 #define CHIP_MADDR_LEN          6
 #define CHIP_ID_FLASH_ADDRESS           0x11000800
 #define CHIP_MADDR_FLASH_ADDRESS        (CHIP_ID_FLASH_ADDRESS+CHIP_ID_LENGTH*4)
+#define FLASH_PROTECT_AREA      0x7c// protected area: 0x7c -> ALL
 
-
+#ifndef FLASH_PROTECT_CMP_ENABLE
+    #define FLASH_PROTECT_CMP_ENABLE   0
+#endif
 
 #ifndef FLASH_PROTECT_FEATURE
     #define FLASH_PROTECT_FEATURE   0
@@ -112,28 +114,6 @@
 #define FCMD_READQIO            0xeB  //quad I/O fast read
 #define FCMD_READQIOW           0xe7  //quad I/O fast read word
 
-#if FLASH_PROTECT_FEATURE
-    //protected area:0~256KB
-    #define GD25WD80_ID             0x1464C8    //NULL
-
-    #define GD25WD40_ID             0x1364C8    //0x18
-    #define XT25W04D_ID             0x13600B    //0x18
-    #define MD25D40_ID              0x134051    //0x18
-    #define ZB25WD40_ID             0x13325E    //0x18
-
-    #define UC25HQ40_ID             0x1360B3    //0x2c
-    #define P25D40U_ID              0x136085    //0x2c
-    #define P25Q16_ID               0x154285    //0x2c
-    #define BY25Q40_ID              0x131068    //0x2c
-    #define GT25Q40_ID              0x1340C4    //0x2c
-    #define TH25D40HB_ID            0x1360CD    //0x2c
-    #define TH25Q40UA_ID            0x1360EB    //0x2c
-    //protected area:0~128KB
-    #define XT25W02D_ID             0x12600B    //0x28
-    #define TH25D20UA_ID            0x1260EB    //0x28
-    #define P25D22U_ID              0x124485    //0x28
-    #define P25D21U_ID              0x124085    //0x28
-#endif
 typedef struct
 {
     uint32_t      rd_instr;
@@ -155,6 +135,27 @@ typedef struct
     uint8_t mAddr[CHIP_MADDR_LEN];
 } chipMAddr_t;
 
+typedef enum
+{
+    SLB_OTA                = 0x1,
+    SINGLE_OTA             = 0x2,
+    MAIN_INIT              = 0x3,
+    FS_INIT                = 0x4,
+    FS_FORMAT              = 0x5,
+    FS_GARBAGE_COLLECT     = 0x6,
+    FS_ITEM_DEL            = 0x7,
+    FS_ITEM_WRITE          = 0x8,
+    PS_STORE               = 0x9,
+    USER_DEFINE_1          = 0xa,
+    USER_DEFINE_2          = 0xb,
+    USER_DEFINE_3          = 0xc,
+    NONE                   = 0xff, //Only used in main initialization !!!
+} module_ID_t;
+typedef struct
+{
+    bool    bypass_flash_lock;
+    module_ID_t module_ID;
+} FLASH_PROTECT_INFO;
 
 extern int _spif_wait_nobusy(uint8_t flg, uint32_t tout_ns);
 extern int  spif_write(uint32_t addr, uint8_t* data, uint32_t size);
@@ -174,9 +175,12 @@ extern void spif_wrdata(uint8_t* data, uint8_t len);
 int hal_spif_cache_init(xflash_Ctx_t cfg);
 void hal_cache_tag_flush(void);
 #if(FLASH_PROTECT_FEATURE == 1)
-    int hal_flash_write_status_register(uint16_t reg_data);
+    int hal_flash_enable_lock(module_ID_t id);
+    int hal_flash_disable_lock(module_ID_t id);
+    int hal_flash_write_status_register(uint8_t reg_data);
     int hal_flash_lock(void);
     int hal_flash_unlock(void);
+    uint8_t hal_flash_get_lock_state(void);
 #endif
 int hal_flash_write(uint32_t addr, uint8_t* data, uint32_t size);
 int hal_flash_write_by_dma(uint32_t addr, uint8_t* data, uint32_t size);
@@ -184,12 +188,6 @@ int hal_flash_read(uint32_t addr, uint8_t* data, uint32_t size);
 int hal_flash_erase_sector(unsigned int addr);
 int hal_flash_erase_block64(unsigned int addr);
 int flash_write_word(unsigned int offset, uint32_t  value);
-
-#ifdef FLASH_PROTECT_FEATURE
-    int hal_flash_lock(void);
-    int hal_flash_unlock(void);
-    uint8_t hal_flash_get_lock_state(void);
-#endif
 
 CHIP_ID_STATUS_e chip_id_one_bit_hot_convter(uint8_t* b,uint32_t w);
 

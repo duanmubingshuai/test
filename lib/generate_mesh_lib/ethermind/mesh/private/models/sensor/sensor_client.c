@@ -124,156 +124,142 @@ API_RESULT MS_sensor_client_send_reliable_pdu
     MS_IGNORE_UNUSED_PARAM(rsp_opcode);
 
     switch(req_opcode)
-    {  
-        case MS_ACCESS_SENSOR_DESCRIPTOR_GET_OPCODE:
+    {
+    case MS_ACCESS_SENSOR_DESCRIPTOR_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_DESCRIPTOR_GET_OPCODE\n");
+        MS_SENSOR_DESCRIPTOR_GET_STRUCT* param_p;
+        param_p = (MS_SENSOR_DESCRIPTOR_GET_STRUCT*) param;
+
+        if(param_p->optional_fields_present)
         {
-            printf("MS_ACCESS_SENSOR_DESCRIPTOR_GET_OPCODE\n");           
-            MS_SENSOR_DESCRIPTOR_GET_STRUCT* param_p;
-            param_p = (MS_SENSOR_DESCRIPTOR_GET_STRUCT*) param;
-
-            if(param_p->optional_fields_present)
-            {
-                MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
-                marker += 2;
-            }
-        }
-        break;
-
-        case MS_ACCESS_SENSOR_CADENCE_GET_OPCODE:
-        {
-            printf("MS_ACCESS_SENSOR_CADENCE_GET_OPCODE\n");           
-            MS_SENSOR_CADENCE_GET_STRUCT* param_p;
-            param_p = (MS_SENSOR_CADENCE_GET_STRUCT*) param;
-
             MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
             marker += 2;
         }
-        break;
+    }
+    break;
 
-        case MS_ACCESS_SENSOR_CADENCE_SET_OPCODE:
-        case MS_ACCESS_SENSOR_CADENCE_SET_UNACKNOWLEDGED_OPCODE:
+    case MS_ACCESS_SENSOR_CADENCE_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_CADENCE_GET_OPCODE\n");
+        MS_SENSOR_CADENCE_GET_STRUCT* param_p;
+        param_p = (MS_SENSOR_CADENCE_GET_STRUCT*) param;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
+        marker += 2;
+    }
+    break;
+
+    case MS_ACCESS_SENSOR_CADENCE_SET_OPCODE:
+    case MS_ACCESS_SENSOR_CADENCE_SET_UNACKNOWLEDGED_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_CADENCE_SET_OPCODE\n");
+        MS_SENSOR_CADENCE_SET_STRUCT* param_p;
+        param_p = (MS_SENSOR_CADENCE_SET_STRUCT*) param;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
+        marker += 2;
+        buffer[marker] = (param_p->fast_cadence_period_divisor)&(param_p->status_trigger_type << 7);
+        marker ++;
+        MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->status_trigger_delta_down[0],param_p->status_trigger_delta_down_len);
+        marker += param_p->status_trigger_delta_down_len;
+        MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->status_trigger_delta_up[0],param_p->status_trigger_delta_up_len);
+        marker += param_p->status_trigger_delta_up_len;
+        buffer[marker] = param_p->status_min_interval;
+        marker ++;
+        MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->fast_cadence_low[0],param_p->fast_cadence_low_len);
+        marker += param_p->fast_cadence_low_len;
+        MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->fast_cadence_high[0],param_p->fast_cadence_high_len);
+        marker += param_p->fast_cadence_high_len;
+    }
+    break;
+
+    case MS_ACCESS_SENSOR_SETTINGS_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_SETTINGS_GET_OPCODE\n");
+        MS_SENSOR_SETTINGS_GET_STRUCT* param_p;
+        param_p = (MS_SENSOR_SETTINGS_GET_STRUCT*) param;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_property_id);
+        marker += 2;
+    }
+    break;
+
+    case MS_ACCESS_SENSOR_SETTING_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_SETTING_GET_OPCODE\n");
+        MS_SENSOR_SETTING_GET_STRUCT* param_p;
+        param_p = (MS_SENSOR_SETTING_GET_STRUCT*) param;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_property_id);
+        marker += 2;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_setting_property_id);
+        marker += 2;
+    }
+    break;
+
+    case MS_ACCESS_SENSOR_SETTING_SET_OPCODE:
+    case MS_ACCESS_SENSOR_SETTING_SET_UNACKNOWLEDGED_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_SETTING_SET_OPCODE\n");
+        MS_SENSOR_SETTING_SET_STRUCT* param_p;
+        param_p = (MS_SENSOR_SETTING_SET_STRUCT*) param;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_property_id);
+        marker += 2;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_setting_property_id);
+        marker += 2;
+        MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->sensor_setting_raw[0],param_p->sensor_setting_raw_len);
+        marker += param_p->sensor_setting_raw_len;
+    }
+    break;
+
+    case MS_ACCESS_SENSOR_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_GET_OPCODE\n");
+        MS_SENSOR_GET_STRUCT* param_p;
+        param_p = (MS_SENSOR_GET_STRUCT*) param;
+
+        if(param_p->optional_fields_present)
         {
-            printf("MS_ACCESS_SENSOR_CADENCE_SET_OPCODE\n");           
-            MS_SENSOR_CADENCE_SET_STRUCT* param_p;
-            param_p = (MS_SENSOR_CADENCE_SET_STRUCT*) param;
-
             MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
             marker += 2;
-
-            buffer[marker] = (param_p->fast_cadence_period_divisor)&(param_p->status_trigger_type << 7);
-            marker ++;
-
-            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->status_trigger_delta_down[0],param_p->status_trigger_delta_down_len);
-            marker += param_p->status_trigger_delta_down_len;
-
-            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->status_trigger_delta_up[0],param_p->status_trigger_delta_up_len);
-            marker += param_p->status_trigger_delta_up_len;
-
-            buffer[marker] = param_p->status_min_interval;
-            marker ++;
-
-            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->fast_cadence_low[0],param_p->fast_cadence_low_len);
-            marker += param_p->fast_cadence_low_len;
-
-            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->fast_cadence_high[0],param_p->fast_cadence_high_len);
-            marker += param_p->fast_cadence_high_len;
         }
-        break;
+    }
+    break;
 
-        case MS_ACCESS_SENSOR_SETTINGS_GET_OPCODE:
+    case MS_ACCESS_SENSOR_COLUMN_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_COLUMN_GET_OPCODE\n");
+        MS_SENSOR_COLUMN_GET_STRUCT* param_p;
+        param_p = (MS_SENSOR_COLUMN_GET_STRUCT*) param;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
+        marker += 2;
+        MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->raw_value_x[0],param_p->raw_value_x_len);
+        marker += param_p->raw_value_x_len;
+    }
+    break;
+
+    case MS_ACCESS_SENSOR_SERIES_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SENSOR_SERIES_GET_OPCODE\n");
+        MS_SENSOR_SERIES_GET_STRUCT* param_p;
+        param_p = (MS_SENSOR_SERIES_GET_STRUCT*) param;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
+        marker += 2;
+
+        if(param_p->optional_fields_present)
         {
-            printf("MS_ACCESS_SENSOR_SETTINGS_GET_OPCODE\n");           
-            MS_SENSOR_SETTINGS_GET_STRUCT* param_p;
-            param_p = (MS_SENSOR_SETTINGS_GET_STRUCT*) param;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_property_id);
-            marker += 2;
+            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->raw_value_x1[0],param_p->raw_value_x1_len);
+            marker += param_p->raw_value_x1_len;
+            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->raw_value_x2[0],param_p->raw_value_x2_len);
+            marker += param_p->raw_value_x2_len;
         }
-        break;
-
-        case MS_ACCESS_SENSOR_SETTING_GET_OPCODE:
-        {
-            printf("MS_ACCESS_SENSOR_SETTING_GET_OPCODE\n");           
-            MS_SENSOR_SETTING_GET_STRUCT* param_p;
-            param_p = (MS_SENSOR_SETTING_GET_STRUCT*) param;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_property_id);
-            marker += 2;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_setting_property_id);
-            marker += 2;
-        }
-        break;
-
-        case MS_ACCESS_SENSOR_SETTING_SET_OPCODE:
-        case MS_ACCESS_SENSOR_SETTING_SET_UNACKNOWLEDGED_OPCODE:
-        {
-            printf("MS_ACCESS_SENSOR_SETTING_SET_OPCODE\n");           
-            MS_SENSOR_SETTING_SET_STRUCT* param_p;
-            param_p = (MS_SENSOR_SETTING_SET_STRUCT*) param;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_property_id);
-            marker += 2;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->sensor_setting_property_id);
-            marker += 2;
-
-            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->sensor_setting_raw[0],param_p->sensor_setting_raw_len);
-            marker += param_p->sensor_setting_raw_len;
-        }
-        break;
-        case MS_ACCESS_SENSOR_GET_OPCODE:
-        {
-            printf("MS_ACCESS_SENSOR_GET_OPCODE\n");           
-            MS_SENSOR_GET_STRUCT* param_p;
-            param_p = (MS_SENSOR_GET_STRUCT*) param;
-
-            if(param_p->optional_fields_present)
-            {
-                MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
-                marker += 2;
-            }
-        }
-        break;
-        
-        case MS_ACCESS_SENSOR_COLUMN_GET_OPCODE:
-        {
-            printf("MS_ACCESS_SENSOR_COLUMN_GET_OPCODE\n");           
-            MS_SENSOR_COLUMN_GET_STRUCT* param_p;
-            param_p = (MS_SENSOR_COLUMN_GET_STRUCT*) param;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
-            marker += 2;
-
-            MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->raw_value_x[0],param_p->raw_value_x_len);
-            marker += param_p->raw_value_x_len;
-        }
-        break;
-
-        case MS_ACCESS_SENSOR_SERIES_GET_OPCODE:
-        {
-            printf("MS_ACCESS_SENSOR_SERIES_GET_OPCODE\n");           
-            MS_SENSOR_SERIES_GET_STRUCT* param_p;
-            param_p = (MS_SENSOR_SERIES_GET_STRUCT*) param;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->property_id);
-            marker += 2;
-
-            if(param_p->optional_fields_present)
-            {
-                MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->raw_value_x1[0],param_p->raw_value_x1_len);
-                marker += param_p->raw_value_x1_len;
-                MS_PACK_LE_N_BYTE(&buffer[marker], &param_p->raw_value_x2[0],param_p->raw_value_x2_len);
-                marker += param_p->raw_value_x2_len;
-            }
-        }
-        break;
+    }
+    break;
     #if 0
+
     case MS_ACCESS_TIME_GET_OPCODE:
     {
         printf("MS_ACCESS_TIME_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TIME_SET_OPCODE:
     {
         MS_STATE_TIME_STRUCT* param_p;
@@ -283,6 +269,7 @@ API_RESULT MS_sensor_client_send_reliable_pdu
         param_p = (MS_STATE_TIME_STRUCT*) param;
         MS_PACK_LE_N_BYTE(&buffer[marker], param_p->tai_seconds,5);
         marker += 5;
+
         if(EM_mem_cmp(param_p->tai_seconds,tai_seconds_com,5) != 0)
         {
             buffer[marker] = param_p->subsecond;
@@ -297,11 +284,13 @@ API_RESULT MS_sensor_client_send_reliable_pdu
         }
     }
     break;
+
     case MS_ACCESS_TIME_ZONE_GET_OPCODE:
     {
         printf("MS_ACCESS_TIME_ZONE_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TIME_ZONE_SET_OPCODE:
     {
         MS_TIME_ZONE_SET_STRUCT* param_p;
@@ -320,6 +309,7 @@ API_RESULT MS_sensor_client_send_reliable_pdu
         printf("MS_ACCESS_TAI_UTC_DELTA_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TAI_UTC_DELTA_SET_OPCODE:
     {
         MS_TAI_UTC_DELTA_SET_STRUCT* param_p;
@@ -340,6 +330,7 @@ API_RESULT MS_sensor_client_send_reliable_pdu
         printf("MS_ACCESS_TIME_ROLE_GET_OPCODE\n");
     }
     break;
+
     case MS_ACCESS_TIME_ROLE_SET_OPCODE:
     {
         MS_STATE_TIME_ROLE_STRUCT* param_p;
@@ -353,8 +344,8 @@ API_RESULT MS_sensor_client_send_reliable_pdu
 
     default:
         printf("[SENSOR ERROR]CANNOT FIND OPCODE\n");
-    break;
-    }    
+        break;
+    }
 
     /* Publish - reliable */
     if (0 == marker)
@@ -439,7 +430,8 @@ API_RESULT sensor_client_cb
 
     switch(opcode)
     {
-    #if 0
+        #if 0
+
     case MS_ACCESS_SCENE_REGISTER_STATUS_OPCODE:
     {
         SCENE_CLIENT_TRC(

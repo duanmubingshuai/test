@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -134,6 +134,7 @@
 
 #define   CONN_CSA2_ALLOW                  0x00000080
 
+#define OSALMEM_IN_USE             0x8000
 extern const uint32_t g_hclk_table[SYS_CLK_NUM];
 
 // const uint32_t g_hclk_table[SYS_CLK_NUM] =
@@ -205,16 +206,22 @@ extern uint8  g_llAdvMode;
 extern uint32_t       g_llHdcDirAdvTime;
 
 extern uint32 g_new_master_delta;
+
+
 //-----------------------------------------------------------------------------------
 //extern rom  variable
 //
+uint8 ll_recv_scan_all_cnt = 0;
 uint32* pGlobal_config = NULL;
 void efuse_init(void);
 
 const  unsigned char libRevisionDate[]=__DATE__;
 const  unsigned char libRevisionTime[]=__TIME__;
 
+bool chip_hw_version;
+
 // uint8 CreateConn_Flag = FALSE;
+uint8 g_clock_check_flag;
 uint32_t g_t_llhwgo = 0;
 uint8_t g_ll_adv_scan_concurrent=0;
 uint8 g_ll_sleep_timer5_recoverRequired = FALSE;
@@ -226,8 +233,34 @@ uint8 g_txdata_content = LL_TX_DATA_CONTEXT_POST_PROCESSING;
 
 llDevList_t* p_g_llDevList=NULL;
 
+typedef struct
+{
+    uint8_t flag;
+    uint8_t lastNeSn;
+} llFlowCtrl_t;
+llFlowCtrl_t g_ll_flowCtrl[MAX_NUM_LL_CONN_ROM_LIMT];
+
+typedef struct
+{
+    uint8 inuse;
+    void* buf;
+} ll_buf_t;
+
+typedef struct
+{
+    ll_buf_t BufRes[3];//TXBUF,TXCTRLBUF,RXBUF
+    uint8    bufNum;
+} llbuf_Res_t;
+
+#define TXBUF            0
+#define TXCTRLBUF        1
+#define RXBUF            2
+
+llbuf_Res_t llBuf_Res[MAX_NUM_LL_CONN_ROM_LIMT];
+
 extern void log_printf(const char* format, ...);
 uint8 g_recvphyupdate = FALSE;
+uint8 g_msater_recv_phyrsp = FALSE;
 extern uint32 hclk_per_us;
 extern uint32 hclk_per_us_shift;
 extern volatile uint8 g_clk32K_config;
@@ -276,8 +309,8 @@ extern uint8    g_currentLocalRpa[LL_DEVICE_ADDR_LEN];
 //extern llPduLenManagment_t g_llPduLen;
 extern uint8_t             llSecondaryState;            // secondary state of LL
 extern uint8               g_blePktVersion;
-extern osalMemHdr_t *ff1;
-extern osalMemHdr_t *theHeap;
+extern osalMemHdr_t* ff1;
+extern osalMemHdr_t* theHeap;
 extern uint32 heapSize;
 extern uint8 osalMemStat;
 //xip patch
@@ -285,8 +318,8 @@ void __ATTR_FUNC_XIP__(llConnTerminate1)( llConnState_t* connPtr, uint8 reason )
 uint8 __ATTR_FUNC_XIP__(llSetupSecAdvEvt1)( void );
 uint8 __ATTR_FUNC_XIP__(llProcessSlaveControlProcedures1)( llConnState_t* connPtr );
 uint8 __ATTR_FUNC_XIP__(llProcessMasterControlProcedures1)( llConnState_t* connPtr );
-void  __ATTR_FUNC_XIP__(LL_ENC_Encrypt1)( llConnState_t* connPtr, uint8 pktHdr, uint8 pktLen, uint8* pBuf );
-uint8 __ATTR_FUNC_XIP__(LL_ENC_Decrypt1)( llConnState_t* connPtr, uint8 pktHdr, uint8 pktLen, uint8* pBuf );
+// void  __ATTR_FUNC_XIP__(LL_ENC_Encrypt1)( llConnState_t* connPtr, uint8 pktHdr, uint8 pktLen, uint8* pBuf );
+// uint8 __ATTR_FUNC_XIP__(LL_ENC_Decrypt1)( llConnState_t* connPtr, uint8 pktHdr, uint8 pktLen, uint8* pBuf );
 llStatus_t __ATTR_FUNC_XIP__(LL_SetAdvParam1)( uint16 advIntervalMin,
                                                uint16 advIntervalMax,
                                                uint8  advEvtType,
@@ -375,14 +408,25 @@ llStatus_t __ATTR_FUNC_XIP__(LL_InitConnectContext)(llConnState_t*    pConnConte
                                                     uint8 maxPktPerEventRx,
                                                     uint8 blePktVersion);
 llStatus_t __ATTR_FUNC_XIP__(LL_TxData1)( uint16 connId,
-                      uint8 *pBuf,
-                      uint8  pktLen,
-                      uint8  fragFlag );
+                                          uint8* pBuf,
+                                          uint8  pktLen,
+                                          uint8  fragFlag );
 
-void *ll_osal_mem_alloc( uint16 size );
-void ll_osal_mem_free(void *ptr);
+void* ll_osal_mem_alloc(uint8_t connId, uint16 size, uint8_t bufType );
+void ll_osal_mem_free(uint8_t connId, void* ptr);
+void LL_AdvReportCback_Patch( uint8 advEvt,
+                              uint8 advAddrType,
+                              uint8* advAddr,
+                              uint8 dataLen,
+                              uint8* advData,
+                              int8  rssi );
 
-uint8 llProcessRxData1( void );
+
+void* mesh_osal_mem_alloc( uint16 size );
+void mesh_osal_mem_free(void* ptr);
+
+
+// uint8 llProcessRxData1( void );
 void llSlaveEvt_TaskEndOk1( void );
 
 void ll_hw_read_tfifo_rtlp1(void);
@@ -394,25 +438,6 @@ uint8 llWriteTxData1 ( llConnState_t* connPtr,
 llStatus_t LL_Reset1( void );
 void llReleaseConnId1( llConnState_t* connPtr );
 extern void ll_dbg_heap_statics(void);
-
-
-#define _TOSTRING(s)	#s
-#define TOSTRING(s)	_TOSTRING(s)
-
-uint32 get_commit_id(void)
-{
-	uint32 ret;
-	ret = (uint32)TOSTRING(COMMIT_ID);
-	return ret;
-}
-
-uint32 get_commit_date(void)
-{
-	uint32 rd;
-	rd = (uint32)TOSTRING(COMMIT_DATE);
-	return rd;
-}
-
 
 void __wdt_init(void)
 {
@@ -556,6 +581,106 @@ void llbuf_alloc_time_statics(uint32_t t0)
 
     g_llbuf_alloc_avg = ((g_llbuf_alloc_avg*7)+(t))>>3;
 }
+
+static void ll_flow_ctrl_restore(llConnState_t* connPtr)
+{
+    if(g_ll_flowCtrl[connPtr->connId].flag)
+    {
+        subWriteReg( (LL_HW_BASE+ 0x40),8,8,0);
+        connPtr->sn_nesn=(0x02 & connPtr->sn_nesn) | g_ll_flowCtrl[connPtr->connId].lastNeSn;
+        subWriteReg( (LL_HW_BASE+ 0x3c),1,0,connPtr->sn_nesn);
+        g_ll_flowCtrl[connPtr->connId].flag = 0;
+        g_ll_flowCtrl[connPtr->connId].lastNeSn = 0;
+    }
+}
+static void ll_flow_ctrl_process(llConnState_t* connPtr)
+{
+    g_ll_flowCtrl[connPtr->connId].flag = 1;
+    g_ll_flowCtrl[connPtr->connId].lastNeSn = 0x01&connPtr->sn_nesn;
+    subWriteReg( (LL_HW_BASE+ 0x40),8,8,1);
+    subWriteReg( (LL_HW_BASE+ 0x40),0,0,g_ll_flowCtrl[connPtr->connId].lastNeSn);
+    *(volatile uint32_t*)(LL_HW_BASE+ 0x68) = (LL_HW_IGN_CRC );
+}
+extern void ll_read_rxfifo0(void);
+void ll_read_rxfifo1(void)
+{
+    llConnState_t* connPtr;
+    connPtr = &conn_param[g_ll_conn_ctx.currentConn];
+
+    if(g_ll_flowCtrl[connPtr->connId].flag)
+    {
+        rfCounters.numRxOk = 0;
+        return;
+    }
+
+    ll_read_rxfifo0();
+}
+/*V313 cusum advance rx window value */
+volatile static uint8 cusum_array[5] = {2, 5, 9, 14, 20};//start from 2 to 6: 2, 2+3, 2+3+4, 2+3+4+5, 2+3+4+5+6
+
+static uint32 cusum_advance_slave_rx_window()
+{
+    llConnState_t* conn_ptr;
+    conn_ptr = &conn_param[g_ll_conn_ctx.currentConn];
+    uint32 cusum_advance_value = 0;
+
+    if (0 == conn_ptr->pmCounter.ll_tbd_cnt1)
+    {
+        cusum_advance_value = 0;
+    }
+    else if (1 == conn_ptr->pmCounter.ll_tbd_cnt1)
+    {
+        cusum_advance_value = pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE];
+    }
+    else if ( (conn_ptr->pmCounter.ll_tbd_cnt1 <= 6) && (conn_ptr->firstPacket != 1) )
+    {
+        //add 200us per 160ms ConnIntv
+        cusum_advance_value = pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE] + cusum_array[conn_ptr->pmCounter.ll_tbd_cnt1 - 2] * pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] * ((conn_ptr->curParam.connInterval >>8) + 1);
+    }
+    else
+    {
+        cusum_advance_value = pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE] + cusum_array[4] * pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] * ((conn_ptr->curParam.connInterval >>8) + 1);
+    }
+
+    cusum_advance_value = MIN(cusum_advance_value, (conn_ptr->curParam.connInterval >> 3) * 625 * 3 );
+    return cusum_advance_value;
+}
+
+/*V313 enlarge_rx_timeout_1st value when rx timeout */
+static void enlarge_rx_timeout_1st(void)
+{
+    llConnState_t* connPtr;
+    connPtr = &conn_param[g_ll_conn_ctx.currentConn];
+    volatile uint32 rx_timeout_1st_value, set_rx_timeout_1st_limit,cusum_rx_advance_window;
+    rx_timeout_1st_value = (*(volatile uint32_t*)(LL_HW_BASE + 0x24) & 0xffff);
+
+    if (0 == connPtr->pmCounter.ll_tbd_cnt1)
+    {
+        set_rx_timeout_1st_limit = rx_timeout_1st_value + ((connPtr->slaveLatency * connPtr->curParam.connInterval) >> 1);
+    }
+    else if (1 == connPtr->pmCounter.ll_tbd_cnt1)
+    {
+        set_rx_timeout_1st_limit = rx_timeout_1st_value + pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE] * 2;
+    }
+    else if (connPtr->pmCounter.ll_tbd_cnt1 <= 6)
+    {
+        set_rx_timeout_1st_limit = rx_timeout_1st_value + (pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE] + (cusum_array[connPtr->pmCounter.ll_tbd_cnt1 - 2] * pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] * ((connPtr->curParam.connInterval >> 8) + 1))) * 2;
+    }
+    else
+    {
+        set_rx_timeout_1st_limit = rx_timeout_1st_value + (pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE] + (cusum_array[4] * pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] * ((connPtr->curParam.connInterval >> 8) + 1))) * 2;
+    }
+
+    // 2023 03 18 add: 1st rx timeout to set an upper limit
+    cusum_rx_advance_window = cusum_advance_slave_rx_window();
+
+    if((set_rx_timeout_1st_limit - cusum_rx_advance_window) > ((connPtr->lastTimeToNextEvt >> 3) * 625 * 3))
+    {
+        set_rx_timeout_1st_limit = cusum_rx_advance_window + ((connPtr->lastTimeToNextEvt >> 1) * 625);
+    }
+
+    ll_hw_set_rx_timeout_1st(set_rx_timeout_1st_limit);
+}
 //----------------------------------------------------------------------------------------------
 //patch
 //uint8_t mc_dbg_io[5]={P0,P34,P33,P32,P31};
@@ -576,6 +701,9 @@ void ll_hw_go1(void)
         g_pmCounters.ll_trigger_err++;
     }
 
+    if (llModeLast == LL_HW_MODE_RTLP || llModeLast == LL_HW_MODE_TRLP)
+        ll_flow_ctrl_restore(connPtr);
+
     g_t_llhwgo = read_current_fine_time();
     *(volatile uint32_t*)(LL_HW_BASE+ 0x14) = LL_HW_IRQ_MASK;   //clr  irq status
     *(volatile uint32_t*)(LL_HW_BASE+ 0x0c) = 0x0001;           //mask irq :only use mode done
@@ -583,6 +711,21 @@ void ll_hw_go1(void)
 
     if (llModeLast == LL_HW_MODE_RTLP || llModeLast == LL_HW_MODE_TRLP)
     {
+        /*V313 extend trlp timeout */
+        if (llModeLast == LL_HW_MODE_TRLP)
+        {
+            uint32_t temp = connPtr->curParam.connInterval * 625 - connPtr->llPduLen.local.MaxRxTime - pGlobal_config[LL_HW_TRLP_TO_GAP];
+            temp >>= (g_ll_conn_ctx.numLLMasterConns>>1);
+            ll_hw_set_loop_timeout(temp > pGlobal_config[LL_HW_RTLP_LOOP_TIMEOUT] ?
+                                   pGlobal_config[LL_HW_RTLP_LOOP_TIMEOUT] : temp);
+        }
+
+        /*V313 enlarge_rx_timeout_1st value when rx timeout */
+        if (llModeLast == LL_HW_MODE_RTLP && (connPtr->firstPacket != 1) )
+        {
+            enlarge_rx_timeout_1st();
+        }
+
         /*
             The T-Cost of the alloc is around 100us-200us depends on the osal_heap usage
             For 8K heap and almost 95% usage, the Max T-cost is about 350us
@@ -590,7 +733,6 @@ void ll_hw_go1(void)
             2. while osal_mem_alloc sucess, set max length to 255
             3. after ll_buf alloc, change the rx_num as alloc num
         */
-        set_max_length(0);
         uint32_t t0 = read_current_fine_time();
         uint16 alloc_Len = 10;
 
@@ -609,11 +751,10 @@ void ll_hw_go1(void)
             else
                 idx = k+get_rx_write_ptr(connPtr) - g_maxPktPerEventRx;
 
-            connPtr->ll_buf.rx_conn_desc[idx] = ll_osal_mem_alloc(alloc_Len);
+            connPtr->ll_buf.rx_conn_desc[idx] = ll_osal_mem_alloc(g_ll_conn_ctx.currentConn, alloc_Len, RXBUF);
 
             if( connPtr->ll_buf.rx_conn_desc[idx] != NULL)
             {
-                set_max_length(0xff);
                 SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_RX_BUF_B,1);
                 connPtr->ll_buf.rx_conn_desc[idx]->valid = 0;
                 connPtr->ll_buf.rx_conn_desc[idx]->header = 0;
@@ -625,6 +766,11 @@ void ll_hw_go1(void)
 
         if(rx_num)
             write_reg(LL_HW_BASE+ 0x04, ((read_reg(LL_HW_BASE+ 0x04) & 0xff00ffff) | ( rx_num << 16) ) );
+        else
+        {
+            write_reg(LL_HW_BASE+ 0x04, ((read_reg(LL_HW_BASE+ 0x04) & 0xff00ffff) | ( 1 << 16) ) );
+            ll_flow_ctrl_process(connPtr);
+        }
 
         llbuf_alloc_time_statics(t0);
         //dbg_printf("\nalloc:rx%d:",0xff&((read_reg(LL_HW_BASE+ 0x04))>>16));
@@ -729,6 +875,8 @@ void LL_set_default_conn_params1(llConnState_t* connPtr)
 
     for(int j = 0; j < MAX_LL_BUF_LEN; j++)
         connPtr->ll_buf.rx_conn_desc[j] = connPtr->ll_buf.tx_not_ack_pkt;
+
+    connPtr->pmCounter.ll_tbd_cnt3 = 1;
 }
 
 uint8 llSetupNextSlaveEvent1( void )
@@ -800,15 +948,12 @@ void ll_adptive_adj_next_time1(uint32_t next_time)
     connPtr = &conn_param[g_ll_conn_ctx.currentConn];
 
     //no anche point
-    if (connPtr->rx_timeout)
+    if (!connPtr->rx_crcok)///2023 03 18 add: no CRC ok package will advance to rx anchor points;
     {
-        connPtr->pmCounter.ll_tbd_cnt1++;
-        slave_conn_event_recv_delay = LL_TIME_DELTA(g_t_llhwgo, ISR_entry_time)-370+160;//160:timer1 irq->hwgo trigger
+        if(connPtr->rx_timeout)
+            connPtr->pmCounter.ll_tbd_cnt1++;
 
-        if(conn_param[g_ll_conn_ctx.currentConn].curParam.connInterval >= pGlobal_config[LL_DEFUALT_CONN_INTERVAL_LIMIT_VALUE])
-        {
-            slave_conn_event_recv_delay += (connPtr->pmCounter.ll_tbd_cnt1 * pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE]);//advance the RX WINDOW value
-        }
+        slave_conn_event_recv_delay = LL_TIME_DELTA(g_t_llhwgo, ISR_entry_time)-370+160;//160:timer1 irq->hwgo trigger
     }
     else
     {
@@ -830,12 +975,60 @@ void ll_adptive_adj_next_time1(uint32_t next_time)
     {
         slave_conn_event_recv_delay += pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE];
     }
+    //2023 03 18 add: advance rx anchor point;
+    else if ((connPtr->pmCounter.ll_tbd_cnt1 != 0) && (connPtr->pmCounter.ll_tbd_cnt1 <= 6) && (connPtr->firstPacket != 1))
+    {
+        uint32 advance_value_limit = cusum_advance_slave_rx_window();
+
+        ///limit the value of advance_value_limit to less than conn_intv/2
+        if (advance_value_limit >= (connPtr->curParam.connInterval >> 3) * 625 *3)
+        {
+            if (connPtr->pmCounter.ll_tbd_cnt1 == 2)
+            {
+                advance_value_limit = 0;
+            }
+            else
+            {
+                advance_value_limit = (connPtr->curParam.connInterval >> 3) * 625 * 3 - (pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE] + cusum_array[connPtr->pmCounter.ll_tbd_cnt1 - 3] * pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] * ((connPtr->curParam.connInterval >> 8) + 1));
+                connPtr->pmCounter.ll_tbd_cnt1 = 7;
+            }
+
+            slave_conn_event_recv_delay += advance_value_limit;
+        }
+        else
+        {
+            // add 200us per 160ms ConnIntv
+            slave_conn_event_recv_delay += connPtr->pmCounter.ll_tbd_cnt1 * pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] * ((connPtr->curParam.connInterval >> 8) + 1);
+        }
+    }
 
     //adj for ntrm pkt, each pkt cost 50us in wt tfifo
     //if(connPtr->rx_timeout)
     //slave_conn_event_recv_delay += ((connPtr->ll_buf.ntrm_cnt) * 50);
 }
 
+/*v313 2023 05 09 bugfix: master lost conn cancel evt*/
+__ATTR_SECTION_XIP__ llStatus_t LL_CreateConnCancel1( void )
+{
+    HAL_ENTER_CRITICAL_SECTION();
+    uint32 llWaitingIrqTemp = llWaitingIrq;
+    llWaitingIrq = FALSE;
+    llStatus_t return_status = LL_CreateConnCancel0();
+    llWaitingIrq = llWaitingIrqTemp;
+    HAL_EXIT_CRITICAL_SECTION();
+    return( return_status );
+}
+
+/*v313 2023 02 28 bugfix: lost terminate evt*/
+struct DisconnNode
+{
+    uint8 reason;
+    uint8 used;
+    uint16 connId;
+};
+static struct DisconnNode dis_params[16]; //Supports a maximum of 16 connections
+
+/*v313 2023 02 28 bugfix: lost terminate evt*/
 void llConnTerminate1( llConnState_t* connPtr,
                        uint8          reason )
 {
@@ -853,10 +1046,67 @@ void llConnTerminate1( llConnState_t* connPtr,
     }
     else
     {
-        llConnTerminate0(connPtr,reason);
+        for (uint8 i = 0; i < 16; i++)
+        {
+            if(dis_params[i].used == FALSE)
+            {
+                dis_params[i].connId = ((uint16)connPtr->connId) & 0x00FF;
+                dis_params[i].reason = reason;
+                dis_params[i].used = true;
+                break;
+            }
+        }
+
+        (void)osal_set_event( LL_TaskID, LL_EVT_RESET_SYSTEM_SOFT );
+        // // let the application know
+        // LL_DisconnectCback( (uint16)connPtr->connId, reason );
+
+        // A2 multi-connection
+        if (g_ll_conn_ctx.scheduleInfo[connPtr->connId].linkRole == LL_ROLE_MASTER)
+            g_ll_conn_ctx.numLLMasterConns --;
+
+        // cleanup the connection data structures and task
+        llConnCleanup( connPtr );
+        // secondary state is allow for multiconnection, it will be transfer to main state in next event
+        /*
+            // add in A2 for simultaneous conn event + adv
+            // if slave conn termainte, the secondary adv also terminated
+            if (llSecondaryState != LL_SEC_STATE_IDLE)
+            {
+            // TO consider: if previous LL state is MASTER, allow adv
+            //              if previous LL state is SLAVE, disallow adv
+            llSecondaryState = LL_SEC_STATE_IDLE;
+            adv_param.advMode = LL_ADV_MODE_OFF;
+            osal_stop_timerEx( LL_TaskID, LL_EVT_SECONDARY_ADV );   // timer may be running, stop it
+            }
+        */
+        return;
     }
 }
 
+/*v313 2023 02 28 bugfix: lost terminate evt*/
+uint16 LL_ProcessEvent1( uint8 task_id, uint16 events )
+{
+    //0x9DE:/LL_EVT_NEXT_INTERVAL/ /LL_EVT_MASTER_CONN_CREATED/ /LL_EVT_MASTER_CONN_CANCELLED/ /LL_EVT_DIRECTED_ADV_FAILED/
+    //      /LL_EVT_SLAVE_CONN_CREATED/ /LL_EVT_SLAVE_CONN_CREATED_BAD_PARAM/ /LL_EVT_START_32KHZ_XOSC_DELAY/ /LL_EVT_32KHZ_XOSC_DELAY/
+    if ( (!((uint16)events & 0x9DE)) && (events & LL_EVT_RESET_SYSTEM_SOFT))
+    {
+        for (uint8 i = 0; i < 16; i++)
+        {
+            if(dis_params[i].used == TRUE)
+            {
+                LL_DisconnectCback( dis_params[i].connId, dis_params[i].reason );
+                dis_params[i].connId = 0xFFFF;
+                dis_params[i].reason = 0;
+                dis_params[i].used = false;
+            }
+        }
+
+        return (events ^ LL_EVT_RESET_SYSTEM_SOFT );
+    }
+
+    return LL_ProcessEvent0(task_id,events);
+}
 /*V312 for advscan concurrent*/
 void llConnTerminate_advscan( llConnState_t* connPtr,
                               uint8          reason )
@@ -1273,27 +1523,112 @@ void llMasterEvt_TaskEndOk1( void )
     return;
 }
 
-void llMasterEvt_TaskEndOk2( void )
+/*V313 adjust firstPkt */
+void LL_slave_conn_event3(void)            // TODO: update connection context select
 {
+    uint16_t ll_rdCntIni;
+    uint32_t      tx_num, rx_num;
     llConnState_t* connPtr;
+    g_ll_conn_ctx.timerExpiryTick = read_current_fine_time();                     // A2 multiconnection
+//  hal_gpio_write(GPIO_P14, 1);
     connPtr = &conn_param[g_ll_conn_ctx.currentConn];
-    llMasterEvt_TaskEndOk1();
+    // time critical process, disable interrupt
+    HAL_ENTER_CRITICAL_SECTION();
+    tx_num = pGlobal_config[LL_TX_PKTS_PER_CONN_EVT];
+    rx_num = pGlobal_config[LL_RX_PKTS_PER_CONN_EVT];
 
-    //dbg_printf("\nMstTE:rx");
-    for(int j = 0; j < MAX_LL_BUF_LEN; j++)
+    if (tx_num > g_maxPktPerEventTx || tx_num == 0)    tx_num = g_maxPktPerEventTx;
+
+    if (rx_num > g_maxPktPerEventRx || rx_num == 0)    rx_num = g_maxPktPerEventRx;
+
+    connPtr->pmCounter.ll_conn_event_cnt ++;
+
+    if(p_perStatsByChan!=NULL)
+        p_perStatsByChan->connEvtCnt[connPtr->currentChan]++;
+
+    //ZQ 20191209
+    //restore the currentChan for disable slavelatency
+    //ZQ20200207 should use nextChan
+    connPtr->lastCurrentChan = connPtr->nextChan;
+    // counter for one connection event
+    llResetRfCounters();
+    //support rf phy change
+    rf_phy_change_cfg0(connPtr->llRfPhyPktFmt);
+    ll_hw_tx2rx_timing_config(connPtr->llRfPhyPktFmt);
+    // reset Rx/Tx FIFO
+    ll_hw_rst_rfifo();
+    ll_hw_rst_tfifo();
+    // channel physical configuration
+    set_crc_seed(connPtr->initCRC );            // crc seed for data PDU is from CONNECT_REQ
+    set_access_address(connPtr->accessAddr);     // access address
+    set_channel(connPtr->currentChan );        // set channel
+    set_whiten_seed(connPtr->currentChan);     // set whiten seed
+    // A2-multiconn
+    ll_hw_set_rx_timeout(88);
+    set_max_length(0xff);                  // add 2020-03-10
+
+    // win size for 1st packet
+    if (connPtr->firstPacket || connPtr->pmCounter.ll_tbd_cnt3)     // not received the 1st packet, CRC error or correct
     {
-        if( (connPtr->ll_buf.rx_conn_desc[j] != NULL) && (connPtr->ll_buf.rx_conn_desc[j]->valid == 0) )
-        {
-            //dbg_printf("%8x:",connPtr->ll_buf.rx_conn_desc[j]);
-            ll_osal_mem_free(connPtr->ll_buf.rx_conn_desc[j]);
-            connPtr->ll_buf.rx_conn_desc[j] = NULL;
-            SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_RX_BUF_B,-1);
-        }
-        else if((connPtr->ll_buf.rx_conn_desc[j] != NULL))
-        {
-            //dbg_printf("[v%d%8X]:",connPtr->ll_buf.rx_conn_desc[j]->valid,connPtr->ll_buf.rx_conn_desc[j]);
-        }
+        //ll_hw_set_rx_timeout_1st(conn_param[connId].curParam.winSize * 625 + conn_param[connId].timerDrift * 2 );
+        //20180412 enlarge the connectInd or connect_update timing tolerence
+        uint32_t first_window_timout=pGlobal_config[LL_SMART_WINDOW_FIRST_WINDOW] + connPtr->curParam.winSize * 625 + connPtr->timerDrift * 2 ;
+        //The transmitWindowOffset shall be a multiple of 1.25 ms in the range of 0 ms
+        //to connInterval. The transmitWindowSize shall be a multiple of 1.25 ms in the
+        //range of 1.25 ms to the lesser of 10 ms and (connInterval - 1.25 ms).
+        //ZQ 20200208
+        /*V313 adjust 10000 ->11000, for advanced rxWin */
+        uint32_t winSizeLimt = MIN(11000, (connPtr->curParam.connInterval * 625 - 1250) );
+
+        if(winSizeLimt<first_window_timout)
+            first_window_timout = winSizeLimt;
+
+        ll_hw_set_rx_timeout_1st(first_window_timout);
     }
+    else                  // A1 ROM metal change , 2018 - 1 - 3
+    {
+        if (connPtr->rx_timeout)    // timeout case
+            ll_hw_set_rx_timeout_1st(pGlobal_config[LL_HW_RTLP_1ST_TIMEOUT] + pGlobal_config[SLAVE_CONN_DELAY_BEFORE_SYNC] * 2 + (connPtr->timerDrift + connPtr->accuTimerDrift) * 2 );
+        else
+            ll_hw_set_rx_timeout_1st(pGlobal_config[LL_HW_RTLP_1ST_TIMEOUT] + pGlobal_config[SLAVE_CONN_DELAY] * 2 + connPtr->timerDrift * 2);
+    }
+
+    // configure loop timeout
+    // considering the dle case
+    uint32_t temp = connPtr->curParam.connInterval * 625 - connPtr->llPduLen.local.MaxRxTime- pGlobal_config[LL_HW_RTLP_TO_GAP];       // 500us: margin for timer1 IRQ
+    ll_hw_set_loop_timeout(temp > pGlobal_config[LL_HW_RTLP_LOOP_TIMEOUT] ?
+                           pGlobal_config[LL_HW_RTLP_LOOP_TIMEOUT] : temp);         // 2018-6-20, global config for the parameter
+    // now we support 4 RT in one RTLP, if PDU size is 256Byte, need (256*8 + 150) * 8 = 17684us,
+    // not consider Rx packet size
+    ll_hw_trx_settle_config(connPtr->llRfPhyPktFmt);
+    // retransmit count limit
+    ll_hw_set_loop_nack_num( 4 );
+    //set the rfifo ign control
+    ll_hw_ign_rfifo(LL_HW_IGN_ALL);
+    // write packets to Tx FIFO
+    tx_num = ll_generateTxBuffer(tx_num, &ll_rdCntIni);
+    // TODO: consider Rx flow control here
+//    if (LL_RX_FLOW_CONTROL_ENABLED == rxFifoFlowCtrl)
+//    {
+//        // configure LL HW to keep NESN
+//    }
+    ll_hw_config( LL_HW_RTLP,  //connPtr->llMode,
+                  connPtr->sn_nesn,   // sn,nesn init
+                  tx_num,                    // ll_txNum
+                  rx_num,                    // ll_rxNum
+                  1,                         // ll_mdRx
+                  ll_rdCntIni);              // rdCntIni
+    uint8 temp_rf_fmt = g_rfPhyPktFmt;
+    g_rfPhyPktFmt = connPtr->llRfPhyPktFmt;
+    // start LL HW engine
+    ll_hw_go();
+    llWaitingIrq = TRUE;
+    g_rfPhyPktFmt = temp_rf_fmt;
+    HAL_EXIT_CRITICAL_SECTION();
+// hal_gpio_write(GPIO_P14, 0);
+//    LOG("%d-%d ", g_ll_conn_ctx.numLLConns, g_ll_conn_ctx.currentConn);
+//    LOG("%d ", g_ll_conn_ctx.currentConn);
+    ll_debug_output(DEBUG_LL_HW_SET_RTLP);
 }
 
 void llProcessMasterControlPacket1( llConnState_t* connPtr,
@@ -1306,7 +1641,21 @@ void llProcessMasterControlPacket1( llConnState_t* connPtr,
     else
         idx =(g_maxPktPerEventRx-1);
 
+    // 2023 03 08: fix phyreq and phyrsp in the same conn event
+    if((connPtr->ctrlPktInfo.ctrlPktCount > 0)&&
+            (connPtr->ctrlPktInfo.ctrlPkts[ 0 ] == LL_CTRL_PHY_REQ)&&
+            (connPtr->ctrlPktInfo.ctrlPktActive == TRUE) &&
+            (rfCounters.numTxCtrl))
+        connPtr->llPhyModeCtrl.isWatingRsp=TRUE;
+
+    uint8 last_isWatingRsp = connPtr->llPhyModeCtrl.isWatingRsp;
     llProcessMasterControlPacket0(connPtr,pBuf);
+    g_msater_recv_phyrsp = FALSE;
+
+    if(last_isWatingRsp ==TRUE &&
+            connPtr->llPhyModeCtrl.isWatingRsp==FALSE)
+        g_msater_recv_phyrsp=TRUE;
+
     connPtr->ll_buf.rx_conn_desc[idx]->valid = 0;
     connPtr->ll_buf.rx_conn_desc[idx]->header = 0;
 }
@@ -1620,12 +1969,12 @@ uint8 ll_processBasicIRQ_SRX0(uint32_t      irq_status)
 
                         rssi  =  -(pktFoot1 >> 24);
                         // below function cost 51us/66us(measure with GPIO)
-                        LL_AdvReportCback( advEventType,                         // event type
-                                           addrType,                                // Adv address type (TxAdd)
-                                           &peerAddr[0],                         // Adv address (AdvA)
-                                           pktLen - 8,                           // length of rest of the payload, 2 - header, 6 - advA
-                                           &g_rx_adv_buf.data[6],                // rest of payload
-                                           rssi );                               // RSSI
+                        LL_AdvReportCback_Patch( advEventType,                         // event type
+                                                 addrType,                                // Adv address type (TxAdd)
+                                                 &peerAddr[0],                         // Adv address (AdvA)
+                                                 pktLen - 8,                           // length of rest of the payload, 2 - header, 6 - advA
+                                                 &g_rx_adv_buf.data[6],                // rest of payload
+                                                 rssi );                               // RSSI
                         g_pmCounters.ll_recv_adv_pkt_cnt ++;
                     }
                 }
@@ -2032,31 +2381,33 @@ uint8 llSetupStartEncRsp( llConnState_t* connPtr )
 void llProcessSlaveControlPacket1( llConnState_t* connPtr,
                                    uint8*         pBuf )
 {
-	uint8 opcode = pBuf[0];
+    uint8 opcode = pBuf[0];
     uint16 connInterval = BUILD_UINT16(pBuf[4],pBuf[5]);
+
     //LOG("%x %x\n",pBuf[0],connInterval);
-	if(( opcode == 0 ) && ( connPtr->active == TRUE ) &&
-    (connInterval == 0))
-	{
+    if(( opcode == 0 ) && ( connPtr->active == TRUE ) &&
+            (connInterval == 0))
+    {
         // unknown data PDU control packet received so save the type
         connPtr->unknownCtrlType = opcode;
-
         // schedule the output of the control packet
         llEnqueueCtrlPkt( connPtr, LL_CTRL_UNKNOWN_RSP );
         return;
-	}
+    }
 
     //fix phyrsp,phyupdate in the same conn event
     if((connPtr->ctrlPktInfo.ctrlPktCount > 0)&&
-        (connPtr->ctrlPktInfo.ctrlPkts[ 0 ] == LL_CTRL_PHY_RSP)&&
-        (connPtr->ctrlPktInfo.ctrlPktActive == TRUE) &&
-        (rfCounters.numTxCtrl))
-            connPtr->llPhyModeCtrl.isWatingRsp=TRUE;
+            (connPtr->ctrlPktInfo.ctrlPkts[ 0 ] == LL_CTRL_PHY_RSP)&&
+            (connPtr->ctrlPktInfo.ctrlPktActive == TRUE) &&
+            (rfCounters.numTxCtrl))
+        connPtr->llPhyModeCtrl.isWatingRsp=TRUE;
+
     uint8 last_isWatingRsp = connPtr->llPhyModeCtrl.isWatingRsp;
     llProcessSlaveControlPacket0(connPtr,pBuf);
     g_recvphyupdate = FALSE;
+
     if(last_isWatingRsp ==TRUE &&
-    connPtr->llPhyModeCtrl.isWatingRsp==FALSE)
+            connPtr->llPhyModeCtrl.isWatingRsp==FALSE)
         g_recvphyupdate=TRUE;
 }
 
@@ -2915,8 +3266,10 @@ uint8 llProcessSlaveControlProcedures1( llConnState_t* connPtr )
                 {
                     connPtr->llPhyModeCtrl.isProcessingReq=FALSE;
                     connPtr->llPhyModeCtrl.isWatingRsp=TRUE;
+
                     if(g_recvphyupdate==TRUE)
                         connPtr->llPhyModeCtrl.isWatingRsp = FALSE;
+
                     // remove control packet from processing queue and drop through
                     llDequeueCtrlPkt( connPtr );
                 }
@@ -4012,6 +4365,10 @@ uint8 llProcessMasterControlProcedures1( llConnState_t* connPtr )
                 if ( rfCounters.numTxCtrl )
                 {
                     connPtr->llPhyModeCtrl.isWatingRsp=TRUE;
+
+                    if(g_msater_recv_phyrsp==TRUE)
+                        connPtr->llPhyModeCtrl.isWatingRsp = FALSE;
+
                     // remove control packet from processing queue and drop through
                     llDequeueCtrlPkt( connPtr );
                 }
@@ -4479,12 +4836,12 @@ uint8 ll_processBasicIRQ_ScanTRX0(uint32_t              irq_status )
             {
                 advEventType = LL_ADV_RPT_SCAN_RSP;
                 // below function cost 51us/66us(measure with GPIO)
-                LL_AdvReportCback( advEventType,                   // event type
-                                   addrType,                             // Adv address type (TxAdd)
-                                   peerAddr,                             // Adv address (AdvA)
-                                   dataLen,                              // length of rest of the payload
-                                   &g_rx_adv_buf.data[6],                // rest of payload
-                                   rssi );                               // RSSI
+                LL_AdvReportCback_Patch( advEventType,                   // event type
+                                         addrType,                             // Adv address type (TxAdd)
+                                         peerAddr,                             // Adv address (AdvA)
+                                         dataLen,                              // length of rest of the payload
+                                         &g_rx_adv_buf.data[6],                // rest of payload
+                                         rssi );                               // RSSI
                 g_pmCounters.ll_recv_scan_rsp_cnt ++;
                 llAdjBoffUpperLimitSuccess1();
             }
@@ -5227,12 +5584,12 @@ uint8 ll_processBasicIRQ_secondaryScanSRX0(uint32_t              irq_status )
 
                 rssi  =  -(pktFoot1 >> 24);
                 // below function cost 51us/66us(measure with GPIO)
-                LL_AdvReportCback( advEventType,                         // event type
-                                   txAdd,                                // Adv address type (TxAdd)
-                                   &g_rx_adv_buf.data[0],       // Adv address (AdvA)
-                                   pktLen - 8,                           // length of rest of the payload, 2 - header, 6 - advA
-                                   &g_rx_adv_buf.data[6],       // rest of payload
-                                   rssi );                               // RSSI
+                LL_AdvReportCback_Patch( advEventType,                         // event type
+                                         txAdd,                                // Adv address type (TxAdd)
+                                         &g_rx_adv_buf.data[0],       // Adv address (AdvA)
+                                         pktLen - 8,                           // length of rest of the payload, 2 - header, 6 - advA
+                                         &g_rx_adv_buf.data[6],       // rest of payload
+                                         rssi );                               // RSSI
                 g_pmCounters.ll_recv_adv_pkt_cnt ++;
             }
         }
@@ -7388,10 +7745,12 @@ uint8_t hal_system_clock_change_active(sysclk_t clk,pwrmgr_Hdl_t restoreHandle)
         ll_hw_set_loop_timeout(   30000);
         ll_hw_set_timing(g_rfPhyPktFmt);
         ll_hw_tx2rx_timing_config(g_rfPhyPktFmt);
+        g_clock_check_flag = 1;
 
         if(restoreHandle)
             restoreHandle();
 
+        g_clock_check_flag = 0;
         HAL_EXIT_CRITICAL_SECTION();
         return SUCCESS;
     }
@@ -7514,6 +7873,7 @@ int clk_init(sysclk_t hclk_sel)
 
 void wakeup_init1()
 {
+    AP_PCR->CACHE_BYPASS = 1;       //cache bypass by hq 20230404
     efuse_init();
     __wdt_init();
     uint8_t pktFmt = 1;    // packet format 1: BLE 1M
@@ -7747,7 +8107,6 @@ void enterSleepProcess1(uint32 time)
         return;
 
     pGlobal_config[GARBAGE_DATA_RESOURCE] = read_reg(0x1fff8000);
-
     enterSleepProcess0(time);
 }
 
@@ -8010,7 +8369,6 @@ void wakeupProcess1(void)
     uint32 current_RTC_tick;
     uint32 wakeup_time, wakeup_time0, next_time;
     uint32 dlt_tick;
-
     write_reg(0x1fff8000,pGlobal_config[GARBAGE_DATA_RESOURCE]);
     //restore initial_sp according to the app_initial_sp : 20180706 ZQ
     __set_MSP(pGlobal_config[INITIAL_STACK_PTR]);
@@ -8499,7 +8857,7 @@ llStatus_t LL_SetAdvParam1( uint16 advIntervalMin,
                             uint8  advChanMap,
                             uint8  advWlPolicy )
 {
-	HAL_ENTER_CRITICAL_SECTION();
+    HAL_ENTER_CRITICAL_SECTION();
     uint8_t llState_reserve = llState;
     llStatus_t ret;
     /*V312  no 20ms min_advinterval limit */
@@ -8528,7 +8886,8 @@ llStatus_t LL_SetAdvParam1( uint16 advIntervalMin,
     {
         SET_BITS(g_tx_adv_buf.txheader, peerInfo.peerAddrType, RX_ADD_SHIFT, RX_ADD_MASK);   // RxAdd need't set
     }
-	HAL_EXIT_CRITICAL_SECTION();
+
+    HAL_EXIT_CRITICAL_SECTION();
     return ret;
 }
 
@@ -8603,7 +8962,9 @@ llStatus_t LL_SetAdvControl1( uint8 advMode )
             // this is unexpected; something is wrong
             return( LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE );
         }
-		HAL_ENTER_CRITICAL_SECTION();
+
+        HAL_ENTER_CRITICAL_SECTION();
+
         //add llState setting
         if((llState == LL_STATE_IDLE))
         {
@@ -8650,7 +9011,7 @@ llStatus_t LL_SetAdvControl1( uint8 advMode )
             {
                 // indicate advertising is no longer active
                 adv_param.advMode = LL_ADV_MODE_OFF;
-				HAL_EXIT_CRITICAL_SECTION();
+                HAL_EXIT_CRITICAL_SECTION();
                 return( LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE );
             }
         }
@@ -8665,7 +9026,7 @@ llStatus_t LL_SetAdvControl1( uint8 advMode )
 
             if (llSecondaryState != LL_SEC_STATE_IDLE)
             {
-            	HAL_EXIT_CRITICAL_SECTION();
+                HAL_EXIT_CRITICAL_SECTION();
                 return( LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE );
             }
 
@@ -8674,7 +9035,7 @@ llStatus_t LL_SetAdvControl1( uint8 advMode )
                     && adv_param.advEvtType != LL_ADV_SCANNABLE_UNDIRECTED_EVT
                     && adv_param.advEvtType != LL_ADV_CONNECTABLE_UNDIRECTED_EVT)
             {
-            	HAL_EXIT_CRITICAL_SECTION();
+                HAL_EXIT_CRITICAL_SECTION();
                 return( LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE );
             }
 
@@ -8687,7 +9048,7 @@ llStatus_t LL_SetAdvControl1( uint8 advMode )
         }
         else           // other state
         {
-        	HAL_EXIT_CRITICAL_SECTION();
+            HAL_EXIT_CRITICAL_SECTION();
             return (LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE);
         }
 
@@ -8696,7 +9057,8 @@ llStatus_t LL_SetAdvControl1( uint8 advMode )
 
         if (g_llRlDeviceNum > 0)
             osal_start_timerEx( LL_TaskID, LL_EVT_RPA_TIMEOUT, g_llRlTimeout * 1000 );
-		HAL_EXIT_CRITICAL_SECTION();
+
+        HAL_EXIT_CRITICAL_SECTION();
         break;
 
     case LL_ADV_MODE_OFF:
@@ -9232,7 +9594,9 @@ llStatus_t LL_SetScanControl1( uint8 scanMode,
             // this is unexpected; something is wrong
             return( LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE );
         }
-		HAL_ENTER_CRITICAL_SECTION();
+
+        HAL_ENTER_CRITICAL_SECTION();
+
         //20200804 Jie :if random address isn't defined,can't set ownaddresstype to random
         if (((scanInfo.ownAddrType == LL_DEV_ADDR_TYPE_RANDOM)    ||
                 (scanInfo.ownAddrType == LL_DEV_ADDR_TYPE_RPA_RANDOM))  &&
@@ -9243,7 +9607,7 @@ llStatus_t LL_SetScanControl1( uint8 scanMode,
                    (ownRandomAddr[4] == 0xFF) &&
                    (ownRandomAddr[5] == 0xFF)  ))
         {
-			HAL_EXIT_CRITICAL_SECTION();
+            HAL_EXIT_CRITICAL_SECTION();
             return( LL_STATUS_ERROR_BAD_PARAMETER );
         }
 
@@ -9270,8 +9634,8 @@ llStatus_t LL_SetScanControl1( uint8 scanMode,
                  && (pGlobal_config[LL_SWITCH] & SIMUL_CONN_SCAN_ALLOW))
         {
             if (llSecondaryState != LL_SEC_STATE_IDLE)
-            {            	
-				HAL_EXIT_CRITICAL_SECTION();
+            {
+                HAL_EXIT_CRITICAL_SECTION();
                 return( LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE );
             }
 
@@ -9280,13 +9644,14 @@ llStatus_t LL_SetScanControl1( uint8 scanMode,
             osal_set_event(LL_TaskID, LL_EVT_SECONDARY_SCAN);
         }
         else
-        {       	
-			HAL_EXIT_CRITICAL_SECTION();
+        {
+            HAL_EXIT_CRITICAL_SECTION();
             return( LL_STATUS_ERROR_UNEXPECTED_STATE_ROLE );
         }
+
         // indicate we are actively scanning
         scanInfo.scanMode = LL_SCAN_START;
-		HAL_EXIT_CRITICAL_SECTION();
+        HAL_EXIT_CRITICAL_SECTION();
         break;
 
     case LL_SCAN_STOP:
@@ -9315,6 +9680,7 @@ llStatus_t LL_SetScanControl1( uint8 scanMode,
         // now LL slave/master event use same parameter 88
         ll_hw_set_rx_timeout(88);
         // HZF: should we stop scan task immediately, or wait scan IRQ then stop? Now use option 2.
+        ll_recv_scan_all_cnt = 0;
         HAL_EXIT_CRITICAL_SECTION();
 
         while(read_reg(&llWaitingIrq) == TRUE);
@@ -9546,6 +9912,20 @@ void llProcessTxData1( llConnState_t* connPtr, uint8 context )
     if(context!=g_txdata_content)
         return;
 
+    /*V313 free rxbuf before processtxdata*/
+    if( connPtr->active )
+    {
+        for(int j = 0; j < MAX_LL_BUF_LEN; j++)
+        {
+            if( (connPtr->ll_buf.rx_conn_desc[j] != NULL) && (connPtr->ll_buf.rx_conn_desc[j]->valid == 0) )
+            {
+                ll_osal_mem_free(connPtr->connId, connPtr->ll_buf.rx_conn_desc[j]);
+                connPtr->ll_buf.rx_conn_desc[j] = NULL;
+                SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_RX_BUF_B,-1);
+            }
+        }
+    }
+
     llProcessTxData0(connPtr,context);
 }
 /*******************************************************************************
@@ -9618,21 +9998,17 @@ uint16 ll_generateTxBuffer1(int txFifo_vacancy, uint16* pSave_ptr)
     }
 
     rfCounters.numTxCtrl = 0;    // add on 2017-11-15, set tx control packet number 0
-    uint16 alloc_Len = 10;
-
-    if (g_blePktVersion == BLE_PKT_VERSION_4_0)         // BLE4.0
-        alloc_Len += BLE_PKT40_LEN;
-    else                                                // BLE5.1
-        alloc_Len += BLE_PKT51_LEN;
 
     // 2. write control packet
     if ((connPtr->ll_buf.tx_not_ack_pkt->valid == 0 ||                 // no tx not_ack packet, add on 2017-11-15
             (connPtr->ll_buf.tx_not_ack_pkt->header & 0x3) != LL_DATA_PDU_HDR_LLID_CONTROL_PKT)    // last nack packet is not a control packet
             && connPtr->ctrlDataIsPending                                               // we only support 1 control procedure per connection
             && !connPtr->ctrlDataIsProcess
-            && txFifo_vacancy > connPtr->ll_buf.ntrm_cnt)    // tricky here:  if the Tx FIFO is full and nothing is sent in last event, then it can't fill new packet(include ctrl pkt) in new event
+            && txFifo_vacancy > connPtr->ll_buf.ntrm_cnt
+            && llBuf_Res[g_ll_conn_ctx.currentConn].BufRes[TXCTRLBUF].inuse == 0)    // tricky here:  if the Tx FIFO is full and nothing is sent in last event, then it can't fill new packet(include ctrl pkt) in new event
     {
-        connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt] = ll_osal_mem_alloc( alloc_Len );
+        llBuf_Res[g_ll_conn_ctx.currentConn].BufRes[TXCTRLBUF].inuse = 1;
+        connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt] = llBuf_Res[g_ll_conn_ctx.currentConn].BufRes[TXCTRLBUF].buf;
 
         if( connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt] != NULL )
         {
@@ -9668,25 +10044,34 @@ uint16 ll_generateTxBuffer1(int txFifo_vacancy, uint16* pSave_ptr)
         for (i = 0; i < new_pkts_num && i < txFifo_vacancy; i++)
         {
             uint8_t idx = get_tx_read_ptr(connPtr);
-            connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt] = ll_osal_mem_alloc( alloc_Len );
 
-            if( connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt] != NULL )
+            if(ll_hw_write_tfifo((uint8*)&(connPtr->ll_buf.tx_conn_desc[idx]->header), ((connPtr->ll_buf.tx_conn_desc[idx]->header & 0xff00) >> 8) + 2))
             {
+                connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt] = connPtr->ll_buf.tx_conn_desc[idx];
+                connPtr->ll_buf.tx_conn_desc[idx] = NULL;
                 SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_NTX_BUF_B,1);
                 record_ntrm_cnt++;
-                ll_hw_write_tfifo((uint8*)&(connPtr->ll_buf.tx_conn_desc[idx]->header), ((connPtr->ll_buf.tx_conn_desc[idx]->header & 0xff00) >> 8) + 2);
-                ll_osal_mem_free(connPtr->ll_buf.tx_conn_desc[idx]);
-                connPtr->ll_buf.tx_conn_desc[idx] = NULL;
                 SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_TX_BUF_B,-1);
-//              LOG("-F-");
                 update_tx_read_ptr(connPtr);
                 tx_num++;
                 AT_LOG("write  new data packets to FIFO\n");
                 // update PM counter, add A1 ROM metal change
                 connPtr->pmCounter.ll_send_data_pkt_cnt ++;
             }
-            else
+        }
+    }
+
+    //move ctrlPkt's ntrm_pkt space to the end,the ntrm_pkt will be "free" first.
+    if(llBuf_Res[g_ll_conn_ctx.currentConn].BufRes[TXCTRLBUF].inuse)
+    {
+        for(i = 0; i< record_ntrm_cnt; i++)
+        {
+            if(connPtr->ll_buf.tx_ntrm_pkts[i] == llBuf_Res[g_ll_conn_ctx.currentConn].BufRes[TXCTRLBUF].buf && i != record_ntrm_cnt-1)
+            {
+                connPtr->ll_buf.tx_ntrm_pkts[i] = connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt-1];
+                connPtr->ll_buf.tx_ntrm_pkts[record_ntrm_cnt-1] = llBuf_Res[g_ll_conn_ctx.currentConn].BufRes[TXCTRLBUF].buf;
                 break;
+            }
         }
     }
 
@@ -9709,20 +10094,19 @@ uint16 ll_generateTxBuffer1(int txFifo_vacancy, uint16* pSave_ptr)
 }
 
 llStatus_t LL_TxData1( uint16 connId,
-                      uint8 *pBuf,
-                      uint8  pktLen,
-                      uint8  fragFlag )
+                       uint8* pBuf,
+                       uint8  pktLen,
+                       uint8  fragFlag )
 {
-    llConnState_t *connPtr;
-    txData_t      *pTxData;
-
+    llConnState_t* connPtr;
+    txData_t*      pTxData;
     // get the connection info based on the connection ID
-    connPtr = &conn_param[connId];   
+    connPtr = &conn_param[connId];
 
     // sanity check input parameters
     if ( (pBuf == NULL) || (pktLen > connPtr->llPduLen.local.MaxTxOctets/*LL_MAX_LINK_DATA_LEN*/) ||
-         ((fragFlag != LL_DATA_FIRST_PKT_HOST_TO_CTRL) &&
-          (fragFlag != LL_DATA_CONTINUATION_PKT)) )
+            ((fragFlag != LL_DATA_FIRST_PKT_HOST_TO_CTRL) &&
+             (fragFlag != LL_DATA_CONTINUATION_PKT)) )
     {
         return( LL_STATUS_ERROR_BAD_PARAMETER );
     }
@@ -9733,8 +10117,7 @@ llStatus_t LL_TxData1( uint16 connId,
         //return( status );
         return( LL_STATUS_ERROR_INACTIVE_CONNECTION );
     }
-    
-  
+
     // check if the number of available data buffers has been exceeded
     // if ( getTxBufferFree(connPtr) == 0)
     // {
@@ -9748,29 +10131,25 @@ llStatus_t LL_TxData1( uint16 connId,
     }
 
     //txdataQ len++
+    HAL_ENTER_CRITICAL_SECTION();///2022 12 08 bugfix : DEBUG_TXDATAQ_B error
     SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_TXDATAQ_B,1);
-
     // adjust pointer to start of packet (i.e. at the header)
     pBuf -= LL_PKT_HDR_LEN;
-
     // set the packet length field
     // Note: The LLID and Length fields are swapped for the nR (for DMA).
     pBuf[0] = pktLen;
-
     // set LLID fragmentation flag in header
     // Note: NESN=SN=MD=0 and is handled by RF.
     pBuf[1] = (fragFlag==LL_DATA_FIRST_PKT_HOST_TO_CTRL) ?
-             LL_DATA_PDU_HDR_LLID_DATA_PKT_FIRST       : // first pkt
-             LL_DATA_PDU_HDR_LLID_DATA_PKT_NEXT;         // continuation pkt
-
+              LL_DATA_PDU_HDR_LLID_DATA_PKT_FIRST       : // first pkt
+              LL_DATA_PDU_HDR_LLID_DATA_PKT_NEXT;         // continuation pkt
     // ALT: Place check if packet needs to be encrypted and encryption here,
     //      but be careful about control packets and getting them out of order!
-
     // point to Tx data entry
-    pTxData = (txData_t *)(pBuf - sizeof(txData_t));
-
+    pTxData = (txData_t*)(pBuf - sizeof(txData_t));
     // it does, so queue up this data
     llEnqueueDataQ( &connPtr->txDataQ, pTxData );
+    HAL_EXIT_CRITICAL_SECTION();
 
     // check that we are either the master or slave, and if so, that the current
     // connection is connId
@@ -9785,15 +10164,15 @@ llStatus_t LL_TxData1( uint16 connId,
 
     // copy any pending data to the TX FIFO
     llProcessTxData( connPtr, LL_TX_DATA_CONTEXT_SEND_DATA );
-
     // indicate the packet is sent of buffered
-    return( LL_STATUS_SUCCESS );		
+    return( LL_STATUS_SUCCESS );
 }
 
 uint8 LL_Permit_Txdata(uint16 connHandle)
 {
-    llConnState_t *connPtr;
-    connPtr = &conn_param[connHandle]; 
+    llConnState_t* connPtr;
+    connPtr = &conn_param[connHandle];
+
     if(SUB_BYTE_GET(&(connPtr->llTbd4),DEBUG_TXDATAQ_B) >= g_maxPktPerEventTx)
         return FALSE;
     else
@@ -10640,7 +11019,7 @@ void LL_slave_conn_event2(void)
     llConnState_t* connPtr;
     connPtr = &conn_param[g_ll_conn_ctx.currentConn];
     llProcessTxData(connPtr, LL_TX_DATA_CONTEXT_TIMER1IRQ);
-    LL_slave_conn_event0();
+    LL_slave_conn_event3();
 }
 
 llStatus_t LL_StartEncrypt1( uint16 connId,
@@ -10812,7 +11191,7 @@ void global_config_hclk_related(void)
     //====== A2 metal change add, for scanner & initiator
     if(g_system_clk==SYS_CLK_XTAL_16M)
     {
-        pGlobal_config[LL_ADV_TO_SCAN_REQ_DELAY]    = 18+RF_PHY_EXT_PREAMBLE_US;//20;      //  2019/3/19 A2: 20 --> 18
+        pGlobal_config[LL_ADV_TO_SCAN_REQ_DELAY]    = 23+RF_PHY_EXT_PREAMBLE_US;//20;      //  2019/3/19 A2: 20 --> 18   20123/3/30 18 --> 23
         pGlobal_config[LL_ADV_TO_CONN_REQ_DELAY]    = 25+RF_PHY_EXT_PREAMBLE_US;//27;      //  2019/3/19 A2: 27 --> 25
     }
     else if(g_system_clk==SYS_CLK_DBL_32M)
@@ -10832,10 +11211,23 @@ void global_config_hclk_related(void)
     }
 }
 
+__ATTR_SECTION_XIP__ void global_config_maxscanrsplen(uint8 maxScanResponses)
+{
+    pGlobal_config[MAXSCANRSPONSES]    = maxScanResponses;
+}
+
 // global configuration in SRAM, it could be change by application
 // TODO: when integrate, the global_config should be set by APP project
 __ATTR_SECTION_XIP__ void init_config(void)
 {
+    extern bool _rom_efuse_version_init(void);
+    chip_hw_version = _rom_efuse_version_init();
+
+    if((g_system_clk > SYS_CLK_XTAL_16M) && !chip_hw_version)
+    {
+        g_system_clk = SYS_CLK_DBL_32M;
+    }
+
     pGlobal_config = (uint32*)(CONFIG_BASE_ADDR);
     int i;
 
@@ -10877,7 +11269,7 @@ __ATTR_SECTION_XIP__ void init_config(void)
     // LL engine settle time
     pGlobal_config[LL_HW_BB_DELAY] = 54;//54-8;
     pGlobal_config[LL_HW_AFE_DELAY] = 8;
-    pGlobal_config[LL_HW_PLL_DELAY] = 40;//45;//52;
+    pGlobal_config[LL_HW_PLL_DELAY] = 30;//45;//52;  2023 03 30: 40 --> 30: fix 16M no scan rsp bug
     // Tx2Rx and Rx2Tx interval
     //Tx2Rx could be advanced a little
     //Rx2Tx should be ensure T_IFS within150us+-2us
@@ -10934,7 +11326,7 @@ __ATTR_SECTION_XIP__ void init_config(void)
     pGlobal_config[HDC_DIRECT_ADV_INTERVAL] = 1000;
     pGlobal_config[LDC_DIRECT_ADV_INTERVAL] = 6250;
     // A1 ROM metal change for HDC direct adv,
-    pGlobal_config[DIR_ADV_DELAY] = 115;   // in us, consider both direct adv broadcast time & SW delay, ... etc.
+    pGlobal_config[DIR_ADV_DELAY] = 50;   // in us, consider both direct adv broadcast time & SW delay, ... etc.
     // A1 ROM metal change
     pGlobal_config[LL_TX_PKTS_PER_CONN_EVT] = 6;//8;
     pGlobal_config[LL_RX_PKTS_PER_CONN_EVT] = 6;//8;
@@ -10983,9 +11375,8 @@ __ATTR_SECTION_XIP__ void init_config(void)
     pGlobal_config[LL_PRD_ADV_PROCESS_TARGET] = 500;
     //V312 add for slave adjust window advanced when first rxtimeout event
     pGlobal_config[LL_SLAVE_FIRST_RXTO_ADVANCE] = 600;
-    //v312 add for slave adjust window advanced when rxtimeout event with long interval
-    pGlobal_config[LL_DEFUALT_CONN_INTERVAL_LIMIT_VALUE] = 400;
-    pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] = 1000;
+    //v313 add for slave adjust window advanced when rxtimeout event
+    pGlobal_config[LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE] = 200;
     //-------------------------------------------------------------------
     // patch function register
     //--------------------------------------------------------------------
@@ -11028,7 +11419,9 @@ __ATTR_SECTION_XIP__ void init_config(void)
     JUMP_FUNCTION(LL_WRITE_TX_DATA)                 =   (uint32_t)&llWriteTxData1;
     JUMP_FUNCTION(LL_RESET)                         =   (uint32_t)&LL_Reset1;
     JUMP_FUNCTION(LL_RELEASE_CONN_ID)               =   (uint32_t)&llReleaseConnId1;
-    JUMP_FUNCTION(LL_TXDATA)				        =   (uint32_t)&LL_TxData1;
+    JUMP_FUNCTION(LL_TXDATA)                        =   (uint32_t)&LL_TxData1;
+    (JUMP_FUNCTION(LL_PROCESS_EVENT))               =   (uint32_t)&LL_ProcessEvent1;
+    JUMP_FUNCTION(LL_READ_RX_FIFO)                  =   (uint32_t)&ll_read_rxfifo1;
 // ====================
     //disableSleep();
     //setSleepMode(MCU_SLEEP_MODE);//SYSTEM_SLEEP_MODE
@@ -11043,8 +11436,8 @@ __ATTR_SECTION_XIP__ void init_config(void)
 #define MAX_RESTORE_PATCH      16
 uint8 restore_index[MAX_RESTORE_PATCH] = {LL_CONN_TERMINATE,
                                           LL_SETUP_SEC_ADV_ENTRY,/*LL_SETUP_SEC_ADV_ENTRY,*/
-                                          LL_ENC_ENCRYPT,
-                                          LL_ENC_DECRYPT,
+                                          0,
+                                          0,
                                           LL_PROCESS_SLAVE_CTRL_PROC,
                                           LL_PROCESS_MASTER_CTRL_PROC,
                                           0,0,0,0,0,0,0,0,0,0
@@ -11065,7 +11458,7 @@ void ll_patch_restore(uint8_t flg)
             need turn off aes clk, for rom LL_ENC_* function
             aes clk will be controlled by LL_ENC_PATCHs
         */
-        AP_PCR->SW_CLK    &= ~BIT(MOD_AES);
+        // AP_PCR->SW_CLK    &= ~BIT(MOD_AES);
     }
     else
     {
@@ -11079,7 +11472,7 @@ void ll_patch_restore(uint8_t flg)
         /*
             need turn on aes clk, for rom LL_ENC_* function
         */
-        AP_PCR->SW_CLK    |= BIT(MOD_AES);
+        // AP_PCR->SW_CLK    |= BIT(MOD_AES);
     }
 }
 
@@ -11095,6 +11488,7 @@ void ll_patch_slave(void)
     JUMP_FUNCTION(LL_CONN_TERMINATE)                =   (uint32_t)&llConnTerminate1;
     JUMP_FUNCTION(LL_PROCESS_SLAVE_CTRL_PROC)       =   (uint32_t)&llProcessSlaveControlProcedures1;
     JUMP_FUNCTION(LL_ADP_ADJ_NEXT_TIME)            =   (uint32_t)&ll_adptive_adj_next_time1;
+    JUMP_FUNCTION(LL_SLAVE_CONN_EVENT)              = (uint32_t)&LL_slave_conn_event3;
 }
 
 llStatus_t llSetupAdv1( void )
@@ -11116,12 +11510,13 @@ void ll_patch_mesh_slave(void)
     JUMP_FUNCTION(LL_CONN_TERMINATE)                =   (uint32_t)&llConnTerminate1;
     JUMP_FUNCTION(LL_PROCESS_SLAVE_CTRL_PROC)       =   (uint32_t)&llProcessSlaveControlProcedures1;
     JUMP_FUNCTION(LL_ADP_ADJ_NEXT_TIME)            =   (uint32_t)&ll_adptive_adj_next_time1;
+    JUMP_FUNCTION(LL_SLAVE_CONN_EVENT)              = (uint32_t)&LL_slave_conn_event3;
 }
 
 //singlemaster function,for sbc
 void ll_patch_master(void)
 {
-    JUMP_FUNCTION(LL_MASTER_EVT_ENDOK)              = (uint32_t)&llMasterEvt_TaskEndOk2; //yes
+    JUMP_FUNCTION(LL_MASTER_EVT_ENDOK)              = (uint32_t)&llMasterEvt_TaskEndOk1; //yes
     JUMP_FUNCTION(LL_SET_SCAN_PARAM)                = (uint32_t)&LL_SetScanParam1;
     JUMP_FUNCTION(LL_SET_SCAN_CTRL)                 = (uint32_t)&LL_SetScanControl1;
     JUMP_FUNCTION(LL_START_ENCRYPT)                 =   (uint32_t)&LL_StartEncrypt1;
@@ -11134,6 +11529,8 @@ void ll_patch_master(void)
     JUMP_FUNCTION(LL_MOVE_TO_MASTER_FUNCTION)       =   (uint32_t)&move_to_master_function2;//yes
     JUMP_FUNCTION(LL_CREATE_CONN)                   =   (uint32_t)&LL_CreateConn1;  //yes
     JUMP_FUNCTION(LL_PROCESS_MASTER_CTRL_PKT)       =   (uint32_t)&llProcessMasterControlPacket1;//no
+    JUMP_FUNCTION(LL_CONN_TERMINATE)                =   (uint32_t)&llConnTerminate1;
+    JUMP_FUNCTION(LL_CREATE_CONN_CANCEL)            =   (uint32_t)&LL_CreateConnCancel1;
 }
 
 //multislave function,for sbpMc
@@ -11212,10 +11609,9 @@ void ll_patch_mesh_master(void)
 {
     ll_patch_mesh_slave();
     //master
-    JUMP_FUNCTION(LL_MASTER_EVT_ENDOK)              = (uint32_t)&llMasterEvt_TaskEndOk2;
+    JUMP_FUNCTION(LL_MASTER_EVT_ENDOK)              = (uint32_t)&llMasterEvt_TaskEndOk1;
     JUMP_FUNCTION(LL_MOVE_TO_MASTER_FUNCTION)       =   (uint32_t)&move_to_master_function2;
     JUMP_FUNCTION(LL_CREATE_CONN)                   =   (uint32_t)&LL_CreateConn1;
-    
     JUMP_FUNCTION(LL_SEC_ADV_ALLOW)                 = (uint32_t)&llSecAdvAllow1;
     JUMP_FUNCTION(LL_SETUP_SEC_ADV_ENTRY)           =   (uint32_t)&llSetupSecAdvEvt1;
     JUMP_FUNCTION(LL_SCHEDULER)                     =   (uint32_t)&ll_scheduler_singleconn;
@@ -11227,7 +11623,7 @@ void ll_patch_mesh_master(void)
     JUMP_FUNCTION(LL_SETUP_SEC_SCAN)                =   (uint32_t )&llSetupSecScan1;
     JUMP_FUNCTION(LL_SETUP_SCAN)                    =   (uint32_t)&llSetupScan1;
     JUMP_FUNCTION(LL_CALC_MAX_SCAN_TIME)            = (uint32_t)&llCalcMaxScanTime1;
-    ll_patch_secscan_passivescan();
+    ll_patch_secscan_activescan();
 }
 
 
@@ -11246,7 +11642,7 @@ void ll_patch_mesh_multi(void)
     JUMP_FUNCTION(LL_SETUP_SEC_SCAN)                =   (uint32_t )&llSetupSecScan1;
     JUMP_FUNCTION(LL_SETUP_SCAN)                    =   (uint32_t)&llSetupScan1;
     JUMP_FUNCTION(LL_CALC_MAX_SCAN_TIME)            = (uint32_t)&llCalcMaxScanTime1;
-	JUMP_FUNCTION(LL_ADD_TASK)                      = (uint32_t)&ll_addTask1;
+    JUMP_FUNCTION(LL_ADD_TASK)                      = (uint32_t)&ll_addTask1;
     ll_patch_secscan_passivescan();
 }
 
@@ -11323,7 +11719,7 @@ void ll_patch_slave_extadv(void)
 //singlemaster function,for ext_sbc
 void ll_patch_master_extadv(void)
 {
-    JUMP_FUNCTION(LL_MASTER_EVT_ENDOK)              = (uint32_t)&llMasterEvt_TaskEndOk2;
+    JUMP_FUNCTION(LL_MASTER_EVT_ENDOK)              = (uint32_t)&llMasterEvt_TaskEndOk1;
     JUMP_FUNCTION(LL_START_ENCRYPT)                 =   (uint32_t)&LL_StartEncrypt1;
     JUMP_FUNCTION(LL_ENC_DECRYPT)                   =   (uint32_t)&LL_ENC_Decrypt1;
     JUMP_FUNCTION(LL_PROCESS_MASTER_CTRL_PROC)      =   (uint32_t)&llProcessMasterControlProcedures1;
@@ -11334,9 +11730,7 @@ void ll_patch_master_extadv(void)
 void hal_rom_boot_init(void)
 {
     extern void _rom_sec_boot_init();
-    extern void _rom_efuse_version_init(void);
     _rom_sec_boot_init();
-    _rom_efuse_version_init();
 }
 //-----------------------------------------------------------------------
 // Patch for V105/V103 LL_ChanMapUpdate
@@ -11809,8 +12203,21 @@ void TRNG_INIT(void)
 
     if (!init_flag)
     {
+        uint8_t rc32k_power_reg = (read_reg(&(AP_AON->PMCTL2_0)) >> 8) & 0x1;
+
+        if (!rc32k_power_reg)
+        {
+            subWriteReg(&(AP_AON->PMCTL2_0), 8, 8, 0x01);
+        }
+
         TRNG_Output((uint32_t*)(s_trng_seed), 4);
         TRNG_Output((uint32_t*)(s_trng_iv), 4);
+
+        if (!rc32k_power_reg)
+        {
+            subWriteReg(&(AP_AON->PMCTL2_0), 8, 8, 0x00);
+        }
+
         init_flag = 1;
     }
 
@@ -12085,6 +12492,39 @@ llStatus_t LL_InitConnectContext(llConnState_t*    pConnContext,
 //            p += pktLen;
 //            total += pktLen;
 //        }
+        g_ll_flowCtrl[i].flag =0;
+        g_ll_flowCtrl[i].lastNeSn =0;
+        //malloc ctrlPkt ntrm mem
+        uint16 alloc_Len = 10;
+
+        if (g_blePktVersion == BLE_PKT_VERSION_4_0)         // BLE4.0
+            alloc_Len += BLE_PKT40_LEN;
+        else                                                // BLE5.1
+            alloc_Len += BLE_PKT51_LEN;
+
+        llBuf_Res[i].bufNum                     = 0;
+        llBuf_Res[i].BufRes[TXBUF].inuse        = 0;
+        llBuf_Res[i].BufRes[TXBUF].buf          = ll_osal_mem_alloc(i, alloc_Len, TXBUF);
+        llBuf_Res[i].BufRes[TXCTRLBUF].inuse    = 0;
+        llBuf_Res[i].BufRes[TXCTRLBUF].buf      = ll_osal_mem_alloc(i, alloc_Len, TXCTRLBUF);
+        llBuf_Res[i].BufRes[RXBUF].inuse        = 0;
+        llBuf_Res[i].BufRes[RXBUF].buf          = ll_osal_mem_alloc(i, alloc_Len, RXBUF);
+
+        if(llBuf_Res[i].BufRes[TXBUF].buf == NULL ||
+                llBuf_Res[i].BufRes[TXCTRLBUF].buf == NULL ||
+                llBuf_Res[i].BufRes[RXBUF].buf == NULL)
+        {
+            return LL_STATUS_ERROR_BAD_PARAMETER;
+        }
+
+        // g_llCtrlPkt_ntrm[i] = ll_osal_mem_alloc(alloc_Len);
+    }
+
+    for (uint8 i = 0; i < 16; i++)
+    {
+        dis_params[i].connId = 0xFFFF;
+        dis_params[i].reason = 0;
+        dis_params[i].used = false;
     }
 
 //  LOG("total = %d\n", total);
@@ -12115,7 +12555,7 @@ uint8 llWriteTxData1 ( llConnState_t* connPtr,
                 alloc_Len += BLE_PKT51_LEN;
 
             idx = get_tx_write_ptr(connPtr);//find_free_tx_buf();
-            connPtr->ll_buf.tx_conn_desc[idx] = ll_osal_mem_alloc( alloc_Len );
+            connPtr->ll_buf.tx_conn_desc[idx] = ll_osal_mem_alloc( connPtr->connId, alloc_Len, TXBUF );
 
             /*
                 check llbuf_heap alloc before LL_ENC,
@@ -12197,7 +12637,7 @@ void ll_hw_read_tfifo_rtlp1(void)
     {
         if( connPtr->ll_buf.tx_ntrm_pkts[i] )
         {
-            ll_osal_mem_free(connPtr->ll_buf.tx_ntrm_pkts[i]);
+            ll_osal_mem_free(g_ll_conn_ctx.currentConn, connPtr->ll_buf.tx_ntrm_pkts[i]);
             connPtr->ll_buf.tx_ntrm_pkts[i] = NULL;
             SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_NTX_BUF_B,-1);
         }
@@ -12220,46 +12660,49 @@ void ll_hw_read_tfifo_rtlp1(void)
 //      }
 //  }
 //}
-uint8 llProcessRxData1( void )
-{
-    llConnState_t* connPtr;
-    uint8_t  idx_before,idx_after;
-    // get current connection
-    connPtr = &conn_param[g_ll_conn_ctx.currentConn];
-    idx_before = get_rx_read_ptr (connPtr);
-    uint8 ret = llProcessRxData0();
-    idx_after = get_rx_read_ptr (connPtr);
+// uint8 llProcessRxData1( void )
+// {
+//     llConnState_t* connPtr;
+//     uint8_t  idx_before,idx_after;
+//     // get current connection
+//     connPtr = &conn_param[g_ll_conn_ctx.currentConn];
+//     idx_before = get_rx_read_ptr (connPtr);
+//     uint8 ret = llProcessRxData0();
+//     idx_after = get_rx_read_ptr (connPtr);
 
-    if(idx_after != idx_before )
-    {
-        ll_osal_mem_free(connPtr->ll_buf.rx_conn_desc[idx_before]);
-        connPtr->ll_buf.rx_conn_desc[idx_before] = NULL;
-        SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_RX_BUF_B,-1);
-    }
+//     if(idx_after != idx_before )
+//     {
+//         ll_osal_mem_free(connPtr->ll_buf.rx_conn_desc[idx_before]);
+//         connPtr->ll_buf.rx_conn_desc[idx_before] = NULL;
+//         SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_RX_BUF_B,-1);
+//     }
 
-    return ret;
-}
+//     return ret;
+// }
 void llSlaveEvt_TaskEndOk1( void )
 {
     llConnState_t* connPtr;
     connPtr = &conn_param[g_ll_conn_ctx.currentConn];
-    llSlaveEvt_TaskEndOk0();
 
-//  if(g_ll_conn_ctx.currentConn != LL_INVALID_CONNECTION_ID && conn_param [g_ll_conn_ctx.currentConn].active)
-    if( connPtr->active )
-    {
-        for(int j = 0; j < MAX_LL_BUF_LEN; j++)
-        {
-            if( (connPtr->ll_buf.rx_conn_desc[j] != NULL) && (connPtr->ll_buf.rx_conn_desc[j]->valid == 0) )
-            {
-                ll_osal_mem_free(connPtr->ll_buf.rx_conn_desc[j]);
-                connPtr->ll_buf.rx_conn_desc[j] = NULL;
-                SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_RX_BUF_B,-1);
-            }
-        }
-    }
+    if(connPtr->rx_crcok && connPtr->pmCounter.ll_tbd_cnt3)
+        connPtr->pmCounter.ll_tbd_cnt3 = 0;
+
+    llSlaveEvt_TaskEndOk0();
 }
 
+void LL_AdvReportCback_Patch( uint8 advEvt,
+                              uint8 advAddrType,
+                              uint8* advAddr,
+                              uint8 dataLen,
+                              uint8* advData,
+                              int8  rssi )
+{
+    if(ll_recv_scan_all_cnt >= pGlobal_config[MAXSCANRSPONSES])
+        return;
+
+    LL_AdvReportCback( advEvt,advAddrType,advAddr,dataLen,advData,rssi );
+    ll_recv_scan_all_cnt++;
+}
 
 void patch_linkBuf_init( uint8 flag )
 {
@@ -12305,7 +12748,7 @@ void llReleaseConnId1( llConnState_t* connPtr )
     {
         if( connPtr->ll_buf.tx_conn_desc[j] != NULL )
         {
-            ll_osal_mem_free( connPtr->ll_buf.tx_conn_desc[j] );
+            ll_osal_mem_free( connPtr->connId, connPtr->ll_buf.tx_conn_desc[j] );
             SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_TX_BUF_B,-1);
         }
 
@@ -12316,7 +12759,7 @@ void llReleaseConnId1( llConnState_t* connPtr )
     {
         if( connPtr->ll_buf.rx_conn_desc[j] != NULL )
         {
-            ll_osal_mem_free( connPtr->ll_buf.rx_conn_desc[j] );
+            ll_osal_mem_free( connPtr->connId, connPtr->ll_buf.rx_conn_desc[j] );
             SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_RX_BUF_B,-1);
         }
 
@@ -12327,13 +12770,14 @@ void llReleaseConnId1( llConnState_t* connPtr )
     {
         if( connPtr->ll_buf.tx_ntrm_pkts[j] != NULL )
         {
-            ll_osal_mem_free( connPtr->ll_buf.tx_ntrm_pkts[j] );
+            ll_osal_mem_free( connPtr->connId, connPtr->ll_buf.tx_ntrm_pkts[j] );
             SUB_BYTE_ADD(&(connPtr->llTbd4),DEBUG_NTX_BUF_B,-1);
         }
 
         connPtr->ll_buf.tx_ntrm_pkts[j] = NULL;
     }
 
+    ll_flow_ctrl_restore(connPtr);
     llReleaseConnId0(connPtr);
 
     for(int j = 0; j < MAX_LL_BUF_LEN; j++)
@@ -12341,60 +12785,86 @@ void llReleaseConnId1( llConnState_t* connPtr )
 
     for(int j = 0; j < MAX_LL_BUF_LEN; j++)
         connPtr->ll_buf.rx_conn_desc[j] = NULL;
-    
+
     SUB_BYTE_RESET(&(connPtr->llTbd4),DEBUG_TXDATAQ_B);
 }
 
-
-osalMemHdr_t *ff1_llLink = NULL;
-osalMemHdr_t *theHeap_llLink = NULL;
+osalMemHdr_t* ff1_llLink = NULL;
+osalMemHdr_t* theHeap_llLink = NULL;
 uint32 heapSize_llLink = MAXMEMHEAP;
 
 #define OSALMEM_HDRSZ              sizeof(osalMemHdr_t)
 void ll_osalmem_init(osalMemHdr_t* hdr, uint32 size)
 {
-    osal_mem_set_heap(hdr, size);
+    if (size & OSALMEM_IN_USE)       // sanity check, the size of heap should not
+        return;
+
+    theHeap = hdr;
+    // Setup the small-block bucket.
+    ff1     = theHeap;
+    heapSize = size;     // align to 4bytes edge
     //osal mem init ,only one block
     hdr[(heapSize / OSALMEM_HDRSZ) - 1].val = 0;
     hdr->val = (heapSize - OSALMEM_HDRSZ);                   // Set 'len' & clear 'inUse' field.
-
     //save llLink mem config
     ff1_llLink = ff1;
     theHeap_llLink = theHeap;
     heapSize_llLink = heapSize;
 }
 
-void *ll_osal_mem_alloc( uint16 size )
+void* ll_osal_mem_alloc(uint8_t connId, uint16 size, uint8_t bufType )
 {
     HAL_ENTER_CRITICAL_SECTION();
-    osalMemHdr_t *ff1_last = ff1;
-    osalMemHdr_t *theHeap_last = theHeap;
+    osalMemHdr_t* ff1_last = ff1;
+    osalMemHdr_t* theHeap_last = theHeap;
     uint32 heapSize_last = heapSize;
-
     ff1 = ff1_llLink;
     theHeap = theHeap_llLink;
     heapSize = heapSize_llLink;
     osalMemStat =0;
-
-    void *tem = osal_mem_alloc(size);
-
+    void* tem = osal_mem_alloc(size);
     ff1 = ff1_last;
     theHeap = theHeap_last;
     heapSize = heapSize_last;
     osalMemStat =1;
+
+    if(tem)
+    {
+        llBuf_Res[connId].bufNum ++;
+    }
+    else
+    {
+        //try to use llBuf_Res
+        if(llBuf_Res[connId].BufRes[bufType].inuse == 0)
+        {
+            llBuf_Res[connId].BufRes[bufType].inuse = 1;
+            tem = llBuf_Res[connId].BufRes[bufType].buf;
+        }
+    }
+
     HAL_EXIT_CRITICAL_SECTION();
     return tem;
 }
 
-void ll_osal_mem_free(void *ptr)
+void ll_osal_mem_free(uint8_t connId, void* ptr)
 {
     HAL_ENTER_CRITICAL_SECTION();
 
+    //check llBuf_Res, don't free it
+    for(uint8 i=0; i<3; i++)
+    {
+        if(llBuf_Res[connId].BufRes[i].inuse && ptr == llBuf_Res[connId].BufRes[i].buf)
+        {
+            llBuf_Res[connId].BufRes[i].inuse = 0;
+            HAL_EXIT_CRITICAL_SECTION();
+            return;
+        }
+    }
 
     //osal mem free
-    osalMemHdr_t *hdr = (osalMemHdr_t *)ptr - 1;
+    osalMemHdr_t* hdr = (osalMemHdr_t*)ptr - 1;
     hdr->hdr.inUse = FALSE;
-
+    llBuf_Res[connId].bufNum --;
     HAL_EXIT_CRITICAL_SECTION();
 }
 
@@ -12412,12 +12882,11 @@ uint32  ll_osal_memory_statics(void)
     current = (osalMemHdr_t*)ptr;
 //    HAL_ENTER_CRITICAL_SECTION1( intState );  // Hold off interrupts.
 
-
     do
     {
         if ((uint32)ptr > (uint32)header + 4096)
         {
-            dbg_printf("==========error: memory audit failed===============\r\n");
+            log_printf("==========error: memory audit failed===============\r\n");
             break;
         }
 
@@ -12444,9 +12913,102 @@ uint32  ll_osal_memory_statics(void)
     HAL_EXIT_CRITICAL_SECTION();
 //    HAL_EXIT_CRITICAL_SECTION1( intState );  // Re-enable interrupts.
 //    printf("sum_alloc = %d, sum_free = %d, max_free_block = %d\r\n", sum_alloc, sum_free, max_block);
-    dbg_printf("ll sum_alloc = %d, ll sum_free = %d,ll max_free_block = %d \n", sum_alloc,sum_free, max_block);
+    log_printf("ll sum_alloc = %d, ll sum_free = %d,ll max_free_block = %d \n", sum_alloc,sum_free, max_block);
     return sum_alloc;
 }
+
+osalMemHdr_t* ff1_mesh = NULL;
+osalMemHdr_t* theHeap_mesh = NULL;
+uint32 heapSize_mesh = MAXMEMHEAP;
+void mesh_osalmem_init(osalMemHdr_t* hdr, uint32 size)
+{
+    osal_mem_set_heap(hdr, size);
+    //osal mem init ,only one block
+    hdr[(heapSize / OSALMEM_HDRSZ) - 1].val = 0;
+    hdr->val = (heapSize - OSALMEM_HDRSZ);                   // Set 'len' & clear 'inUse' field.
+    //save meshAdv mem config
+    ff1_mesh = ff1;
+    theHeap_mesh = theHeap;
+    heapSize_mesh = heapSize;
+}
+
+void* mesh_osal_mem_alloc( uint16 size )
+{
+    HAL_ENTER_CRITICAL_SECTION();
+    osalMemHdr_t* ff1_last = ff1;
+    osalMemHdr_t* theHeap_last = theHeap;
+    uint32 heapSize_last = heapSize;
+    ff1 = ff1_mesh;
+    theHeap = theHeap_mesh;
+    heapSize = heapSize_mesh;
+    osalMemStat =0;
+    void* tem = osal_mem_alloc(size);
+    ff1 = ff1_last;
+    theHeap = theHeap_last;
+    heapSize = heapSize_last;
+    osalMemStat =1;
+    HAL_EXIT_CRITICAL_SECTION();
+    return tem;
+}
+
+void mesh_osal_mem_free(void* ptr)
+{
+    HAL_ENTER_CRITICAL_SECTION();
+    //osal mem free
+    osalMemHdr_t* hdr = (osalMemHdr_t*)ptr - 1;
+    hdr->hdr.inUse = FALSE;
+    HAL_EXIT_CRITICAL_SECTION();
+}
+
+uint32  mesh_osal_memory_statics(void)
+{
+    osalMemHdr_t* header, *current;
+    void* ptr;
+    uint32  sum_alloc = 0;
+    uint32  sum_free = 0;
+    uint32  max_block = 0;
+//    halIntState_t intState;
+    HAL_ENTER_CRITICAL_SECTION();
+    ptr = (void*)theHeap_mesh;
+    header = (osalMemHdr_t*)ptr;
+    current = (osalMemHdr_t*)ptr;
+//    HAL_ENTER_CRITICAL_SECTION1( intState );  // Hold off interrupts.
+
+    do
+    {
+        if ((uint32)ptr > (uint32)header + 4096)
+        {
+            log_printf("==========error: memory audit failed===============\r\n");
+            break;
+        }
+
+        // seek to the last block, return
+        if ( current->val == 0 )       /// val = 0, so len = 0
+        {
+            break;
+        }
+
+        if (current->hdr.inUse)
+            sum_alloc += current->hdr.len;
+        else
+        {
+            sum_free += current->hdr.len;
+
+            if (current->hdr.len > max_block )
+                max_block = current->hdr.len;
+        }
+
+        current = (osalMemHdr_t*)((uint8*)current + current->hdr.len);
+    }
+    while (1);
+
+    HAL_EXIT_CRITICAL_SECTION();
+//    HAL_EXIT_CRITICAL_SECTION1( intState );  // Re-enable interrupts.
+//    printf("sum_alloc = %d, sum_free = %d, max_free_block = %d\r\n", sum_alloc, sum_free, max_block);
+    log_printf("mesh sum_alloc = %d, mesh sum_free = %d, mesh max_free_block = %d \n", sum_alloc,sum_free, max_block);
+    return sum_alloc;
+}
+
 
 #define EFUSE_PROG_FIX_FOR_CHIP
 #ifdef EFUSE_PROG_FIX_FOR_CHIP
@@ -12529,7 +13091,7 @@ void ll_dbg_heap_statics(void)
 
     for (int i = 0; i < g_maxConnNum; i++)
     {
-        log_printf("%06x ,", conn_param[i].llTbd4);
+        log_printf("%08x ,", conn_param[i].llTbd4);
     }
 
     log_printf("\n");
@@ -12559,6 +13121,14 @@ void ll_dbg_show(void)
     }
 
     log_printf("\n");
+    log_printf("llBuf_Res bufNum: ");
+
+    for (int i = 0; i < g_maxConnNum; i++)
+    {
+        log_printf(" %d %d,", i, llBuf_Res[i].bufNum);
+    }
+
+    log_printf("\n");
     ll_dbg_heap_statics();
 
     if(p_g_llDevList)
@@ -12573,6 +13143,7 @@ void ll_dbg_show(void)
     }
 
     osal_memory_statics();
+    ll_osal_memory_statics();
 }
 
 #endif

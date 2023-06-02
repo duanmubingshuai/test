@@ -102,12 +102,13 @@ extern "C"
 /*********************************************************************
     MACROS
 */
-typedef struct {
-  uint8_t       type;
-  uint8_t*      data;
-  uint8_t       len;
-  uint8_t       rssi;
-}phy_comm_evt_t;
+typedef struct
+{
+    uint8_t       type;
+    uint8_t*      data;
+    uint8_t       len;
+    uint8_t       rssi;
+} phy_comm_evt_t;
 
 typedef uint8_t (*phy_comm_cb_t)(phy_comm_evt_t* pev);
 
@@ -120,9 +121,9 @@ uint8_t phy_rf_get_current_status(void);
 uint8_t phy_adv_data_update(uint8_t* din, uint8_t dLen);
 uint8_t phy_rf_start_tx(uint8_t* din, uint8_t dLen, uint32_t txintv, uint16_t targetnetid);
 uint8_t phy_rf_stop_tx(void);
-uint8_t phy_cbfunc_regist(int8_t cbfunc_type, uint8_t (*phy_comm_cb_t)(phy_comm_evt_t *pev));
+uint8_t phy_cbfunc_regist(int8_t cbfunc_type, uint8_t (*phy_comm_cb_t)(phy_comm_evt_t* pev));
 uint8_t phy_update_syncword(uint32_t syncword);
-uint8_t phy_update_chmap(uint8_t chnum, uint8_t *chmap, uint8_t *wtmap);
+uint8_t phy_update_chmap(uint8_t chnum, uint8_t* chmap, uint8_t* wtmap);
 void phy_adv_opcode_update(uint8_t opcode);
 void phy_set_tx_maxtime(uint32_t txdura);
 

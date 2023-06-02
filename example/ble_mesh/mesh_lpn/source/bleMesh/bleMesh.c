@@ -88,6 +88,7 @@
 #include "flash.h"
 
 #include "dongleKey.h"
+#include "global_config.h"
 /*********************************************************************
     MACROS
 */
@@ -164,7 +165,7 @@ static gapAdvertisingParams_t bleMesh_advparam;
 
 static UCHAR bleMesh_DiscCancel = FALSE;             // HZF todo, not use???
 
-UCHAR cmdstr[64];
+UCHAR cmdstr[CLI_MAX_ARGS];
 UCHAR cmdlen;
 DECL_CONST CLI_COMMAND cli_cmd_list[] =
 {
@@ -566,6 +567,10 @@ static void bleMesh_ProcessGAPMsg( gapEventHdr_t* pMsg )
     {
         osal_stop_timerEx(bleMesh_TaskID, BLEMESH_GAP_MSG_EVT);
         blebrr_timer_stop();
+
+        if(BLEBRR_GET_STATE() == BLEBRR_STATE_ADV_ENABLED)
+            BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+
         blebrr_scan_enable();
         gapEstLinkReqEvent_t* pPkt = (gapEstLinkReqEvent_t*)pMsg;
         printf("\r\n GAP_LINK_ESTABLISHED_EVENT received! \r\n");

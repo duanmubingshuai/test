@@ -80,6 +80,10 @@
 
 #include "xmodem_service.h"
 
+#ifdef PHY_SLB_OTA_ENABLE
+    #include "slb_app.h"
+#endif
+
 /*********************************************************************
     GLOBAL VARIABLES
 */
@@ -103,6 +107,9 @@ __ATTR_SECTION_SRAM__ const pTaskEventHandlerFn tasksArr[] =
     GATTServApp_ProcessEvent,                                         // task 7
     SimpleBLEPeripheral_ProcessEvent,                                 // task 8
     xmodem_service_processevent,                                      // task 9
+    #ifdef PHY_SLB_OTA_ENABLE
+    SLB_OTA_ProcessEvent,
+    #endif
 };
 
 __ATTR_SECTION_SRAM__ const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -153,6 +160,9 @@ void osalInitTasks( void )
     SimpleBLEPeripheral_Init( taskID++ );
     /*xmodem service*/
     xmodem_service_init( taskID++ );
+    #ifdef PHY_SLB_OTA_ENABLE
+    SLB_OTA_Init( taskID );
+    #endif
 }
 #endif
 /*********************************************************************

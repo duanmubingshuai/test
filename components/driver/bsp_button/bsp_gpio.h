@@ -67,6 +67,8 @@ int hal_gpio_btn_get_index(gpio_pin_e pin,uint8_t* index);
 
 void hal_gpio_btn_cb(uint8_t ucKeyCode);
 
+void gpio_btn_pin_event_handler(gpio_pin_e pin,IO_Wakeup_Pol_e type);
+
 #ifdef __cplusplus
 }
 #endif

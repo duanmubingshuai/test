@@ -88,6 +88,7 @@ static void hal_spi_write_fifo(AP_SSI_TypeDef* Ssix,uint8_t len,uint8_t* tx_rx_p
         {
             Ssix->DataReg = *((uint16_t*)tx_rx_ptr+i);
         }
+
         i++;
     }
 
@@ -676,78 +677,78 @@ static int hal_spi_xmit_polling
                 {
                     switch (tmp_len)
                     {
-                        case 1:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            tmp_tx_buf_len += 1;
-                            break;
+                    case 1:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        tmp_tx_buf_len += 1;
+                        break;
 
-                        case 2:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
-                            tmp_tx_buf_len += 2;
-                            break;
+                    case 2:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
+                        tmp_tx_buf_len += 2;
+                        break;
 
-                        case 3:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
-                            tmp_tx_buf_len += 3;
-                            break;
+                    case 3:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
+                        tmp_tx_buf_len += 3;
+                        break;
 
-                        case 4:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
-                            tmp_tx_buf_len += 4;
-                            break;
+                    case 4:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
+                        tmp_tx_buf_len += 4;
+                        break;
 
-                        case 5:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
-                            tmp_tx_buf_len += 5;
-                            break;
+                    case 5:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
+                        tmp_tx_buf_len += 5;
+                        break;
 
-                        case 6:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+5);
-                            tmp_tx_buf_len += 6;
-                            break;
+                    case 6:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+5);
+                        tmp_tx_buf_len += 6;
+                        break;
 
-                        case 7:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+5);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+6);
-                            tmp_tx_buf_len += 7;
-                            break;
+                    case 7:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+5);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+6);
+                        tmp_tx_buf_len += 7;
+                        break;
 
-                        case 8:
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+5);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+6);
-                            Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+7);
-                            tmp_tx_buf_len += 8;
-                            break;
+                    case 8:
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+1);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+2);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+3);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+4);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+5);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+6);
+                        Ssix->DataReg = *((uint16_t*)tx_buf+tmp_tx_buf_len+7);
+                        tmp_tx_buf_len += 8;
+                        break;
 
-                        default:
-                            break;
-                        }
+                    default:
+                        break;
                     }
+                }
             }
             else
             {

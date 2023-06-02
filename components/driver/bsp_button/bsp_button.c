@@ -1,10 +1,15 @@
 #include "error.h"
 #include "bsp_button.h"
 #include "log.h"
+#include "pwrmgr.h"
 
 #define KEY_BUF_INDEX(index)    (index / 32)
 #define KEY_BUF_MOD(index)      (index % 32)
 #define KEY_COMBINE_LEN         (sizeof(BTN_COMBINE_T) << 3)
+
+uint8_t key_checking_flag = 1;
+uint8_t poweroff_key_release = 0;
+uint32_t poweroff_keydown_timestamp = 0;
 
 static BTN_T*                   g_btn_ptr = NULL;
 static uint8_t                  g_btn_num;
@@ -12,9 +17,14 @@ static uint8_t                  g_btn_num;
 static uint32_t*                g_combing_ptr = NULL;
 static uint8_t                  g_combing_start;
 
-static KEY_FIFO_T               s_Key;
-static void                     bsp_DetectBtn(uint8_t index);
-static uint32_t                 g_btn_value[(BTN_NUMBER-1)/32+1];
+// ! app key register callback
+bsp_app* bsp_btn_cb = NULL;
+static keyboard_cfg* bsp_KeyBoardCfg = NULL;
+// ! bsp button register arr
+BTN_T usr_sum_btn_array[BSP_TOTAL_BTN_NUM];
+static KEY_FIFO_T s_Key;
+
+static uint32_t g_btn_value[(BTN_NUMBER - 1) / 32 + 1];
 
 static uint8_t bsp_btn_map(uint32_t index)
 {
@@ -163,7 +173,12 @@ bool bsp_set_key_value_by_row_col(uint8_t cols_num,uint8_t row,uint8_t col,bool 
     uint32_t temp,combine_temp;
     uint32_t index = row * cols_num + col;
 
-    //LOG("----------->(%d) %d %d\n",__LINE__,index,value);
+    if (KEY_BUF_INDEX(index) >= ((BTN_NUMBER - 1) / 32 + 1))
+    {
+        LOG("----------->(%d) %d %d\n",__LINE__,index,value);
+        return FALSE;
+    }
+
     if(value)
     {
         g_btn_value[KEY_BUF_INDEX(index)] |= BIT(KEY_BUF_MOD(index));
@@ -233,8 +248,8 @@ bool bsp_InitBtn(BTN_T* sum_btn_array,uint8_t sum_btn_num,uint8_t combine_btn_st
 
         if((g_btn_ptr[i].KeyConfig & BSP_BTN_LPS_CFG) || (g_btn_ptr[i].KeyConfig & BSP_BTN_LPK_CFG))
         {
-            g_btn_ptr[i].LongTime = BTN_LONG_PRESS_START_TICK_COUNT;
-            g_btn_ptr[i].RepeatSpeed = BTN_LONG_PRESS_KEEP_TICK_COUNT;
+            g_btn_ptr[i].LongTime = bsp_KeyBoardCfg->keyboard_param.long_press_start_count;
+            g_btn_ptr[i].RepeatSpeed = bsp_KeyBoardCfg->keyboard_param.long_press_keep_count;
             g_btn_ptr[i].RepeatCount = 0;
         }
         else
@@ -303,80 +318,58 @@ static void bsp_DetectBtn(uint8_t index)
 
     if (bsp_is_key_press(index))
     {
-        if (_pBtn->Count < _pBtn->FilterTime)
+        if (_pBtn->State == 0)
         {
-            _pBtn->Count = _pBtn->FilterTime;
-        }
-        else if(_pBtn->Count < 2 * _pBtn->FilterTime)
-        {
-            _pBtn->Count++;
-        }
-        else
-        {
-            if (_pBtn->State == 0)
-            {
-                _pBtn->State = 1;
+            _pBtn->State = 1;
 
-                if (_pBtn->KeyConfig & BSP_BTN_PD_CFG)
-                {
-                    bsp_PutKey(BSP_BTN_PD_BASE + index);
-                }
+            if (_pBtn->KeyConfig & BSP_BTN_PD_CFG)
+            {
+                bsp_PutKey(BSP_BTN_PD_BASE + index);
             }
+        }
 
-            #ifdef BSP_BTN_LONG_PRESS_ENABLE
+        #ifdef BSP_BTN_LONG_PRESS_ENABLE
 
-            if (_pBtn->LongTime > 0)
+        if (_pBtn->LongTime > 0)
+        {
+            if (_pBtn->LongCount < _pBtn->LongTime)
             {
-                if (_pBtn->LongCount < _pBtn->LongTime)
+                if (++_pBtn->LongCount == _pBtn->LongTime)
                 {
-                    if (++_pBtn->LongCount == _pBtn->LongTime)
+                    if (_pBtn->KeyConfig & BSP_BTN_LPS_CFG)
                     {
-                        if (_pBtn->KeyConfig & BSP_BTN_LPS_CFG)
-                        {
-                            bsp_PutKey(BSP_BTN_LPS_BASE + index);
-                        }
+                        bsp_PutKey(BSP_BTN_LPS_BASE + index);
                     }
                 }
-                else
+            }
+            else
+            {
+                if (_pBtn->RepeatSpeed > 0)
                 {
-                    if (_pBtn->RepeatSpeed > 0)
+                    if (++_pBtn->RepeatCount >= _pBtn->RepeatSpeed)
                     {
-                        if (++_pBtn->RepeatCount >= _pBtn->RepeatSpeed)
-                        {
-                            _pBtn->RepeatCount = 0;
+                        _pBtn->RepeatCount = 0;
 
-                            if (_pBtn->KeyConfig & BSP_BTN_LPK_CFG)
-                            {
-                                bsp_PutKey(BSP_BTN_LPK_BASE + index);
-                            }
+                        if (_pBtn->KeyConfig & BSP_BTN_LPK_CFG)
+                        {
+                            bsp_PutKey(BSP_BTN_LPK_BASE + index);
                         }
                     }
                 }
             }
-
-            #endif
         }
+
+        #endif
     }
     else
     {
-        if(_pBtn->Count > _pBtn->FilterTime)
+        if (_pBtn->State == 1)
         {
-            _pBtn->Count = _pBtn->FilterTime;
-        }
-        else if(_pBtn->Count != 0)
-        {
-            _pBtn->Count--;
-        }
-        else
-        {
-            if (_pBtn->State == 1)
-            {
-                _pBtn->State = 0;
+            _pBtn->State = 0;
 
-                if (_pBtn->KeyConfig & BSP_BTN_UP_CFG )
-                {
-                    bsp_PutKey(BSP_BTN_UP_BASE + index);
-                }
+            if (_pBtn->KeyConfig & BSP_BTN_UP_CFG)
+            {
+                bsp_PutKey(BSP_BTN_UP_BASE + index);
             }
         }
 
@@ -426,3 +419,243 @@ bool bsp_KeyEmpty(void)
     }
 }
 
+void bsp_button_param_init(keyboard_cfg* cfg)
+{
+    bsp_KeyBoardCfg = cfg;
+    keyboard_register(bsp_KeyBoardCfg);
+
+    // !config user key support status
+    for (int i = 0; i < BSP_TOTAL_BTN_NUM; i++)
+    {
+        if (i == BSP_COMBINE_KEY_ID_0 || i == BSP_COMBINE_KEY_ID_1 || i == BSP_COMBINE_KEY_ID_2 || i == BSP_IR_LEARN_KEY_ID)
+        {
+            usr_sum_btn_array[i].KeyConfig = (BSP_BTN_PD_CFG | BSP_BTN_UP_CFG | BSP_BTN_LPS_CFG | BSP_BTN_LPK_CFG);
+        }
+        else
+        {
+            usr_sum_btn_array[i].KeyConfig = (BSP_BTN_PD_CFG | BSP_BTN_UP_CFG);
+        }
+    }
+
+    #if (BSP_COMBINE_BTN_NUM > 0)
+
+    // ! combine button config size checking
+    if (BSP_COMBINE_BTN_NUM != bsp_KeyBoardCfg->keyboard_param.combine_param.keyboard_combine_num)
+    {
+        LOG("combine button config error\n");
+        return;
+    }
+
+    // ! combine button config checking
+    for (int i = 0; i < BSP_COMBINE_BTN_NUM; i++)
+    {
+        if (bsp_KeyBoardCfg->keyboard_param.combine_param.keyboard_combine_btn_array[i] == 0x00)
+        {
+            LOG("combine button data init error\n");
+            return;
+        }
+    }
+
+    if (PPlus_SUCCESS != bsp_InitBtn(usr_sum_btn_array, BSP_TOTAL_BTN_NUM, BSP_SINGLE_BTN_NUM, bsp_KeyBoardCfg->keyboard_param.combine_param.keyboard_combine_btn_array))
+    #else
+    if (PPlus_SUCCESS != bsp_InitBtn(usr_sum_btn_array, BSP_TOTAL_BTN_NUM, 0, NULL))
+    #endif
+    {
+        LOG("bsp button init error\n");
+    }
+}
+
+/*********************************************************************
+    @fn      time_exceed
+
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+int time_exceed(unsigned int ref, unsigned int span)
+{
+    unsigned int now = hal_systick();
+    return now >= ref ? (now - ref) > span : (0xffffffff - ref + now) > span;
+}
+
+/*********************************************************************
+    @fn      key_app_register
+
+    @brief   register key status change callback api
+
+    @param   void
+
+    @return  void
+*/
+void key_app_register(bsp_app* bsp_app_cb)
+{
+    if (bsp_app_cb == NULL)
+    {
+        return;
+    }
+
+    bsp_btn_cb = bsp_app_cb;
+}
+
+/*********************************************************************
+    @fn      poweroff_key_Press_StartPhaseReport
+
+    @brief   poweroff key press report  in start phase
+
+    @param   void
+
+    @return  void
+*/
+void poweroff_key_Press_StartPhaseReport(void)
+{
+    // ! bsp button param init
+    bsp_button_param_init(bsp_KeyBoardCfg);
+
+    if (READ_MATRIX_KEY <= MATRIX_KEY_MAX && g_system_reset_cause == WAKE_SYSTEM_CAUSE)
+    {
+        // ! get poweroff key press tick value
+        poweroff_keydown_timestamp = hal_systick();
+        // ! update row col data into bspbutton  row = READ_MATRIX_KEY%MATRIX_KEYBOARD_ROW | col = READ_MATRIX_KEY/MATRIX_KEYBOARD_ROW
+        bsp_set_key_value_by_row_col(MATRIX_KEYBOARD_COL, READ_MATRIX_KEY % MATRIX_KEYBOARD_ROW, READ_MATRIX_KEY / MATRIX_KEYBOARD_ROW, TRUE);
+        uint8 poweroffkey_press_index = BSP_BTN_INDEX(bsp_KeyPro());
+        //        LOG("[key]:%02d pre\n", poweroffkey_press_index);
+
+        if (bsp_btn_cb && bsp_btn_cb->poweroff_Key_pre_cb)
+        {
+            bsp_btn_cb->poweroff_Key_pre_cb(poweroffkey_press_index);
+        }
+    }
+}
+
+/*********************************************************************
+    @fn      poweroff_key_Release_StartPhaseReport
+
+    @brief   poweroff key release report  in start phase
+
+    @param   void
+
+    @return  void
+*/
+void poweroff_key_Release_StartPhaseReport(void)
+{
+    if (poweroff_key_release == 0)
+    {
+        if (READ_MATRIX_KEY <= MATRIX_KEY_MAX && g_system_reset_cause == WAKE_SYSTEM_CAUSE)
+        {
+            poweroff_key_release = 1;
+            bsp_set_key_value_by_row_col(MATRIX_KEYBOARD_COL, READ_MATRIX_KEY % MATRIX_KEYBOARD_ROW, READ_MATRIX_KEY / MATRIX_KEYBOARD_ROW, FALSE);
+            uint8 poweroff_key_release_index = BSP_BTN_INDEX(bsp_KeyPro());
+            //          LOG("[key]:%02d rel\n", poweroff_key_release_index);
+
+            if (bsp_btn_cb && bsp_btn_cb->poweroff_Key_rel_cb)
+            {
+                bsp_btn_cb->poweroff_Key_rel_cb(poweroff_key_release_index);
+            }
+        }
+    }
+}
+
+/*********************************************************************
+    @fn      pragram_start_checking
+
+    @brief   checking keyboard wheather press or release
+
+    @param   void
+
+    @return  0 -- key release  1-- key press
+*/
+int8_t pragram_start_checking(GPIO_Pin_e* rows, GPIO_Pin_e* cols)
+{
+    if (g_system_reset_cause == WAKE_SYSTEM_CAUSE)
+    {
+        if (READ_MATRIX_KEY <= MATRIX_KEY_MAX)
+        {
+            if (keyboard_read_once(rows, cols) != 0)
+            {
+                return 1;
+            }
+            else
+            {
+                key_checking_flag = 0;
+                return 0;
+            }
+        }
+        else
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+/*********************************************************************
+    @fn      power_Off_init_phase_key_checking
+
+    @brief   keyboard release checking  and  keyboard report  in start phase & polling call this function in start phase
+
+    @param   void
+
+    @return  void
+*/
+// ! key checking on poweon init process
+uint8_t power_Off_init_phase_key_checking(GPIO_Pin_e* rows, GPIO_Pin_e* cols)
+{
+    // ! to report
+    if (get_key_checking_Flag() == 0)
+    {
+        poweroff_key_Release_StartPhaseReport();
+        return 0;
+    }
+    else
+    {
+        // ! again checking
+        if (pragram_start_checking(rows, cols) == 0)
+        {
+            poweroff_key_Release_StartPhaseReport();
+        }
+
+        return 1;
+    }
+}
+
+/*********************************************************************
+    @fn      get_key_checking_Flag
+
+    @brief   get keyboard wheather idle
+
+    @param   void
+
+    @return  1---working  0 -- idle
+*/
+uint8_t get_key_checking_Flag(void)
+{
+    return key_checking_flag;
+}
+
+/*********************************************************************
+    @fn      keybaord_middle_button_data_handle
+
+    @brief   bsp button handle
+
+    @param   void
+
+    @return  void
+*/
+void keybaord_middle_button_data_handle(void)
+{
+    uint8 KeyCode;
+    KeyCode = bsp_KeyPro();
+
+    if (KeyCode != BTN_NONE)
+    {
+        if (bsp_btn_cb && bsp_btn_cb->bsp_btn_change_cb)
+        {
+            bsp_btn_cb->bsp_btn_change_cb(KeyCode);
+        }
+    }
+}

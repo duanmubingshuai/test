@@ -325,6 +325,41 @@ pwm_ch_t hal_pwm_ch_reg(PWMN_e pwmN)
 }
 
 
+static void pwm_enable_or_disable(PWMN_e pwm_ch, bool enable)
+{
+    if(enable)
+    {
+        if(pwm_ch == PWM_CH0 || pwm_ch == PWM_CH1)
+        {
+            PWM_ENABLE_CH_01;
+        }
+        else if(pwm_ch == PWM_CH2 || pwm_ch == PWM_CH3)
+        {
+            PWM_ENABLE_CH_23;
+        }
+        else if(pwm_ch == PWM_CH4 || pwm_ch == PWM_CH5)
+        {
+            PWM_ENABLE_CH_45;
+        }
+    }
+    else
+    {
+        if(pwm_ch == PWM_CH0 || pwm_ch == PWM_CH1)
+        {
+            PWM_DISABLE_CH_01;
+        }
+        else if(pwm_ch == PWM_CH2 || pwm_ch == PWM_CH3)
+        {
+            PWM_DISABLE_CH_23;
+        }
+        else if(pwm_ch == PWM_CH4 || pwm_ch == PWM_CH5)
+        {
+            PWM_DISABLE_CH_45;
+        }
+    }
+}
+
+
 void pwm_complement_start(pwm_complement_deadzone_cfg_t pwm_cfg)
 {
     if(pwm_cfg.dead_ratio != 0)
@@ -332,17 +367,31 @@ void pwm_complement_start(pwm_complement_deadzone_cfg_t pwm_cfg)
         pwm_deadzone_start(pwm_cfg);
         return;
     }
-        
-    AP_PWM->pwmen &= ~BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN1);
-    AP_PWM->pwmen &= ~BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN2);
-    hal_pwm_init(pwm_cfg.pwmN1, pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity1);
-    hal_pwm_init(pwm_cfg.pwmN2, pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity2);
-    hal_pwm_set_count_val(pwm_cfg.pwmN1, pwm_cfg.cmpVal, pwm_cfg.cntTopVal);
-    hal_pwm_set_count_val(pwm_cfg.pwmN2, pwm_cfg.cmpVal, pwm_cfg.cntTopVal);
-    hal_pwm_open_channel(pwm_cfg.pwmN1, pwm_cfg.pwmPin1);
-    hal_pwm_open_channel(pwm_cfg.pwmN2, pwm_cfg.pwmPin2);
-    AP_PWM->pwmen |= BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN1);
-    AP_PWM->pwmen |= BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN2);
+
+    if((ABS(pwm_cfg.pwmN[0]-pwm_cfg.pwmN[1]) == 1) && (pwm_cfg.pwmN[0]/2 == pwm_cfg.pwmN[1]/2))
+    {
+        pwm_enable_or_disable(pwm_cfg.pwmN[0], FALSE);
+    }
+    else
+    {
+        PWM_DISABLE_ALL;
+    }
+
+    hal_pwm_init(pwm_cfg.pwmN[0], pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity[0]);
+    hal_pwm_init(pwm_cfg.pwmN[1], pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity[1]);
+    hal_pwm_set_count_val(pwm_cfg.pwmN[0], pwm_cfg.cmpVal, pwm_cfg.cntTopVal);
+    hal_pwm_set_count_val(pwm_cfg.pwmN[1], pwm_cfg.cmpVal, pwm_cfg.cntTopVal);
+    hal_pwm_open_channel(pwm_cfg.pwmN[0], pwm_cfg.pwmPin[0]);
+    hal_pwm_open_channel(pwm_cfg.pwmN[1], pwm_cfg.pwmPin[1]);
+
+    if((ABS(pwm_cfg.pwmN[0]-pwm_cfg.pwmN[1]) == 1) && (pwm_cfg.pwmN[0]/2 == pwm_cfg.pwmN[1]/2))
+    {
+        pwm_enable_or_disable(pwm_cfg.pwmN[0], TRUE);
+    }
+    else
+    {
+        PWM_ENABLE_ALL;
+    }
 }
 
 
@@ -353,15 +402,29 @@ void pwm_deadzone_start(pwm_complement_deadzone_cfg_t pwm_cfg)
         pwm_complement_start(pwm_cfg);
         return;
     }
-        
-    AP_PWM->pwmen &= ~BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN1);
-    AP_PWM->pwmen &= ~BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN2);
-    hal_pwm_init(pwm_cfg.pwmN1, pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity1);
-    hal_pwm_init(pwm_cfg.pwmN2, pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity2);
-    hal_pwm_set_count_val(pwm_cfg.pwmN1, pwm_cfg.cmpVal, pwm_cfg.cntTopVal);
-    hal_pwm_set_count_val(pwm_cfg.pwmN2, pwm_cfg.cmpVal+(pwm_cfg.cntTopVal+1)/pwm_cfg.dead_ratio, pwm_cfg.cntTopVal);
-    hal_pwm_open_channel(pwm_cfg.pwmN1, pwm_cfg.pwmPin1);
-    hal_pwm_open_channel(pwm_cfg.pwmN2, pwm_cfg.pwmPin2);
-    AP_PWM->pwmen |= BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN1);
-    AP_PWM->pwmen |= BIT(PWM_ENABLE_CH_BASE+pwm_cfg.pwmN2);
+
+    if((ABS(pwm_cfg.pwmN[0]-pwm_cfg.pwmN[1]) == 1) && (pwm_cfg.pwmN[0]/2 == pwm_cfg.pwmN[1]/2))
+    {
+        pwm_enable_or_disable(pwm_cfg.pwmN[0], FALSE);
+    }
+    else
+    {
+        PWM_DISABLE_ALL;
+    }
+
+    hal_pwm_init(pwm_cfg.pwmN[0], pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity[0]);
+    hal_pwm_init(pwm_cfg.pwmN[1], pwm_cfg.pwmDiv, pwm_cfg.pwmMode, pwm_cfg.pwmPolarity[1]);
+    hal_pwm_set_count_val(pwm_cfg.pwmN[0], pwm_cfg.cmpVal, pwm_cfg.cntTopVal);
+    hal_pwm_set_count_val(pwm_cfg.pwmN[1], pwm_cfg.cmpVal+(pwm_cfg.cntTopVal+1)/pwm_cfg.dead_ratio, pwm_cfg.cntTopVal);
+    hal_pwm_open_channel(pwm_cfg.pwmN[0], pwm_cfg.pwmPin[0]);
+    hal_pwm_open_channel(pwm_cfg.pwmN[1], pwm_cfg.pwmPin[1]);
+
+    if((ABS(pwm_cfg.pwmN[0]-pwm_cfg.pwmN[1]) == 1) && (pwm_cfg.pwmN[0]/2 == pwm_cfg.pwmN[1]/2))
+    {
+        pwm_enable_or_disable(pwm_cfg.pwmN[0], TRUE);
+    }
+    else
+    {
+        PWM_ENABLE_ALL;
+    }
 }

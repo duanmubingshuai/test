@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -67,6 +67,8 @@ API_RESULT cli_get_information(UINT32 argc, UCHAR* argv[]);
 
 API_RESULT cli_disp_key(UINT32 argc, UCHAR* argv[]);
 
+API_RESULT cli_mesh_stack_clear(UINT32 argc, UCHAR* argv[]);
+
 API_RESULT cli_demo_reset(UINT32 argc, UCHAR* argv[]);
 
 API_RESULT cli_internal_status(UINT32 argc, UCHAR* argv[]);
@@ -93,6 +95,7 @@ API_RESULT cli_seg_send(UINT32 argc, UCHAR* argv[]);
 
 API_RESULT cli_snb(UINT32 argc, UCHAR* argv[]);
 
+API_RESULT cli_send_pdu(UINT32 argc, UCHAR* argv[]);
 
 #endif
 

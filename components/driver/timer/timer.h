@@ -42,9 +42,9 @@ extern "C" {
 #define FREE_TIMER_NUMBER 2
 
 #if (TIM2_IRQHANDLER1_ENABLE==TRUE)
-    #define JUMP_TIM2_IRQHANDLER1_FUNCTION() do { \
-            JUMP_FUNCTION(V21_IRQ_HANDLER) = (uint32_t)&TIM2_IRQHandler1; \
-            }while(0);
+#define JUMP_TIM2_IRQHANDLER1_FUNCTION() do { \
+        JUMP_FUNCTION(V21_IRQ_HANDLER) = (uint32_t)&TIM2_IRQHandler1; \
+    }while(0);
 #endif
 typedef enum
 {

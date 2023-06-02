@@ -36,7 +36,6 @@ RTE_Components.h
 # ignor folder
 #RTE/
 bin/
-__bld_cmd
 components/driver_rom/
 /lib/generate_mesh_lib/ethermind/build/*
 !/lib/generate_mesh_lib/ethermind/build/*.defines

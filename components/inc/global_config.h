@@ -221,12 +221,11 @@
 #define   LL_EXT_ADV_INTER_SEC_CHN_INT_2MPHY 115
 
 //Open the RX window in advance if the connection interval is too large in sleep mode
-#define   LL_SLEEP_MODE_ADVANCE_RX_WINDOW_FLAG 116  /// FALSE
-#define   LL_DEFUALT_CONN_INTERVAL_LIMIT_VALUE 117  /// 400
-#define   LL_DEFUALT_ADVANCE_RX_WINDOW_VALUE   118  /// 300
-#define   LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE   119  /// 1000
+#define   LL_ENLARGE_ADVANCE_RX_WINDOW_VALUE   116  /// 200
 
-#define   GARBAGE_DATA_RESOURCE                120  /// 1000
+#define   GARBAGE_DATA_RESOURCE                117  /// 1000
+#define   MAXSCANRSPONSES                      118  /// 64
+
 
 
 

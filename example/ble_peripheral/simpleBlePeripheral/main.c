@@ -123,7 +123,10 @@ llConnState_t               pConnContext[BLE_MAX_ALLOW_CONNECTION];
 #endif
 ALIGN4_U8   g_largeHeap[LARGE_HEAP_SIZE];
 
-#define     LL_LINK_HEAP_SIZE    (1*1024)
+#define     LL_LINKBUF_CFG_NUM                0
+
+#define     LL_PKT_BUFSIZE                    280
+#define     LL_LINK_HEAP_SIZE    ( ( BLE_MAX_ALLOW_CONNECTION * 3 + LL_LINKBUF_CFG_NUM ) * LL_PKT_BUFSIZE )//basic Space + configurable Space
 ALIGN4_U8   g_llLinkHeap[LL_LINK_HEAP_SIZE];
 /*********************************************************************
     GLOBAL VARIABLES
@@ -182,7 +185,7 @@ static void hal_low_power_io_init(void)
     #if ( HOST_CONFIG & OBSERVER_CFG )
     hal_pwrmgr_RAM_retention(RET_SRAM0|RET_SRAM1);
     #else
-    hal_pwrmgr_RAM_retention(RET_SRAM0);
+    hal_pwrmgr_RAM_retention(RET_SRAM0|RET_SRAM1);
     #endif
     hal_pwrmgr_RAM_retention_set();
     hal_pwrmgr_LowCurrentLdo_enable();
@@ -193,7 +196,6 @@ static void ble_mem_init_config(void)
     //ll linkmem setup
     extern void ll_osalmem_init(osalMemHdr_t* hdr, uint32 size);
     ll_osalmem_init((osalMemHdr_t*)g_llLinkHeap, LL_LINK_HEAP_SIZE);
-
     osal_mem_set_heap((osalMemHdr_t*)g_largeHeap, LARGE_HEAP_SIZE);
     LL_InitConnectContext(pConnContext,
                           g_pConnectionBuffer,
@@ -327,12 +329,12 @@ int  main(void)
     g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_DBL_32M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;//SYS_CLK_DLL_48M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
-#if defined ( __GNUC__ )
+    #if defined ( __GNUC__ )
     extern const uint32_t* const jump_table_base[];
     osal_memcpy((void*)0x1fff0000, (void*)jump_table_base, 1024);
-#endif
+    #endif
     drv_irq_init();
     init_config();
     #if ( HOST_CONFIG & OBSERVER_CFG )

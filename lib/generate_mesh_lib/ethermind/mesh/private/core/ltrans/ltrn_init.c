@@ -528,6 +528,7 @@ API_RESULT ltrn_pkt_in
     }
 
     #ifdef MS_LPN_SUPPORT
+
     /*seg ack pkt is ctrl pkt*/
     //if (MS_TRN_CTRL_PKT != net_hdr->ctl)
     //{
@@ -549,8 +550,8 @@ API_RESULT ltrn_pkt_in
             }
         }
     }
-    //}
 
+    //}
     #endif /* MS_LPN_SUPPORT */
     return retval;
 }
@@ -584,17 +585,7 @@ API_RESULT ltrn_send_ack
     */
     if (ms_max_subnets == subnet_handle)
     {
-        UINT8 role;
-        MS_access_cm_get_friendship_role (&role);
-
-        if (MS_FRND_ROLE_LPN == role)
-        {
-            LTRN_TRC("[LTRN] Segment from Friend Received. Not Sending Ack\n");
-            LTRN_UNLOCK();
-            trn_frnd_handle_segment_ack(subnet_handle);
-            LTRN_LOCK();
-            return API_SUCCESS;
-        }
+        return API_SUCCESS;
     }
 
     #endif /* MS_LPN_SUPPORT */
@@ -1126,14 +1117,12 @@ API_RESULT ltrn_handle_seg_pdu
     }
 
     #endif /* MS_FRIEND_SUPPORT */
+    /**
+           Check if packet received from friend.
+           TODO: Revamp
+    */
     #ifdef MS_LPN_SUPPORT
 
-    /**
-        Check if packet received from friend.
-        TODO: Revamp
-    */
-    //if (MS_TRN_CTRL_PKT != net_hdr->ctl)
-    //{
     if (ms_max_subnets == subnet_handle)
     {
         UINT8 role;
@@ -1141,16 +1130,15 @@ API_RESULT ltrn_handle_seg_pdu
 
         if (MS_FRND_ROLE_LPN == role)
         {
-            printf("[LTRN] Segment from Friend Received. Not Sending Ack\n");
+            LTRN_TRC("[LTRN] Segment from Friend Received. Not Sending Ack\n");
             LTRN_UNLOCK();
             trn_frnd_handle_segment_ack(subnet_handle);
             LTRN_LOCK();
-            return API_SUCCESS;
+            //return API_SUCCESS;
         }
     }
-    //}
 
-    #endif /* MS_LPN_SUPPORT */
+    #endif
     return retval;
 }
 #endif /* MS_LTRN */

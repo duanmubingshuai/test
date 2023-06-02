@@ -50,6 +50,10 @@
 #include "voice.h"
 #include "Voice_Queue.h"
 #include "mcu.h"
+#include "adc_config.h"
+
+
+#if (APP_RUN_MODE == ADC_RUNMODE_INTERRUPT)
 
 /*********************************************************************
     TYPEDEFS
@@ -77,7 +81,7 @@ static uint8_t channel_done_flag = 0;
     LOCAL VARIABLES
 */
 
-uint8 adcDemo_TaskID;   // Task ID for internal task/event processing
+static uint8 adcDemo_TaskID;   // Task ID for internal task/event processing
 /*
     channel:
     is_differential_mode:
@@ -92,17 +96,12 @@ uint8 adcDemo_TaskID;   // Task ID for internal task/event processing
     then the pair of [P20~P15,P14~P13,P12~P11] will work.
     other adc channel cannot work.
 */
-adc_Cfg_t adc_cfg =
+static adc_Cfg_t adc_cfg =
 {
-
-
     .channel = ADC_BIT(ADC_CH3P_P20)|ADC_BIT(ADC_CH2P_P14)|ADC_BIT(ADC_CH3N_P15),
-
     .is_continue_mode = FALSE,
     .is_differential_mode = 0x00,
-
     .is_high_resolution = 0x00,
-
 };
 
 
@@ -171,7 +170,6 @@ static void adc_ProcessOSALMsg( osal_event_hdr_t* pMsg )
 
 static void adc_evt(adc_Evt_t* pev)
 {
-    static unsigned char adc_cnt = 0 ;
     float value = 0;
     int i = 0;
     bool is_high_resolution = FALSE;
@@ -240,18 +238,7 @@ static void adc_evt(adc_Evt_t* pev)
 
         if(adc_cfg.is_continue_mode == FALSE)
         {
-            adc_cnt++;
-
-            if( adc_cnt <= 0x09)
-            {
-                osal_start_timerEx(adcDemo_TaskID, adcMeasureTask_EVT,1000);
-            }
-            else
-            {
-                osal_start_timerEx(adcDemo_Poilling_TaskID, adcMeasureTask_Poilling_EVT,1000);
-                // osal_start_timerEx(adcDemo_TaskID, VOICE_VOICE_RECORD_STOP_EVT,3000);
-                adc_cnt = 0 ;
-            }
+            osal_start_timerEx(adcDemo_TaskID, adcMeasureTask_EVT,1000);
         }
     }
 }
@@ -261,7 +248,7 @@ static void adcMeasureTask( void )
     bool batt_mode = FALSE;
     uint8_t batt_ch = ADC_CH2P_P14;
     GPIO_Pin_e pin;
-    LOG("adcMeasureTask\n");
+    LOG("adcMeasureTask INTERRUPT\n");
 
     if(FALSE == batt_mode)
     {
@@ -287,7 +274,10 @@ static void adcMeasureTask( void )
         return;
     }
 
-//WaitMs(1);
     hal_adc_start(INTERRUPT_MODE);
 }
+
+
+#endif
+
 

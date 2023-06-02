@@ -39,9 +39,6 @@
 /*******************************************************************************************************
     @ Description    :  macro define
  *******************************************************************************************************/
-#define MULTI_SCH_DELAY         500     // unit ms
-
-
 #define MULTI_SCH_ADV_DURATION_TIME     4 //ms
 
 
@@ -795,12 +792,11 @@ void multiRole_insert_node(uint8 mode,uint16 param, uint16 idx_len, void* pValue
         {
             while( node != NULL)
             {
-                LOG("node %p\n",node);
-
+//                LOG("node %p\n",node);
                 if( node->next == NULL )
                 {
                     node->next = insNode;
-                    LOG("node->next->next %p\n",node->next->next);
+//                    LOG("node->next->next %p\n",node->next->next);
                     break;
                 }
 
@@ -843,12 +839,11 @@ void multiRole_insert_node(uint8 mode,uint16 param, uint16 idx_len, void* pValue
         {
             while( node != NULL)
             {
-                LOG("node %p\n",node);
-
+//                LOG("node %p\n",node);
                 if( node->next == NULL )
                 {
                     node->next = insNode;
-                    LOG("node->next->next %p\n",node->next->next);
+//                    LOG("node->next->next %p\n",node->next->next);
                     break;
                 }
 
@@ -1481,7 +1476,7 @@ static void MultiScheduleScan(multiScehdule_t* node)
     if( node->roleScd.scan.scanning == FALSE )
     {
         ret= GAPMultiRole_StartDiscovery( param[0],param[1],param[2] );
-        LOG("start scan ret %d\n",ret);
+//        LOG("start scan ret %d\n",ret);
 
         if( SUCCESS == ret )
         {
@@ -1498,7 +1493,7 @@ static void MultiScheduleScan(multiScehdule_t* node)
             node->roleScd.scan.scanning = FALSE;
         }
 
-        LOG("stop scan ret %d\n",ret);
+//        LOG("stop scan ret %d\n",ret);
     }
 }
 
@@ -1527,6 +1522,12 @@ static void MultiScheduleInitating(multiScehdule_t* node)
         else
         {
             LOG("start establish failure ret %d\n",ret);
+
+            ///2023 04 25 add: restart multi schedule state machine
+            if(osal_get_timeoutEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT) == 0)
+            {
+                osal_start_timerEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT,MULTI_SCH_DELAY);
+            }
         }
     }
 }
@@ -1645,14 +1646,14 @@ GAPMultiLinkInfo_t multiConfigLink_status(uint8 opcode,void* pkt)
         }
 
         #if( MAX_CONNECTION_MASTER_NUM > 0 )
-
         #ifndef BLE_AT_ENABLE
+
         if( tNode->RoleState == Master_Role )
         {
             multiAddSlaveConnList( tNode->peerDevAddrType,tNode->peerDevAddr );
         }
-        #endif
 
+        #endif
         #endif
         multiRole_delete_node( MULTI_LINK_MODE,NULL,(void**)&tNode  );
     }

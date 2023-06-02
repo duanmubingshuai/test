@@ -42,8 +42,8 @@
 /* Application */
 #include "at_multi_role.h"
 #ifdef BLE_AT_ENABLE
-/* AT Proj */
-#include "ble_at.h"
+    /* AT Proj */
+    #include "ble_at.h"
 #endif
 
 /*********************************************************************
@@ -51,7 +51,7 @@
 */
 
 // The order in this table must be identical to the task initialization calls below in osalInitTask.
-const pTaskEventHandlerFn tasksArr[] =
+__ATTR_SECTION_SRAM__  const pTaskEventHandlerFn tasksArr[] =
 {
     LL_ProcessEvent,
     HCI_ProcessEvent,
@@ -73,7 +73,7 @@ const pTaskEventHandlerFn tasksArr[] =
     #endif
 };
 
-const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
+__ATTR_SECTION_SRAM__  const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
 uint16* tasksEvents;
 
 /*********************************************************************

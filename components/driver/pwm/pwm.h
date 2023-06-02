@@ -173,14 +173,11 @@ typedef enum
 typedef struct
 {
     uint8_t         dead_ratio;
-    PWMN_e          pwmN1;
-    PWMN_e          pwmN2;
-    gpio_pin_e      pwmPin1;
-    gpio_pin_e      pwmPin2;
+    PWMN_e          pwmN[2];
+    gpio_pin_e      pwmPin[2];
     PWM_CLK_DIV_e   pwmDiv;
     PWM_CNT_MODE_e  pwmMode;
-    PWM_POLARITY_e  pwmPolarity1;
-    PWM_POLARITY_e  pwmPolarity2;
+    PWM_POLARITY_e  pwmPolarity[2];
     uint16_t        cmpVal;
     uint16_t        cntTopVal;
 } pwm_complement_deadzone_cfg_t;

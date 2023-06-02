@@ -154,7 +154,8 @@ static uint8 ota_ReadAttrCB(uint16 connHandle, gattAttribute_t* pAttr,
 static bStatus_t ota_WriteAttrCB(uint16 connHandle, gattAttribute_t* pAttr,
                                  uint8* pValue, uint16 len, uint16 offset);
 
-static bStatus_t sendNotify(attHandleValueNoti_t* pNoti);
+
+static bStatus_t sendNotify(uint16 conn_handle, attHandleValueNoti_t* pNoti);/// 2022 11 30 fix multi role ota failed bug,add conn_handle in process_cmd/response/response_rsp/sendNotify/ota_disconnect_link api.
 CONST gattServiceCBs_t ota_ProfileCBs =
 {
     ota_ReadAttrCB,  // Read callback function pointer
@@ -166,7 +167,7 @@ CONST gattServiceCBs_t ota_ProfileCBs =
 /*Byte  value*/
 /*0     error code*/
 /*1~19  response data payload*/
-static void response(uint8_t* rsp_data, uint8_t size)
+static void response(uint16_t conn_handle,uint8_t* rsp_data, uint8_t size)
 {
     attHandleValueNoti_t notif;
     osal_memset(&notif, 0, sizeof(notif));
@@ -176,10 +177,10 @@ static void response(uint8_t* rsp_data, uint8_t size)
 
     notif.len = size;
     osal_memcpy(notif.value, rsp_data, size);
-    sendNotify(&notif);
+    sendNotify(conn_handle,&notif);
 }
 
-static void response_rsp(int state_cmd, uint8_t* rsp_data, uint8_t size)
+static void response_rsp(uint16_t conn_handle, int state_cmd, uint8_t* rsp_data, uint8_t size)
 {
     attHandleValueNoti_t notif;
     osal_memset(&notif, 0, sizeof(notif));
@@ -190,7 +191,7 @@ static void response_rsp(int state_cmd, uint8_t* rsp_data, uint8_t size)
     notif.len = size+1;
     notif.value[0] = (uint8_t)state_cmd;
     osal_memcpy(notif.value+1, rsp_data, size);
-    sendNotify(&notif);
+    sendNotify(conn_handle,&notif);
 }
 
 static int set_ota_mode(uint8_t mode)
@@ -219,13 +220,13 @@ static void load_ota_version(void)
 }
 
 void __attribute__((weak)) ui_firmware_upgrade(void);
-static void ota_disconnect_link(void)
+static void ota_disconnect_link(uint16_t conn_handle)
 {
-    LL_Disconnect(0, LL_DISCONNECT_REMOTE_DEV_POWER_OFF);
+    LL_Disconnect(conn_handle, LL_DISCONNECT_REMOTE_DEV_POWER_OFF);
     WaitMs(500);
 }
 
-static void process_cmd(uint8_t* cmdbuf, uint8_t size)
+static void process_cmd(uint16_t conn_handle, uint8_t* cmdbuf, uint8_t size)
 {
     uint8_t rsp = PPlus_SUCCESS;
     ota_app_cmd_t cmd;
@@ -249,30 +250,24 @@ static void process_cmd(uint8_t* cmdbuf, uint8_t size)
         if (rsp == PPlus_SUCCESS)
         {
             //GAPRole_TerminateConnection();
-            if (size != 3)
+            if ((size != 3) || (cmdbuf[2] != 1))
             {
                 #if (FLASH_PROTECT_FEATURE == 1)
-                hal_flash_unlock();
+                hal_flash_disable_lock(SINGLE_OTA);
                 #endif
-                ota_disconnect_link();
-                hal_system_soft_reset();
-            }
-
-            if (cmdbuf[2] != 1)
-            {
-                ota_disconnect_link();
+                ota_disconnect_link(conn_handle);
                 hal_system_soft_reset();
             }
 
             //if cmdbuf[2] is 1
             //case host will initiate termination request
             //when device terminated, device reboot to ota mode
-            response(&rsp, 1);
+            response(conn_handle,&rsp, 1);
             s_reboot_flg = true;
         }
         else
         {
-            response(&rsp, 1);
+            response(conn_handle,&rsp, 1);
         }
     }
     break;
@@ -281,7 +276,7 @@ static void process_cmd(uint8_t* cmdbuf, uint8_t size)
     {
         rsp = PPlus_ERR_NOT_SUPPORTED;
         //format fs and application
-        response(&rsp, 1);
+        response(conn_handle,&rsp, 1);
     }
     break;
 
@@ -291,7 +286,7 @@ static void process_cmd(uint8_t* cmdbuf, uint8_t size)
         uint8_t info_rsp[20];
         osal_memset(info_rsp, 0, 20);
         info_rsp[0] = PPlus_SUCCESS;
-        GAPRole_GetParameter(GAPROLE_BD_ADDR, info_rsp + 1);
+        LL_ReadBDADDR(&info_rsp[1]);
 
         if (s_ota_app.ver_test_build)
         {
@@ -306,7 +301,7 @@ static void process_cmd(uint8_t* cmdbuf, uint8_t size)
             sprintf((char*)(info_rsp + 7), "V%d.%d.%d", s_ota_app.ver_major, s_ota_app.ver_minor, s_ota_app.ver_revision);
         }
 
-        response(info_rsp, 8 + strlen((const char*)info_rsp + 7));
+        response(conn_handle,info_rsp, 8 + strlen((const char*)info_rsp + 7));
     }
     break;
 
@@ -317,7 +312,7 @@ static void process_cmd(uint8_t* cmdbuf, uint8_t size)
         LL_Rand((uint8_t*)s_ota_app.s_random, sizeof(s_ota_app.s_random));
         osal_memset(s_ota_app.s_key,0,sizeof(s_ota_app.s_key));
         LL_ENC_AES128_Encrypt((uint8_t*)g_ota_sec_key, s_ota_app.s_random,s_ota_app.s_key);
-        response_rsp(OTAAPP_RSP_SEC_CONFIRM,s_ota_app.s_key,sizeof(s_ota_app.s_key));
+        response_rsp(conn_handle,OTAAPP_RSP_SEC_CONFIRM,s_ota_app.s_key,sizeof(s_ota_app.s_key));
     }
     break;
 
@@ -330,12 +325,12 @@ static void process_cmd(uint8_t* cmdbuf, uint8_t size)
 
         if(osal_memcmp(key,s_ota_app.m_key,sizeof(key))==0)
         {
-            ota_disconnect_link();
+            ota_disconnect_link(conn_handle);
             hal_system_soft_reset();
         }
         else
         {
-            response_rsp(OTAAPP_RSP_RND_CHANGE,s_ota_app.s_random,sizeof(s_ota_app.s_random));
+            response_rsp(conn_handle,OTAAPP_RSP_RND_CHANGE,s_ota_app.s_random,sizeof(s_ota_app.s_random));
         }
     }
     break;
@@ -350,20 +345,20 @@ static void process_cmd(uint8_t* cmdbuf, uint8_t size)
 
         if(osal_memcmp(s_ota_app.s_confirm,s_ota_app.m_confirm,sizeof(s_ota_app.s_confirm))==0)
         {
-            ota_disconnect_link();
+            ota_disconnect_link(conn_handle);
             hal_system_soft_reset();
         }
         else
         {
             //s_ota_ctx.ota_state = OTA_ST_CONNECTED;
-            response_rsp(OTAAPP_RSP_VERIFY_KEY,s_ota_app.s_confirm,sizeof(s_ota_app.s_confirm));
+            response_rsp(conn_handle,OTAAPP_RSP_VERIFY_KEY,s_ota_app.s_confirm,sizeof(s_ota_app.s_confirm));
         }
     }
     break;
 
     default:
         rsp = PPlus_ERR_OTA_UNKNOW_CMD;
-        response(&rsp, 1);
+        response(conn_handle,&rsp, 1);
     }
 }
 
@@ -392,11 +387,11 @@ static void handleConnStatusCB(uint16 connHandle, uint8 changeType)
     }
 }
 
-static bStatus_t sendNotify(attHandleValueNoti_t* pNoti)
+static bStatus_t sendNotify(uint16 connHandle,attHandleValueNoti_t* pNoti)
 {
-    uint16 connHandle;
+    // uint16 connHandle;
     uint16 value;
-    GAPRole_GetParameter(GAPROLE_CONNHANDLE, &connHandle);
+    // GAPRole_GetParameter(GAPROLE_CONNHANDLE, &connHandle);/// 2022 11 30 fix multi role ota failed bug,add conn_handle in process_cmd/response/response_rsp/sendNotify/ota_disconnect_link api.
     value = GATTServApp_ReadCharCfg(connHandle, ota_ResponseCCCD);
 
     if (connHandle == INVALID_CONNHANDLE)
@@ -468,7 +463,7 @@ static bStatus_t ota_WriteAttrCB(uint16 connHandle, gattAttribute_t* pAttr,
         // 128-bit UUID Command
         if (pAttr->handle == ota_AttrTbl[OTA_COMMAND_HANDLE].handle)
         {
-            process_cmd(pValue, len);
+            process_cmd(connHandle,pValue, len);
         }
     }
 

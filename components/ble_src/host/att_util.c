@@ -1551,6 +1551,7 @@ bStatus_t attSendMsg( uint16 connHandle, attBuildMsg_t pfnBuildMsg, uint8 opcode
 {
     //check att_notify & att_write_cmd tx permit
     extern uint8 LL_Permit_Txdata(uint16 connHandle);
+
     if((opcode == ATT_HANDLE_VALUE_NOTI || opcode == ATT_WRITE_CMD) && LL_Permit_Txdata(connHandle)==FALSE)
         return bleMemAllocError;
 

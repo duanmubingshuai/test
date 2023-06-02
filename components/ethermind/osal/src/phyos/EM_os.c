@@ -266,6 +266,12 @@ INT32 EM_thread_cond_signal
 }
 
 extern uint32  osal_memory_statics(void);
+
+#if (MESH_HEAP == 1)
+    extern void* mesh_osal_mem_alloc( uint16 size );
+    extern void mesh_osal_mem_free(void* ptr);
+    extern uint32  mesh_osal_memory_statics(void);
+#endif
 /**
     \fn EM_alloc_mem
 
@@ -285,12 +291,19 @@ extern uint32  osal_memory_statics(void);
 void* EM_alloc_mem ( /* IN */ UINT32 size )
 {
     void* buf;
+    #if (MESH_HEAP == 1)
+    buf = mesh_osal_mem_alloc (size);
+    #else
     buf = osal_mem_alloc (size);
+    #endif
 
     if (NULL == buf)
     {
         printf ("Memory Allocation Failed!, size = %d ", size);
 //        osal_memory_statics();
+        #if (MESH_HEAP == 1)
+        mesh_osal_memory_statics();
+        #endif
     }
 
 //  printf("<+%d> ", size);
@@ -314,7 +327,11 @@ void* EM_alloc_mem ( /* IN */ UINT32 size )
 */
 void EM_free_mem ( /* IN */ void* ptr )
 {
+    #if (MESH_HEAP == 1)
+    mesh_osal_mem_free(ptr);
+    #else
     osal_mem_free(ptr);
+    #endif
     return;
 }
 

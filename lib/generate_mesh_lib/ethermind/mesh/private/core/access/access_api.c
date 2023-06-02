@@ -694,7 +694,7 @@ API_RESULT MS_access_reply
         ACCESS_CM_GET_DEFAULT_TTL(ttl);
     }
 
-	saddr = ms_element_addr_table[0].uaddr + ms_access_model_list[*handle].fixed.elem_handle;
+    saddr = ms_element_addr_table[0].uaddr + ms_access_model_list[*handle].fixed.elem_handle;
     /* Also publish this */
     retval = MS_access_get_publish_addr
              (

@@ -4,8 +4,8 @@
 
 ;*********************************************************************************
 ; ota rom size limit 48KB
-; sram 20kB
-; xip 28kB
+; sram 24kB
+; xip 24kB
 ;*********************************************************************************
 ;20kB for ota_sram_code
  LR_ROM_CODE 0x1fff1838 0x009AC8 {  ; load region size_region
@@ -21,8 +21,8 @@
  
 }
 ;28kB for ota_xip_code
-LR_ROM_XIP  0x1100a000 0x07000 {
-  ER_ROM_XIP 0x1100a000 0x07000  {  ; load address = execution address
+LR_ROM_XIP  0x1100b000 0x06000 {
+  ER_ROM_XIP 0x1100b000 0x06000  {  ; load address = execution address
    ;devinfoservice.o(+RO)
    gatt*.o(+RO)
    gattservapp.o(+RO)
@@ -32,7 +32,9 @@ LR_ROM_XIP  0x1100a000 0x07000 {
    sm*.o (+RO)
    gap*.o (+RO)
    peripheral.o(+RO)
-;   gpio.o(+RO)
+   gpio.o(+RO)
+;   ota_service.o(+RO)
+;   ota_protocol.o(+RO)
    *.o(_section_xip_code_, _func_xip_code_.*)
   }
  } 

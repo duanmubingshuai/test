@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************
+/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -86,6 +86,7 @@
 #include "access_extern.h"
 #include "cli_model.h"
 #include "flash.h"
+#include "global_config.h"
 
 /*********************************************************************
     MACROS
@@ -147,7 +148,7 @@ static gapAdvertisingParams_t bleMesh_advparam;
 
 static UCHAR bleMesh_DiscCancel = FALSE;             // HZF todo, not use???
 
-UCHAR cmdstr[64];
+UCHAR cmdstr[CLI_MAX_ARGS];
 UCHAR cmdlen;
 DECL_CONST CLI_COMMAND cli_cmd_list[] =
 {
@@ -201,7 +202,7 @@ void bleMesh_Init( uint8 task_id )
     // Register for direct HCI messages
     //HCI_GAPTaskRegister(bleMesh_TaskID);
     GAP_ParamsInit (bleMesh_TaskID, (GAP_PROFILE_PERIPHERAL | GAP_PROFILE_CENTRAL));
-    GAP_CentDevMgrInit(0x80);
+    GAP_CentDevMgrInit(0x40);
     GAP_PeriDevMgrInit();
     GAP_CentConnRegister();
     // Set the GAP Characteristics
@@ -423,10 +424,11 @@ static void bleMesh_ProcessGAPMsg( gapEventHdr_t* pMsg )
 
         if (SUCCESS != pMsg->hdr.status)
         {
-        	if((pMsg->hdr.status == LL_STATUS_ERROR_COMMAND_DISALLOWED) && adv_param.advMode == LL_ADV_MODE_ON)
-			{
-				adv_param.advMode = LL_ADV_MODE_OFF;
-			}
+            if((pMsg->hdr.status == LL_STATUS_ERROR_COMMAND_DISALLOWED) && adv_param.advMode == LL_ADV_MODE_ON)
+            {
+                adv_param.advMode = LL_ADV_MODE_OFF;
+            }
+
             ret = GAP_MakeDiscoverable(bleMesh_TaskID, &bleMesh_advparam);
 
             if (SUCCESS != ret)
@@ -512,6 +514,10 @@ static void bleMesh_ProcessGAPMsg( gapEventHdr_t* pMsg )
     {
         osal_stop_timerEx(bleMesh_TaskID, BLEMESH_GAP_MSG_EVT);
         blebrr_timer_stop();
+
+        if(BLEBRR_GET_STATE() == BLEBRR_STATE_ADV_ENABLED)
+            BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+
         blebrr_scan_enable();
         gapEstLinkReqEvent_t* pPkt = (gapEstLinkReqEvent_t*)pMsg;
         printf("\r\n GAP_LINK_ESTABLISHED_EVENT received! \r\n");

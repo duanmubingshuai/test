@@ -87,6 +87,7 @@
 //#include "vendorModel.h"
 #include "cli_model.h"
 #include "dongleKey.h"
+#include "global_config.h"
 
 
 /*********************************************************************
@@ -116,6 +117,9 @@ extern  key_contex_t key_state;
     GLOBAL VARIABLES
 */
 
+/*********************************************************************
+    EXTERNAL VARIABLES
+*/
 
 /*********************************************************************
     EXTERNAL FUNCTIONS
@@ -176,7 +180,7 @@ static gapAdvertisingParams_t bleMesh_advparam;
 
 static UCHAR bleMesh_DiscCancel = FALSE;             // HZF�� not use???
 
-UCHAR cmdstr[64];
+UCHAR cmdstr[CLI_MAX_ARGS];
 UCHAR cmdlen;
 DECL_CONST CLI_COMMAND cli_cmd_list[] =
 {
@@ -725,9 +729,18 @@ bStatus_t BLE_gap_set_adv_enable
 
 static void ProcessUartData(uart_Evt_t* evt)
 {
-    osal_memcpy((cmdstr + cmdlen), evt->data, evt->len);
-    cmdlen += evt->len;
-    osal_set_event( bleMesh_TaskID, BLEMESH_UART_RX_EVT );
+    UCHAR c_len = cmdlen + evt->len;
+
+    if(c_len < sizeof(cmdstr))
+    {
+        osal_memcpy((cmdstr + cmdlen), evt->data, evt->len);
+        cmdlen += evt->len;
+        osal_set_event( bleMesh_TaskID, BLEMESH_UART_RX_EVT );
+    }
+    else
+    {
+        cmdlen = 0;
+    }
 }
 
 void bleMesh_uart_init(void)

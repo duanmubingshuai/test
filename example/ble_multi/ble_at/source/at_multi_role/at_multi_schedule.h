@@ -34,6 +34,7 @@
 #define SCH_LIST_NULL                   0x01
 #define SCH_INVALID_ERROR_CODE          0xFF
 
+#define MULTI_SCH_DELAY         500     // unit ms
 /*******************************************************************************************************
     @ Description    :  typedef -- multi role advertising parameter structure
     Modification History

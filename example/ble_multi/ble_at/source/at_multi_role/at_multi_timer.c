@@ -10,14 +10,14 @@
 //timer handle list head. master role use head_handle list, slave role use slave_head_handle list.
 struct multiTimer* head_handle = NULL;
 #if ( MAX_CONNECTION_SLAVE_NUM > 0 )
-struct multiTimer* slave_head_handle = NULL;
+    struct multiTimer* slave_head_handle = NULL;
 #endif
 //Timer ticks
 static uint32 _timer_ticks = 0;
 ///
 #if ( MAX_CONNECTION_SLAVE_NUM > 0 )
-extern multiTimer* g_peri_conn_update_timer[MAX_CONNECTION_SLAVE_NUM];
-extern multiTimer* g_pcu_no_success_timer[MAX_CONNECTION_SLAVE_NUM];
+    extern multiTimer* g_peri_conn_update_timer[MAX_CONNECTION_SLAVE_NUM];
+    extern multiTimer* g_pcu_no_success_timer[MAX_CONNECTION_SLAVE_NUM];
 #endif
 /**
     @brief  Initializes the timer struct handle.
@@ -86,7 +86,7 @@ void multitimer_slave_del(struct multiTimer* handle)
                 // AT_LOG("del g_peri_conn_update_timer timer\n");
                 g_peri_conn_update_timer[i] = NULL;
             }
-            else if (pcu_no_success_entry == handle)
+            else if (pcu_no_success_entry == handle)/// why use else if?
             {
                 // AT_LOG("del g_pcu_no_success_timer timer\n");
                 g_pcu_no_success_timer[i] = NULL;

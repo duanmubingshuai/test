@@ -448,6 +448,7 @@ API_RESULT ltrn_handle_segment_ack
             */
             /* Stop Timer */
             #if 0
+
             if((0 != sar->rtx_count) && ((block_ack_local < sar->block_ack)||(sar->block_ack==0)))
             {
                 #ifdef EM_USE_EXT_TIMER
@@ -478,6 +479,7 @@ API_RESULT ltrn_handle_segment_ack
 //                blebrr_scan_pl(FALSE);
 //                ltrn_sar_transmit_segments(sar);
             }
+
             #endif
         }
     }

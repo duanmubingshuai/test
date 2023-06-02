@@ -141,7 +141,7 @@ void spi_demo_Init( uint8 task_id )
     hal_dma_init_channel(dma_cfg);
 
     for(int i = 0 ; i< BUF_LEN; i++)
-      s_spi_tx_buf[i] = (char)i;
+        s_spi_tx_buf[i] = (char)i;
 
     osal_set_event( spi_TaskID, START_DEVICE_EVT);
 }
@@ -151,19 +151,20 @@ static uint8_t s_u8_cnt = 0;
 static int s_cnt = 0;
 uint16 spi_demo_ProcessEvent( uint8 task_id, uint16 events )
 {
-  int ret,i;
-  if (events & START_DEVICE_EVT )
-  {
-    osal_set_event(spi_TaskID, SPI_TX_TEST_EVT);
-    return (events ^ START_DEVICE_EVT);
-  }
-  if (events & SPI_TX_TEST_EVT )
-  {
-		hal_spi_dma_set(&s_spi,1,0);
-    ret = hal_spi_transmit(&s_spi,SPI_TXD, s_spi_tx_buf, NULL, 256 ,0);
-    return (events ^ SPI_TX_TEST_EVT );
-  }
-      
+    int ret,i;
+
+    if (events & START_DEVICE_EVT )
+    {
+        osal_set_event(spi_TaskID, SPI_TX_TEST_EVT);
+        return (events ^ START_DEVICE_EVT);
+    }
+
+    if (events & SPI_TX_TEST_EVT )
+    {
+        hal_spi_dma_set(&s_spi,1,0);
+        ret = hal_spi_transmit(&s_spi,SPI_TXD, s_spi_tx_buf, NULL, 256,0);
+        return (events ^ SPI_TX_TEST_EVT );
+    }
 
     if (events & UART_INPUT1_EVT )
     {

@@ -265,11 +265,31 @@ __ATTR_SECTION_XIP__ void hal_xtal16m_cap_Set(void)
     }
 }
 
+static void aon_register_init(void)
+{
+    write_reg(0x4000f008, 0x06000c00);
+    write_reg(0x4000f00c, 0);
+    write_reg(0x4000f010, 0x00036000);
+    write_reg(0x4000f014, 0x00268000);
+    write_reg(0x4000f018, 0x01064040);
+    write_reg(0x4000f01c, 0x0001ffab);
+    write_reg(0x4000f020, 0);
+    write_reg(0x4000f024, 0);
+    write_reg(0x4000f02c, 0);
+    write_reg(0x4000f030, 0);
+    write_reg(0x4000f034, 0);
+    write_reg(0x4000f0a0, 0);
+    write_reg(0x4000f0a4, 0);
+    write_reg(0x4000f0a8, 0);
+    write_reg(0x4000f0b8, 0x01);
+}
+
 void hal_rc32k_clk_tracking_init(void)
 {
     extern uint32 counter_tracking;
     extern uint32_t  g_counter_traking_avg ;
     counter_tracking = g_counter_traking_avg = STD_RC32_16_CYCLE_16MHZ_CYCLE;
+    aon_register_init();
     AON_CLEAR_XTAL_TRACKING_AND_CALIB;
 }
 

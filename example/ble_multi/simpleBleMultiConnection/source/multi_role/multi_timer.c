@@ -9,12 +9,15 @@
 #include "multi.h"
 //timer handle list head. master role use head_handle list, slave role use slave_head_handle list.
 struct multiTimer* head_handle = NULL;
-struct multiTimer* slave_head_handle = NULL;
+
 //Timer ticks
 static uint32 _timer_ticks = 0;
-///
-extern multiTimer* g_peri_conn_update_timer[MAX_CONNECTION_SLAVE_NUM];
-extern multiTimer* g_pcu_no_success_timer[MAX_CONNECTION_SLAVE_NUM];
+#if ( MAX_CONNECTION_SLAVE_NUM > 0 )
+    ///
+    struct multiTimer* slave_head_handle = NULL;
+    extern multiTimer* g_peri_conn_update_timer[MAX_CONNECTION_SLAVE_NUM];
+    extern multiTimer* g_pcu_no_success_timer[MAX_CONNECTION_SLAVE_NUM];
+#endif
 /**
     @brief  Initializes the timer struct handle.
     @param  handle: the timer handle strcut.
@@ -51,7 +54,7 @@ int multitimer_start(struct multiTimer* handle)
     head_handle = handle;
     return 0;
 }
-
+#if ( MAX_CONNECTION_SLAVE_NUM > 0 )
 int multitimer_start_slave(struct multiTimer* handle)
 {
     struct multiTimer* target = slave_head_handle;
@@ -138,7 +141,7 @@ void multitimer_loop_slave()
         }
     }
 }
-
+#endif
 
 /**
     @brief  Stop the timer work, remove the handle off work list.

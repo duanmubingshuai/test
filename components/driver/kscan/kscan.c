@@ -76,9 +76,8 @@ static void kscan_sleep_handler(void);
 static void kscan_wakeup_handler(void);
 static void get_key_matrix(uint16_t* key_matrix);
 static void rmv_ghost_key(uint16_t* key_matrix);
-static kscan_Evt_t  kscan_compare_key(uint16_t* key_pre, uint16_t* key_nxt);
+static void kscan_compare_key(uint16_t* key_pre, uint16_t* key_nxt, kscan_Evt_t* handler);
 static void hal_kscan_clear_config(void);
-extern void hal_gpioin_set_flag(gpio_pin_e pin);
 
 #define TIMEOUT_DELTA   10
 /**************************************************************************************
@@ -150,7 +149,8 @@ void __attribute__((used)) hal_KSCAN_IRQHandler()
 
     if(m_kscanCtx.cfg.evt_handler)
     {
-        kscan_Evt_t evt = kscan_compare_key(m_kscanCtx.key_state, key_nxt);
+        kscan_Evt_t evt;
+        kscan_compare_key(m_kscanCtx.key_state, key_nxt, &evt);
 
         if(evt.num>0)
             m_kscanCtx.cfg.evt_handler(&evt);
@@ -184,8 +184,11 @@ void hal_kscan_timeout_handler()
 
         if(m_kscanCtx.cfg.evt_handler)
         {
-            kscan_Evt_t evt = kscan_compare_key(m_kscanCtx.key_state, key_nxt);
-            m_kscanCtx.cfg.evt_handler(&evt);
+            kscan_Evt_t evt;
+            kscan_compare_key(m_kscanCtx.key_state, key_nxt, &evt);
+
+            if(evt.num>0)
+                m_kscanCtx.cfg.evt_handler(&evt);
         }
 
         memcpy(m_kscanCtx.key_state, key_nxt, sizeof(uint16_t)*(MULTI_KEY_NUM<<1));
@@ -272,7 +275,6 @@ static void kscan_sleep_handler(void)
     {
         gpio_pin_e col_pin = (gpio_pin_e)KSCAN_COL_GPIO[m_kscanCtx.cfg.key_cols[i]];
         subWriteReg(&(AP_IOMUX->keyscan_out_en),m_kscanCtx.cfg.key_cols[i],m_kscanCtx.cfg.key_cols[i],0);
-        hal_gpioin_set_flag(col_pin);
         hal_gpio_pull_set(col_pin, GPIO_PULL_DOWN);
         hal_gpio_pin_init(col_pin, GPIO_INPUT);
     }
@@ -281,7 +283,6 @@ static void kscan_sleep_handler(void)
     {
         gpio_pin_e row_pin = (gpio_pin_e)KSCAN_ROW_GPIO[m_kscanCtx.cfg.key_rows[i]];
         subWriteReg(&(AP_IOMUX->keyscan_in_en),m_kscanCtx.cfg.key_rows[i],m_kscanCtx.cfg.key_rows[i],0);
-        hal_gpioin_set_flag(row_pin);
         hal_gpio_pull_set(row_pin, GPIO_PULL_UP);
         hal_gpio_pin_init(row_pin, GPIO_INPUT);
         pol = hal_gpio_read(row_pin) ? POL_FALLING:POL_RISING;
@@ -292,45 +293,54 @@ static void kscan_sleep_handler(void)
 
 static void kscan_wakeup_handler(void)
 {
-    for(uint8_t i=0; i<NUM_KEY_COLS; i++)
-    {
-        gpio_pin_e col_pin = (gpio_pin_e)KSCAN_COL_GPIO[m_kscanCtx.cfg.key_cols[i]];
-        subWriteReg(&(AP_IOMUX->keyscan_out_en),m_kscanCtx.cfg.key_cols[i],m_kscanCtx.cfg.key_cols[i],0);
-        hal_gpio_pull_set(col_pin, GPIO_PULL_DOWN);
-        hal_gpio_pin_init(col_pin, GPIO_INPUT);
-    }
+    extern uint8 g_clock_check_flag;
 
-    for(uint8_t i=0; i<NUM_KEY_ROWS; i++)
+    if (g_clock_check_flag == 0 )
     {
-        gpio_pin_e row_pin = (gpio_pin_e)KSCAN_ROW_GPIO[m_kscanCtx.cfg.key_rows[i]];
-        subWriteReg(&(AP_IOMUX->keyscan_in_en),m_kscanCtx.cfg.key_rows[i],m_kscanCtx.cfg.key_rows[i],0);
-        hal_gpio_pull_set(row_pin, GPIO_PULL_UP);//teddy add 20190122
-        hal_gpio_pin_init(row_pin, GPIO_INPUT);
-    }
-
-    for(uint8_t i=0; i<NUM_KEY_ROWS; i++)
-    {
-        gpio_pin_e row_pin = (gpio_pin_e)KSCAN_ROW_GPIO[m_kscanCtx.cfg.key_rows[i]];
-        hal_gpio_pin_init(row_pin, GPIO_INPUT);
-        gpio_polarity_e pol = hal_gpio_read(row_pin) ? POL_RISING:POL_FALLING;
-
-        if(pol == m_kscanCtx.pin_state[i])
+        for(uint8_t i=0; i<NUM_KEY_COLS; i++)
         {
-            break;
+            gpio_pin_e col_pin = (gpio_pin_e)KSCAN_COL_GPIO[m_kscanCtx.cfg.key_cols[i]];
+            subWriteReg(&(AP_IOMUX->keyscan_out_en),m_kscanCtx.cfg.key_cols[i],m_kscanCtx.cfg.key_cols[i],0);
+            hal_gpio_pull_set(col_pin, GPIO_PULL_DOWN);
+            hal_gpio_pin_init(col_pin, GPIO_INPUT);
         }
-        else if(i == (NUM_KEY_ROWS-1))
+
+        for(uint8_t i=0; i<NUM_KEY_ROWS; i++)
         {
-            return;
+            gpio_pin_e row_pin = (gpio_pin_e)KSCAN_ROW_GPIO[m_kscanCtx.cfg.key_rows[i]];
+            subWriteReg(&(AP_IOMUX->keyscan_in_en),m_kscanCtx.cfg.key_rows[i],m_kscanCtx.cfg.key_rows[i],0);
+            hal_gpio_pull_set(row_pin, GPIO_PULL_UP);//teddy add 20190122
+            hal_gpio_pin_init(row_pin, GPIO_INPUT);
+        }
+
+        for(uint8_t i=0; i<NUM_KEY_ROWS; i++)
+        {
+            gpio_pin_e row_pin = (gpio_pin_e)KSCAN_ROW_GPIO[m_kscanCtx.cfg.key_rows[i]];
+            hal_gpio_pin_init(row_pin, GPIO_INPUT);
+            gpio_polarity_e pol = hal_gpio_read(row_pin) ? POL_RISING:POL_FALLING;
+
+            if(pol == m_kscanCtx.pin_state[i])
+            {
+                break;
+            }
+            else if(i == (NUM_KEY_ROWS-1))
+            {
+                return;
+            }
+        }
+
+        hal_pwrmgr_lock(MOD_KSCAN);
+
+        for(uint8_t i=0; i<NUM_KEY_COLS; i++) //teddy add 20190122
+        {
+            gpio_pin_e col_pin = (gpio_pin_e)KSCAN_COL_GPIO[m_kscanCtx.cfg.key_cols[i]];
+            hal_gpio_pull_set(col_pin, GPIO_PULL_UP);
+            hal_gpio_pin_init(col_pin, GPIO_INPUT);
         }
     }
-
-    hal_pwrmgr_lock(MOD_KSCAN);
-
-    for(uint8_t i=0; i<NUM_KEY_COLS; i++) //teddy add 20190122
+    else
     {
-        gpio_pin_e col_pin = (gpio_pin_e)KSCAN_COL_GPIO[m_kscanCtx.cfg.key_cols[i]];
-        hal_gpio_pull_set(col_pin, GPIO_PULL_UP);
-        hal_gpio_pin_init(col_pin, GPIO_INPUT);
+        NVIC_DisableIRQ((IRQn_Type)KSCAN_IRQn);
     }
 
     kscan_hw_config();
@@ -399,7 +409,7 @@ static void rmv_ghost_key(uint16_t* key_matrix)
     }
 }
 
-static kscan_Evt_t kscan_compare_key(uint16_t* key_pre, uint16_t* key_nxt)
+static void kscan_compare_key(uint16_t* key_pre, uint16_t* key_nxt, kscan_Evt_t* handler)
 {
     uint16_t multi_key_num = 0;
 
@@ -428,8 +438,6 @@ static kscan_Evt_t kscan_compare_key(uint16_t* key_pre, uint16_t* key_nxt)
         }
     }
 
-    kscan_Evt_t evt;
-    evt.keys = m_keys;
-    evt.num  = multi_key_num;
-    return evt;
+    handler->keys = m_keys;
+    handler->num  = multi_key_num;
 }

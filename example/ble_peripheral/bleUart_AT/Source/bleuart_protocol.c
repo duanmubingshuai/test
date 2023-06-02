@@ -366,8 +366,6 @@ __ATTR_SECTION_SRAM__ void gpio_sleep_handle()
     hal_gpio_pin_init(FLOW_CTRL_IO_HOST_WAKEUP, GPIO_INPUT);
     hal_gpio_fmux(FLOW_CTRL_IO_HOST_WAKEUP, Bit_DISABLE);
     //hal_gpio_pin_assi_set(FLOW_CTRL_IO_HOST_WAKEUP, GPIO_INPUT);
-    extern void hal_gpioin_set_flag(gpio_pin_e pin);  // in gpio.c file.
-    hal_gpioin_set_flag(FLOW_CTRL_IO_HOST_WAKEUP);
     hal_gpio_wakeup_set(FLOW_CTRL_IO_HOST_WAKEUP, NEGEDGE); //  NEGEDGE
 }
 

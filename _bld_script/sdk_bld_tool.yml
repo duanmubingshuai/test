@@ -15,6 +15,9 @@ tPath3:
 tPath4:
 - D:\\Software\\Keil\\Install\\UV4\\UV4.exe
 
+tPath5:
+- D:\\pc_exe\\keil5\\UV4\\UV4.exe
+
 #urladdr
 GitUrl:
 - git_url:

@@ -92,8 +92,8 @@ void blebrr_handle_evt_scan_complete (UINT8 enable);
 #define BLEBRR_NCON_ADVCHMAP                0x07
 #define BLEBRR_NCON_ADVFILTERPOLICY         0x00
 
-#define BLEBRR_CON_ADVINTMIN                0x320
-#define BLEBRR_CON_ADVINTMAX                0x320
+#define BLEBRR_CON_ADVINTMIN                0xA0
+#define BLEBRR_CON_ADVINTMAX                0xA0
 #define BLEBRR_CON_ADVTYPE                  0x00
 #define BLEBRR_CON_DIRADDRTYPE              0x00
 #define BLEBRR_CON_ADVCHMAP                 0x07
@@ -120,7 +120,7 @@ void blebrr_handle_evt_scan_complete (UINT8 enable);
 #define BLEBRR_ADVSCANEN_TIMEOUT            50
 
 /* Active connection handle used to send measurements */
-static uint16_t active_conn_hndl = BLEBRR_CONN_HNDL_INVALID;
+/*static*/ uint16_t active_conn_hndl = BLEBRR_CONN_HNDL_INVALID;
 #ifdef MS_PRIVATE_SUPPORT
     uint16_t proxy_conn_hndl = BLEBRR_CONN_HNDL_INVALID;
     uint16_t prov_conn_hndl = BLEBRR_CONN_HNDL_INVALID;
@@ -287,40 +287,52 @@ void appl_dump_bytes(UCHAR* buffer, UINT16 length)
 
 void blebrr_handle_evt_adv_report (gapDeviceInfoEvent_t* adv)
 {
-    UCHAR pdata[80]; //to define
-    
+    UCHAR* pdata; //to define
     UCHAR type;
     /* Reference the event type, data and datalength */
     type = (HCI_NONCONNECTABLE_UNDIRECTED_ADV == (UCHAR)adv->eventType)? BRR_BCON_PASSIVE: BRR_BCON_ACTIVE;
-    
 //    EM_mem_copy(pdata, adv->pEvtData, adv->dataLen);
-    
-//    pdata = (UCHAR*)adv->pEvtData;
-    
+    pdata = (UCHAR*)adv->pEvtData;
     #ifdef BLE_CLIENT_ROLE
-		UINT16 len;
-    DECL_CONST UINT8 mesh_provision_service_uuid[4] = {0x15,0x16,LO_UINT16(MESH_PROVISIONING_SERVICE),HI_UINT16(MESH_PROVISIONING_SERVICE)}; 
+    UINT8 p_active_data[80];
+    UINT16 len;
+    DECL_CONST UINT8 mesh_provision_service_uuid[4] = {0x15,0x16,LO_UINT16(MESH_PROVISIONING_SERVICE),HI_UINT16(MESH_PROVISIONING_SERVICE)};
     DECL_CONST UINT8 mesh_proxy_nodeid_service_uuid[4] = {0x14,0x16,LO_UINT16(MESH_PROXY_SERVICE),HI_UINT16(MESH_PROXY_SERVICE)};
     DECL_CONST UINT8 mesh_proxy_netid_service_uuid[4] = {0x0c,0x16,LO_UINT16(MESH_PROXY_SERVICE),HI_UINT16(MESH_PROXY_SERVICE)};
-    if ((BRR_BCON_ACTIVE == type) && ((adv->dataLen == 29) || ((adv->dataLen == 28)) || ((adv->dataLen == 20))))
+    #endif
+
+    /* Pass advertising data to the bearer */
+    if ((BRR_BCON_PASSIVE == type)
+            &&((MESH_AD_TYPE_BCON == adv->pEvtData[1]) || (MESH_AD_TYPE_PB_ADV == adv->pEvtData[1]) || (MESH_AD_TYPE_PKT == adv->pEvtData[1])))
+    {
+        EM_mem_copy(pdata, adv->pEvtData, adv->dataLen);
+        blebrr_pl_recv_advpacket (type, &pdata[1], pdata[0], (UCHAR)adv->rssi);
+    }
+
+    #ifdef BLE_CLIENT_ROLE
+    else if ((BRR_BCON_ACTIVE == type) && ((adv->dataLen == 29) || ((adv->dataLen == 28)) || ((adv->dataLen == 20))))
     {
         if((EM_mem_cmp(&adv->pEvtData[7], mesh_proxy_netid_service_uuid, 4) == 0) ||
-            (EM_mem_cmp(&adv->pEvtData[7], mesh_provision_service_uuid, 4) == 0) ||
-            (EM_mem_cmp(&adv->pEvtData[7], mesh_proxy_nodeid_service_uuid, 4) == 0))
+                (EM_mem_cmp(&adv->pEvtData[7], mesh_provision_service_uuid, 4) == 0) ||
+                (EM_mem_cmp(&adv->pEvtData[7], mesh_proxy_nodeid_service_uuid, 4) == 0))
         {
-            EM_mem_copy(pdata, &adv->pEvtData[7], adv->pEvtData[7]+1);
-            EM_mem_copy(pdata + adv->pEvtData[7]+1, adv->addr, 6);
+            EM_mem_copy(p_active_data, &adv->pEvtData[7], adv->pEvtData[7]+1);
+            EM_mem_copy(p_active_data + adv->pEvtData[7]+1, adv->addr, 6);
+
             if(EM_mem_cmp(&adv->pEvtData[7], mesh_provision_service_uuid, 4) == 0)
             {
-                len = pdata[0]+1;
+                len = p_active_data[0]+1;
             }
             else
             {
-                len = pdata[0]+7;
+                len = p_active_data[0]+7;
             }
-            blebrr_pl_recv_service_packet (type, &pdata[0], len, (UCHAR)adv->rssi);
+
+            blebrr_pl_recv_service_packet (type, &p_active_data[0], len, (UCHAR)adv->rssi);
         }
+
         #if 0
+
         if((EM_mem_cmp(&adv->pEvtData[7], mesh_proxy_netid_service_uuid, 4) == 0))
         {
             EM_mem_copy(pdata, &adv->pEvtData[7], adv->pEvtData[7]+1);
@@ -338,18 +350,11 @@ void blebrr_handle_evt_adv_report (gapDeviceInfoEvent_t* adv)
             EM_mem_copy(pdata + adv->pEvtData[7]+1, adv->addr, 6);
             blebrr_pl_recv_service_packet (type, &pdata[0], pdata[0]+7, (UCHAR)adv->rssi);
         }
+
         #endif
     }
 
     #endif /* 0 */
-
-    /* Pass advertising data to the bearer */
-    if ((BRR_BCON_PASSIVE == type)
-        &&((MESH_AD_TYPE_BCON == adv->pEvtData[1]) || (MESH_AD_TYPE_PB_ADV == adv->pEvtData[1]) || (MESH_AD_TYPE_PKT == adv->pEvtData[1])))
-    {
-        EM_mem_copy(pdata, adv->pEvtData, adv->dataLen);
-        blebrr_pl_recv_advpacket (type, &pdata[1], pdata[0], (UCHAR)adv->rssi);
-    }
 }
 
 void blebrr_handle_evt_adv_complete (UINT8 enable)
@@ -398,6 +403,7 @@ void blebrr_handle_evt_scan_complete (UINT8 enable)
             blebrr_connect_state = 0x02;
             /* Set GATT Role as Client */
             blebrr_gatt_role = BLEBRR_CLIENT_ROLE;
+            BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
         }
         else
         {
@@ -1105,6 +1111,7 @@ void appl_mesh_proxy_notif_config_status_cb
             BLEBRR_GATT_PROXY_MODE,
             (flag)? BLEBRR_COM_CHANNEL_CONNECT : BLEBRR_COM_CHANNEL_DISCONNECT
         );
+        blebrr_scan_enable();
     }
     else
     {
@@ -1185,6 +1192,7 @@ API_RESULT blebrr_create_gatt_conn_pl
                      "with retval 0x%04X\r\n",
                      p_bdaddr[0], p_bdaddr[1], p_bdaddr[2], p_bdaddr[3],
                      p_bdaddr[4], p_bdaddr[5], p_bdaddr_type, ret);
+        BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
         return (0 == ret) ? API_SUCCESS : API_FAILURE;
     }
 

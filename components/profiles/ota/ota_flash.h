@@ -177,6 +177,9 @@ enum
     #elif(CFG_FLASH == 512)
     #define OTAF_START_ADDR         0x11003000
     #define OTAF_END_ADDR           0x1107ffff
+    #elif(CFG_FLASH == 1024)
+    #define OTAF_START_ADDR         0x11003000
+    #define OTAF_END_ADDR           0x11100000
     #elif(CFG_FLASH == 4096)
     #define OTAF_START_ADDR         0x11003000
     #define OTAF_END_ADDR           0x111fffff

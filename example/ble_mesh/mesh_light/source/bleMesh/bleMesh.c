@@ -86,6 +86,7 @@
 #include "access_extern.h"
 #include "cli_model.h"
 #include "flash.h"
+#include "global_config.h"
 
 /*********************************************************************
     MACROS
@@ -145,7 +146,7 @@ static gapDevDiscReq_t bleMesh_scanparam;
 static gapAdvertisingParams_t bleMesh_advparam;
 
 static UCHAR bleMesh_DiscCancel = FALSE;             // HZF todo, not use???
-UCHAR cmdstr[64];
+UCHAR cmdstr[CLI_MAX_ARGS];
 UCHAR cmdlen;
 DECL_CONST CLI_COMMAND cli_cmd_list[] =
 {
@@ -161,6 +162,9 @@ DECL_CONST CLI_COMMAND cli_cmd_list[] =
     /*display key */
     { "key", "display key", cli_disp_key },
 
+    /*reset mesh stack clear */
+    { "mshstackclr", "mesh stack reset", cli_mesh_stack_clear },
+
     /*heartbeat set */
     { "hbeart", "heartbeat set", cli_modelc_config_heartbeat_publication_set },
 
@@ -169,6 +173,9 @@ DECL_CONST CLI_COMMAND cli_cmd_list[] =
 
     /*get information */
     { "ATMSH81", "get information", cli_get_information },
+
+    /*send pdu */
+    { "ATMSH82", "send pdu", cli_send_pdu },
 
 };
 
@@ -348,10 +355,6 @@ static void bleMesh_ProcessOSALMsg( osal_event_hdr_t* pMsg )
 
     case GATT_MSG_EVENT:
         bleMesh_ProcessGATTMsg( (gattMsgEvent_t*)pMsg );
-        /* Invoke the Mesh Client GATT Msg Handler */
-        #ifdef BLE_CLIENT_ROLE
-        mesh_client_process_gattMsg((gattMsgEvent_t*)pMsg, bleMesh_TaskID);
-        #endif
         break;
 
     default:
@@ -506,6 +509,10 @@ static void bleMesh_ProcessGAPMsg( gapEventHdr_t* pMsg )
     {
         osal_stop_timerEx(bleMesh_TaskID, BLEMESH_GAP_MSG_EVT);
         blebrr_timer_stop();
+
+        if(BLEBRR_GET_STATE() == BLEBRR_STATE_ADV_ENABLED)
+            BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+
         blebrr_scan_enable();
         gapEstLinkReqEvent_t* pPkt = (gapEstLinkReqEvent_t*)pMsg;
         printf("\r\n GAP_LINK_ESTABLISHED_EVENT received! \r\n");
@@ -569,7 +576,7 @@ bStatus_t BLE_gap_set_scan_params
     GAP_SetParamValue( TGAP_GEN_DISC_SCAN_WIND, scan_window );
     GAP_SetParamValue( TGAP_GEN_DISC_SCAN_INT, scan_interval );
     GAP_SetParamValue( TGAP_FILTER_ADV_REPORTS, FALSE);
-    GAP_SetParamValue( TGAP_GEN_DISC_SCAN, 1000 );
+    GAP_SetParamValue( TGAP_GEN_DISC_SCAN, 100 );
     GAP_SetParamValue( TGAP_CONN_SCAN_INT,scan_interval );
     GAP_SetParamValue( TGAP_CONN_SCAN_WIND,scan_window);
     //GAP_SetParamValue( TGAP_LIM_DISC_SCAN, 0xFFFF );

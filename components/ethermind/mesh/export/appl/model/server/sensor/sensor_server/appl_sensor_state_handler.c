@@ -531,7 +531,6 @@ void appl_sensor_state_set(UINT16 state_t, UINT16 state_inst, void* param, UINT8
 //                param_p->status = 0x02;
 //                break;
 //            }
-
             /* Copy */
             appl_sensors[state_inst][sensor_propery_index].fast_cadence_period_divisor = param_p->fast_cadence_period_divisor;
             appl_sensors[state_inst][sensor_propery_index].status_trigger_type = param_p->status_trigger_type;

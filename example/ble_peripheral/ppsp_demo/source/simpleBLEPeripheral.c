@@ -68,10 +68,6 @@
 #include "hci_tl.h"
 #include "l2cap_internal.h"
 
-#ifdef PHY_SLB_OTA_ENABLE
-    #include "ppsp_serv.h"
-    #include "ppsp_impl.h"
-#endif
 /*********************************************************************
     MACROS
 */
@@ -331,19 +327,6 @@ static simpleProfileCBs_t simpleBLEPeripheral_SimpleProfileCBs =
     simpleProfileChangeCB    // Charactersitic value change callback
 };
 
-#ifdef PHY_SLB_OTA_ENABLE
-static void simple_rset_hdlr(void);
-static ppsp_impl_clit_hdlr_t bleMesh_ppsp_impl_appl_hdlr =
-{
-    // .ppsp_impl_clit_mtus = 20,
-    // .ppsp_impl_prog_read_hdlr = simpleBLECentral_pull_prog_data_hdlr,
-    // .ppsp_impl_clit_writ_hdlr = simpleBLECentral_writ_ppsp_para_hdlr,
-    //.ppsp_impl_appl_noti_hdlr = 0,
-    // .ppsp_impl_clit_timr_hdlr = simpleBLECentral_bgns_ppsp_timr_hdlr,
-    // .ppsp_impl_appl_tout_hdlr = 0,
-    .ppsp_impl_appl_rset_hdlr = simple_rset_hdlr,
-};
-#endif
 /*********************************************************************
     PUBLIC FUNCTIONS
 */
@@ -462,12 +445,6 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     ota_app_AddService();
     #endif
     // SimpleProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile
-    #ifdef PHY_SLB_OTA_ENABLE
-    ppsp_serv_add_serv(PPSP_SERV_CFGS_SERV_FEB3_MASK);
-    // DEPRECATED
-    //ppsp_impl_ini();
-    //osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PPSP_PERIODIC_EVT, SBP_PPSP_PERIODIC_EVT_PERIOD );
-    #endif
     // Setup the SimpleProfile Characteristic Values
     {
         // uint8  uuid_setting[IBEACON_UUID_LEN] =
@@ -779,22 +756,6 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     }
 
     #endif
-    #ifdef PHY_SLB_OTA_ENABLE
-
-    // DEPRECATED
-    //if ( events & SBP_PPSP_PERIODIC_EVT )
-    //{
-    //  ppsp_impl_appl_timr_hdlr();
-    //  osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PPSP_PERIODIC_EVT, SBP_PPSP_PERIODIC_EVT_PERIOD/5 );
-    //  return ( events ^ SBP_PERIODIC_EVT );
-    //}
-    if ( events & SBP_RSET_CHIP_EVT )
-    {
-        hal_system_soft_reset();
-        return ( events ^ SBP_RSET_CHIP_EVT );
-    }
-
-    #endif
     // Discard unknown events
     return 0;
 }
@@ -987,9 +948,6 @@ static void peripheralStateNotificationCB( gaprole_States_t newState )
     break;
 
     case GAPROLE_CONNECTED:
-        #ifdef PHY_SLB_OTA_ENABLE
-        ppsp_impl_reg_serv_appl(&bleMesh_ppsp_impl_appl_hdlr);
-        #endif
         HCI_PPLUS_ConnEventDoneNoticeCmd(simpleBLEPeripheral_TaskID, NULL);
         break;
 
@@ -1388,11 +1346,5 @@ void check_PerStatsProcess(void)
     LL_PLUS_PerStatsReset();
 }
 
-#ifdef PHY_SLB_OTA_ENABLE
-static void simple_rset_hdlr(void)
-{
-    osal_start_timerEx(simpleBLEPeripheral_TaskID, SBP_RSET_CHIP_EVT, 3000);
-}
-#endif
 /*********************************************************************
 *********************************************************************/

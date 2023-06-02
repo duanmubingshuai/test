@@ -405,6 +405,7 @@ void otaApp_Init(uint8 task_id)
     ll_hw_set_tfifo_space(LL_HW_FIFO_TX_1K_RX_3K);
     llInitFeatureSet2MPHY(TRUE);
     llInitFeatureSetDLE(TRUE);
+    HCI_LE_SetDefaultPhyMode(0,0x00,0x03,0x03);
     // Setup a delayed profile startup
     osal_set_event(ota_TaskID, START_DEVICE_EVT);
 }

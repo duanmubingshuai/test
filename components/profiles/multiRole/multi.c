@@ -43,7 +43,6 @@
     #include "multi_schedule.h"
 #endif
 
-
 /*********************************************************************
     MACROS
 */
@@ -67,7 +66,6 @@ uint8 linkDBNumConns = MAX_NUM_LL_CONN;      // hardcoded,
     EXTERNAL VARIABLES
 */
 extern GAPMultiRoleLinkCtrl_t* g_multiLinkInfo;
-
 /*********************************************************************
     EXTERNAL FUNCTIONS
 */
@@ -148,7 +146,9 @@ static void MultiPeriodProcessEvent(void);
     static void multiListMemoryFree(GAPMultiListMode_t mode );
     void multi_ScannerInsertDev(gapDeviceInfoEvent_t* pMsg);
     uint8 MultiRole_CancelConn(void);
-    static void Multi_centralAction(uint16 idx);
+    #ifndef BLE_AT_ENABLE
+        static void Multi_centralAction(uint16 idx);
+    #endif
     static void  MultiRole_ProcessSDPInfo(gattMsgEvent_t* pMsg);
     static void multilist_free_central_action_actimerlist(uint16 connHandle);
     static void multilist_free_sdplist(uint16 connHandle);
@@ -156,7 +156,6 @@ static void MultiPeriodProcessEvent(void);
     void multiChangeCurrentConnNodeOrder(void);
 
 #endif
-
 static void MultiRole_ProcessParamUpdateInfo(gapLinkUpdateEvent_t* pPkt);
 static void MultiRole_ProcessOSALMsg( osal_event_hdr_t* pMsg );
 static uint8 MultiRole_processGAPMsg(gapEventHdr_t* pMsg);
@@ -631,8 +630,10 @@ void GAPMultiRole_Init(uint8 taskId)
     GAPBondMgr_Register( (gapBondCBs_t*) &multiRoleBondCB );
 //    GAP_RegisterForHCIMsgs( taskId );
 //    HCI_PPLUS_AdvEventDoneNoticeCmd(gapMultiRole_TaskID,MULTI_ADV_EVENT_DONE_EVT);
+    #ifndef BLE_AT_ENABLE
     /// conn state used
-    // osal_start_reload_timer(gapMultiRole_TaskID, MULTI_PERIOD_EVT,  MULTI_PERIOD_TIMING);
+    osal_start_reload_timer(gapMultiRole_TaskID, MULTI_PERIOD_EVT,  MULTI_PERIOD_TIMING);
+    #endif
 }
 
 /**
@@ -696,6 +697,7 @@ uint16 GAPMultiRole_ProcessEvent( uint8 task_id, uint16 events )
 
     if( events & CONN_TIMEOUT_EVT )
     {
+        AT_LOG("cancel conn\n");
         MultiRole_CancelConn();
         return ( events ^ CONN_TIMEOUT_EVT );
     }
@@ -817,10 +819,10 @@ static uint8 MultiRole_processGAPMsg(gapEventHdr_t* pMsg)
 
             if( info.value.role == Slave_Role )
             {
-                at_parameters.conn_param[pPkt->connectionHandle].con_role_state = Slave_Role;
-                gapBond_PairingMode[ pPkt->connectionHandle ] = GAPBOND_PAIRING_MODE_INITIATE ;
+                gapBond_PairingMode[ pPkt->connectionHandle ] = GAPBOND_PAIRING_MODE_WAIT_FOR_REQ;//GAPBOND_PAIRING_MODE_INITIATE ;
                 uint8 bondret = GAPBondMgr_LinkEst( pPkt->devAddrType, pPkt->devAddr, pPkt->connectionHandle, GAP_PROFILE_PERIPHERAL );
                 LOG("GAPBondMgr_LinkEst SLAVE bondret %d\n",bondret);
+                #ifndef BLE_AT_ENABLE
                 // varify if enable connection parameter update?
                 uint8 param_update_enable = FALSE;
                 GAPMultiRole_GetParameter(GAPMULTIROLE_PARAM_UPDATE_ENABLE, &param_update_enable );
@@ -843,6 +845,8 @@ static uint8 MultiRole_processGAPMsg(gapEventHdr_t* pMsg)
                         int ret = multitimer_start_slave(g_peri_conn_update_timer[info.value.perIdx]);
                     }
                 }
+
+                #endif
             }
 
             #endif
@@ -850,10 +854,10 @@ static uint8 MultiRole_processGAPMsg(gapEventHdr_t* pMsg)
 
             if( info.value.role == Master_Role )
             {
-                at_parameters.conn_param[pPkt->connectionHandle].con_role_state = Master_Role;
                 gapBond_PairingMode[ pPkt->connectionHandle ] = GAPBOND_PAIRING_MODE_WAIT_FOR_REQ ;
                 osal_stop_timerEx(gapMultiRole_TaskID, CONN_TIMEOUT_EVT );
                 multiDelCurrentConnNode();
+                #ifndef BLE_AT_ENABLE
 //              uint8 bondret = GAPBondMgr_LinkEst( pPkt->devAddrType, pPkt->devAddr, pPkt->connectionHandle, GAP_PROFILE_CENTRAL );
 //              LOG("GAPBondMgr_LinkEst MASTER bondret %d\n",bondret);
                 // TODO : read user area flash to check the action after establish success
@@ -910,15 +914,39 @@ static uint8 MultiRole_processGAPMsg(gapEventHdr_t* pMsg)
                         // AT_LOG("insert g_centralActionTimer node error\n");
                     }
                 }
+
+                #else
+                GAPMultiRole_CentralSDP_t sdp_node;
+                osal_memset(&sdp_node, 0,sizeof(GAPMultiRole_CentralSDP_t));
+                sdp_node.connHandle = info.value.connHandle;
+                multiListInsertTail(MULTI_CENTRAL_SDP_MODE,(void**)&g_centralSDPlist,&sdp_node);
+                GAPMultiRole_CentralSDP_t* find_sdp_node =  multiList_inside(MULTI_CENTRAL_SDP_MODE,(void**)&g_centralSDPlist,&pPkt->connectionHandle);
+
+                if( find_sdp_node )
+                {
+                    if( find_sdp_node->state == DISC_STATE_IDLE )
+                    {
+                        bStatus_t ret = GATT_DiscAllPrimaryServices(pPkt->connectionHandle,gapMultiRole_TaskID);
+
+                        if( ret == SUCCESS  )
+                        {
+                            find_sdp_node->state = DISC_STATE_SVC;
+                        }
+                    }
+                }
+
+                #endif
             }
 
             #endif
+            #if BLE_AT_ENABLE
             // save link info
             at_parameters.conn_param[pPkt->connectionHandle].at_conn_params.peer_addr_type = pPkt->devAddrType;
             osal_memcpy(at_parameters.conn_param[pPkt->connectionHandle].at_conn_params.peer_addr,pPkt->devAddr,6);
             at_parameters.conn_param[pPkt->connectionHandle].at_conn_params.conn_int = pPkt->connInterval;
             at_parameters.conn_param[pPkt->connectionHandle].at_conn_params.conn_latenty = pPkt->connLatency;
             at_parameters.conn_param[pPkt->connectionHandle].at_conn_params.conn_sup_to = pPkt->connTimeout;
+            #endif
         }
 
         if( pGapRoles_AppCGs->pfnEstablish )
@@ -934,7 +962,6 @@ static uint8 MultiRole_processGAPMsg(gapEventHdr_t* pMsg)
 
         if( pPkt->hdr.status == SUCCESS )
         {
-            at_parameters.conn_param[pPkt->connectionHandle].con_role_state = Idle_Role;
             info = multiConfigLink_status(pMsg->opcode,pMsg);
             #if( MAX_CONNECTION_MASTER_NUM > 0 )
 
@@ -1095,7 +1122,7 @@ static void multiRoleProcessGATTMsg( gattMsgEvent_t* pMsg )
             break;
 
         default:
-            LOG( "connHandle %d,ATT_ERROR_RSP %d\n", handle,pMsg->msg.errorRsp.reqOpcode );
+            LOG( "connHandle %d,ATT_ERROR_RSP %d ERROR_CODE %d\n", handle,pMsg->msg.errorRsp.reqOpcode,pMsg->msg.errorRsp.errCode);
             break;
         }
 
@@ -1206,7 +1233,7 @@ static void MultiRole_PeripheralstartConnUpdate( uint8 conn_handle,uint8 handleF
     updateReq.slaveLatency = desired_slave_latency;
     updateReq.timeoutMultiplier = desired_conn_timeout;
     uint16 idx = multiLinkStatusGetSlaveConnPeerIdx( conn_handle );
-    // AT_LOG("idx %d,connHandle %d\n",idx,conn_handle);
+    AT_LOG("idx %d,connHandle %d\n",idx,conn_handle);
     L2CAP_ConnParamUpdateReq( conn_handle, &updateReq, gapMultiRole_TaskID );
     g_pcu_no_success_timer[idx] = (multiTimer*)osal_mem_alloc( sizeof( multiTimer ) );
 
@@ -1517,28 +1544,16 @@ void multiDelCurrentConnNode(void)
 void multiChangeCurrentConnNodeOrder(void)
 {
     // change first node order, try to connect each device
-    if( g_mlinkingList )
+    GAPMultiRoleCentralDev_t* node_curr = g_mlinkingList;
+
+    while(node_curr->next != NULL)
     {
-        GAPMultiRoleCentralDev_t* node = g_mlinkingList->next;
-
-        if(node != NULL)
-        {
-            GAPMultiRoleCentralDev_t* curr_node = g_mlinkingList;
-            g_mlinkingList = node;
-
-            while(node)
-            {
-                if(node->next == NULL)
-                    break;
-
-                node = node->next;
-            }
-
-            /// push node at the end
-            node->next = curr_node;
-            curr_node->next = NULL;
-        }
+        node_curr = node_curr->next;
     }
+
+    node_curr->next = g_mlinkingList;
+    g_mlinkingList = g_mlinkingList->next;
+    node_curr->next->next = NULL;
 }
 
 uint8 multi_devInLinkList(uint8* addr)
@@ -1562,7 +1577,7 @@ uint8 MultiRole_CancelConn(void)
     uint8 status = GAPMultiRole_TerminateConnection(GAP_CONNHANDLE_INIT);
     return status;
 }
-
+#ifndef BLE_AT_ENABLE
 static void Multi_centralAction(uint16 idx)
 {
     // AT_LOG("centralAction : %p  next :%p\n",g_centralActionTimer,g_centralActionTimer->next);
@@ -1616,7 +1631,7 @@ static void Multi_centralAction(uint16 idx)
         }
     }
 }
-
+#endif
 static void  MultiRole_ProcessSDPInfo(gattMsgEvent_t* pMsg)
 {
     GAPMultiRole_CentralSDP_t* sdp_node =  multiList_inside(MULTI_CENTRAL_SDP_MODE,(void**)&g_centralSDPlist,&pMsg->connHandle);
@@ -1707,6 +1722,7 @@ static void  MultiRole_ProcessSDPInfo(gattMsgEvent_t* pMsg)
 
 static void multilist_free_central_action_actimerlist( uint16 connHandle )
 {
+    #ifndef BLE_AT_ENABLE
     multiTimer* entry = multiList_inside(MULTI_CENTRAL_ACTION_TIMER_MODE,(void**)&g_centralActionTimer, &connHandle );
 
     if(entry == NULL)
@@ -1722,6 +1738,10 @@ static void multilist_free_central_action_actimerlist( uint16 connHandle )
         multilist_free_sdplist(connHandle);
         // AT_LOG("del_entry : %p  next :%p  id: %d\n",(multiTimer*)g_centralActionTimer,((multiTimer*)g_centralActionTimer)->next,((multiTimer*)g_centralActionTimer)->id);
     }
+
+    #else
+    multilist_free_sdplist(connHandle);
+    #endif
 }
 
 static void multilist_free_sdplist(uint16 connHandle)
@@ -2442,13 +2462,6 @@ static void multiListMemoryFree(GAPMultiListMode_t mode )
 }
 #endif
 
-void connHdlMapRoleInit(void)
-{
-    for(uint8_t i = 0 ; i < MAX_CONNECTION_NUM; i++)
-    {
-        at_parameters.conn_param[i].con_role_state = Idle_Role;
-    }
-}
 
 
 

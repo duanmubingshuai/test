@@ -79,16 +79,19 @@
 /*********************************************************************
     EXTERNAL FUNCTIONS
 */
+extern __ATTR_SECTION_XIP__ void global_config_maxscanrsplen(uint8 maxScanResponses);
 
 /*********************************************************************
     LOCAL VARIABLES
 */
 
 // Scan records: advertisements and scan responses
-static gapAdvertRec_t* pGapScanRecs = NULL;
+//static gapAdvertRec_t* pGapScanRecs = NULL;
 
 // Number of scan responses to accept
-static uint8 gapMaxScanResponses = 0;
+//uint8 gapMaxScanResponses = 0;
+
+extern uint8 ll_recv_scan_all_cnt;
 
 /*********************************************************************
     LOCAL FUNCTIONS
@@ -99,11 +102,11 @@ static void gapProcessScanningEvt( hciEvt_BLEAdvPktReport_t* pPkt );
 static uint8 gapProcessConnEvt( uint16 cmdOpcode, hciEvt_CommandStatus_t* pMsg );
 
 static void gapProcessScanDurationTimeout( void );
-static gapAdvertRec_t* gapFindEmptyScanRec( void );
-static gapAdvertRec_t* gapFindScanRec( uint8 addrType, uint8* pAddr );
-static void gapFreeScanRecs( uint8 numScanRecs, uint8 freeRecs );
-static bStatus_t gapAllocScanRecs( void );
-static uint8 gapProcessAdvertDevInfo( hciEvt_DevInfo_t* pDevInfo );
+//static gapAdvertRec_t* gapFindEmptyScanRec( void );
+//static gapAdvertRec_t* gapFindScanRec( uint8 addrType, uint8* pAddr );
+//static void gapFreeScanRecs( uint8 numScanRecs, uint8 freeRecs );
+//static bStatus_t gapAllocScanRecs( void );
+//uint8 gapProcessAdvertDevInfo( hciEvt_DevInfo_t* pDevInfo );
 static void gapSendDevDiscEvent( bStatus_t status );
 static void gapSendDeviceInfoEvent( hciEvt_DevInfo_t* pDevInfo );
 static bStatus_t gapSendScanEnable( uint8 enable );
@@ -234,19 +237,21 @@ bStatus_t GAP_DeviceDiscoveryCancel( uint8 taskID )
 bStatus_t GAP_CentDevMgrInit( uint8 maxScanResponses )
 {
     // Free the space first
-    gapFreeScanRecs( gapMaxScanResponses, TRUE );
+    //gapFreeScanRecs( gapMaxScanResponses, TRUE );
+    global_config_maxscanrsplen(maxScanResponses);
 
     if ( gapProfileRole & (GAP_PROFILE_CENTRAL | GAP_PROFILE_OBSERVER) )
     {
         // Set up Central's processing functions
-        gapMaxScanResponses = maxScanResponses;
+        //gapMaxScanResponses = maxScanResponses;
         gapRegisterCentral( &gapCentralCBs );
-        return ( gapAllocScanRecs() );
+        //return ( gapAllocScanRecs() );
+        return SUCCESS;
     }
 
-    gapMaxScanResponses = 0;
-    gapRegisterCentral( NULL );
-    return ( SUCCESS );
+    //gapMaxScanResponses = 0;
+    //gapRegisterCentral( NULL );
+    return ( FAILURE );
 }
 
 /*********************************************************************
@@ -459,7 +464,7 @@ static void gapProcessAdvertisementReport( hciEvt_BLEAdvPktReport_t* pPkt )
         // Loop through the device advertisements
         for ( uint8 x = 0; x < pPkt->numDevices; x++ )
         {
-            if ( ( pDevInfo->rssi >= minRssi ) && gapProcessAdvertDevInfo( pDevInfo ) )
+            if ( ( pDevInfo->rssi >= minRssi ) )//&& gapProcessAdvertDevInfo( pDevInfo ) )
             {
                 // Send a report to the app
                 gapSendDeviceInfoEvent( pDevInfo );
@@ -469,7 +474,7 @@ static void gapProcessAdvertisementReport( hciEvt_BLEAdvPktReport_t* pPkt )
         }
     }
 }
-
+#if 0
 /*********************************************************************
     LOCAL FUNCTIONS
 */
@@ -647,7 +652,7 @@ static gapAdvertRec_t* gapFindScanRec( uint8 addrType, uint8* pAddr )
 
     @return      TRUE if added to report or information changed.
 */
-static uint8 gapProcessAdvertDevInfo( hciEvt_DevInfo_t* pDevInfo )
+uint8 gapProcessAdvertDevInfo( hciEvt_DevInfo_t* pDevInfo )
 {
     uint8 stateFlags = 0;     // State flag (Flags AD type)
     uint8* ADToken = NULL;    // Holds a advertisement data token
@@ -809,6 +814,7 @@ static uint8 gapProcessAdvertDevInfo( hciEvt_DevInfo_t* pDevInfo )
 
     return ( FALSE );
 }
+#endif
 
 /*********************************************************************
     @fn          gapSendDevDiscEvent
@@ -823,31 +829,18 @@ static uint8 gapProcessAdvertDevInfo( hciEvt_DevInfo_t* pDevInfo )
 static void gapSendDevDiscEvent( bStatus_t status )
 {
     gapDevDiscEvent_t* pMsg;  // Message pointer
-    uint8 x;                  // Loop counter
+//    uint8 x;                  // Loop counter
     uint8 numDevs = 0;        // Number of devices found
     uint16 totalMemSize;      // Total buffer size needed
 
     // Mode check, make sure we are doing a scan
-    if ( pGapDiscReq == NULL || pGapScanRecs == NULL )
+    if ( pGapDiscReq == NULL )
     {
         return;
     }
 
-    // calculate the size of the message needed
-    if ( status == SUCCESS )
-    {
-        for ( x = 0; x < gapMaxScanResponses; x++ )
-        {
-            if ( pGapScanRecs[x].eventType != GAP_ADRPT_EMPTY )
-            {
-                numDevs++;
-            }
-        }
-    }
-
     // Calculate total size of buffer needed
     totalMemSize = (uint16)(sizeof ( gapDevDiscEvent_t ));
-    totalMemSize += (uint16)(sizeof ( gapDevRec_t ) * numDevs);
     // Allocate the message to send
     pMsg = (gapDevDiscEvent_t*)osal_msg_allocate( totalMemSize );
 
@@ -867,38 +860,13 @@ static void gapSendDevDiscEvent( bStatus_t status )
         pMsg->hdr.status = status;
         pMsg->opcode = GAP_DEVICE_DISCOVERY_EVENT;
         pMsg->numDevs = numDevs;
-
-        if ( numDevs > 0 )
-        {
-            gapDevRec_t* pDevList;
-            // Setup pointer for device list
-            pDevList = (gapDevRec_t*)(pMsg+1);
-            pMsg->pDevList = pDevList;
-
-            // Copy the scan records into the message
-            for ( x = 0; (x < gapMaxScanResponses) && (numDevs > 0); x++ )
-            {
-                if ( pGapScanRecs[x].eventType != GAP_ADRPT_EMPTY )
-                {
-                    pDevList->eventType = pGapScanRecs[x].eventType;
-                    pDevList->addrType  = pGapScanRecs[x].addrType;
-                    VOID osal_memcpy( pDevList->addr, pGapScanRecs[x].addr, B_ADDR_LEN );
-                    pDevList++;
-                    numDevs--;
-                }
-            }
-        }
-        else
-        {
-            pMsg->pDevList = NULL;  // No records
-        }
-
+        pMsg->pDevList = NULL;  // No records
         // Send the message to the app
         VOID osal_msg_send( pGapDiscReq->taskID, (uint8*)pMsg );
     }
 
     // Clear the scan record.  Not freed - just cleared.
-    gapFreeScanRecs( gapMaxScanResponses, FALSE );
+    //gapFreeScanRecs( gapMaxScanResponses, FALSE );
     // Free all Device Discovery memory
     osal_mem_free( pGapDiscReq );
     pGapDiscReq = NULL;
@@ -963,6 +931,15 @@ static void gapSendDeviceInfoEvent( hciEvt_DevInfo_t* pDevInfo )
             }
 
             VOID osal_msg_send( pGapDiscReq->taskID, (uint8*)pRsp );
+        }
+        else
+        {
+            HAL_ENTER_CRITICAL_SECTION();
+
+            if(ll_recv_scan_all_cnt != 0)
+                ll_recv_scan_all_cnt--;
+
+            HAL_EXIT_CRITICAL_SECTION();
         }
     }
 }

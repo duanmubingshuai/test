@@ -77,7 +77,7 @@ typedef struct _pwrmgr_Context_t
 } pwrmgr_Ctx_t;
 
 static pwrmgr_Ctx_t mCtx[HAL_PWRMGR_TASK_MAX_NUM];
-static uint32_t sramRet_config;
+static PWRMGR_CFG_BIT s_pwrmgr_cfg;
 static uint32_t s_config_swClk0 = DEF_CLKG_CONFIG_0;
 
 uint32_t s_config_swClk1 = DEF_CLKG_CONFIG_1;
@@ -245,6 +245,7 @@ int hal_pwrmgr_register(MODULE_e mod, pwrmgr_Hdl_t sleepHandle, pwrmgr_Hdl_t wak
         if(mCtx[i].moudle_id == MOD_NONE)
         {
             pctx = &mCtx[i];
+            s_pwrmgr_cfg.moudle_num++;
             break;
         }
     }
@@ -268,6 +269,7 @@ int hal_pwrmgr_unregister(MODULE_e mod)
     {
         if(mCtx[i].moudle_id == mod)
         {
+            s_pwrmgr_cfg.moudle_num--;
             pctx = &mCtx[i];
             break;
         }
@@ -306,6 +308,23 @@ void clk_change_mod_restore(void)
 }
 
 #if(CFG_SLEEP_MODE == PWR_MODE_SLEEP)
+static void peripheral_interrupt_restore_default(void)
+{
+    NVIC_SetPriority((IRQn_Type)KSCAN_IRQn, IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)WDT_IRQn,   IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)UART0_IRQn, IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)UART1_IRQn, IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)I2C0_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)I2C1_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)SPI0_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)SPI1_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)GPIO_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)DMAC_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)TIM5_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)TIM6_IRQn,  IRQ_PRIO_HAL);
+    NVIC_SetPriority((IRQn_Type)ADCC_IRQn,  IRQ_PRIO_HAL);
+}
+
 int __attribute__((used)) hal_pwrmgr_wakeup_process(void)
 {
     int i;
@@ -323,9 +342,9 @@ int __attribute__((used)) hal_pwrmgr_wakeup_process(void)
     NVIC_SetPriority((IRQn_Type)TIM1_IRQn,  IRQ_PRIO_HIGH);     //ll_EVT
     NVIC_SetPriority((IRQn_Type)TIM2_IRQn,  IRQ_PRIO_HIGH);     //OSAL_TICK
     NVIC_SetPriority((IRQn_Type)TIM4_IRQn,  IRQ_PRIO_HIGH);     //LL_EXA_ADV
-    NVIC_SetPriority((IRQn_Type)TIM5_IRQn,  IRQ_PRIO_HIGH);
+    peripheral_interrupt_restore_default();
 
-    for(i = 0; i< HAL_PWRMGR_TASK_MAX_NUM; i++)
+    for(i = 0; i< s_pwrmgr_cfg.moudle_num; i++)
     {
         if(mCtx[i].moudle_id == MOD_NONE)
         {
@@ -346,13 +365,11 @@ int __attribute__((used)) hal_pwrmgr_sleep_process(void)
     hal_pwrmgr_RAM_retention_set();
 
     //LOG("Sleep\n");
-    for(i = 0; i< HAL_PWRMGR_TASK_MAX_NUM; i++)
+    for(i = s_pwrmgr_cfg.moudle_num-1; i >= 0; i--)
     {
         if(mCtx[i].moudle_id == MOD_NONE)
         {
-            //return PPlus_ERR_NOT_REGISTED;
-            //found last module
-            break;
+            return PPlus_ERR_NOT_REGISTED;
         }
 
         if(mCtx[i].sleep_handler)
@@ -405,11 +422,11 @@ int hal_pwrmgr_RAM_retention(uint32_t sram)
 {
     if(sram & 0xffffffe0)
     {
-        sramRet_config = 0x00;
+        s_pwrmgr_cfg.sramRet_config = 0x00;
         return PPlus_ERR_INVALID_PARAM;
     }
 
-    sramRet_config = sram;
+    s_pwrmgr_cfg.sramRet_config = sram;
     return PPlus_SUCCESS;
 }
 
@@ -421,7 +438,7 @@ int hal_pwrmgr_RAM_retention_clr(void)
 
 int hal_pwrmgr_RAM_retention_set(void)
 {
-    subWriteReg(0x4000f01c,21,17,sramRet_config);
+    subWriteReg(0x4000f01c,21,17,s_pwrmgr_cfg.sramRet_config);
     return PPlus_SUCCESS;
 }
 
@@ -438,6 +455,7 @@ int hal_pwrmgr_LowCurrentLdo_enable(void)
 
     return PPlus_SUCCESS;
     #else
+    subWriteReg(0x4000f014,26,26, 0);
     return PPlus_ERR_FORBIDDEN;
     #endif
 }
@@ -472,7 +490,7 @@ void hal_pwrmgr_poweroff(pwroff_cfg_t* pcfg, uint8_t wakeup_pin_num)
     */
     AON_CLEAR_XTAL_TRACKING_AND_CALIB;
     AP_AON->SLEEP_R[0] = 2;
-    write_reg(0x4000f000,0x5a5aa5a5);
+    enter_sleep_off_mode(SYSTEM_OFF_MODE);
 
     while(1);
 }
@@ -549,6 +567,7 @@ __attribute__((section("_section_standby_code_"))) void wakeupProcess_standby(vo
 
     set_sleep_flag(0);
     AP_AON->SLEEP_R[0] = 4;
+    AON_CLEAR_XTAL_TRACKING_AND_CALIB;
     HAL_ENTER_CRITICAL_SECTION();
     AP_PCR->SW_RESET1 = 0;
 
@@ -595,3 +614,21 @@ __attribute__((section("_section_standby_code_"))) void hal_pwrmgr_enter_standby
     while(1);
 }
 
+__ATTR_SECTION_XIP__ int hal_pwrmgr_get_module_lock_status(void)
+{
+    if (mPwrMode == PWR_MODE_NO_SLEEP || mPwrMode == PWR_MODE_PWROFF_NO_SLEEP)
+    {
+        disableSleep();
+        return FALSE;
+    }
+
+    for (int i = 0; i < HAL_PWRMGR_TASK_MAX_NUM; i++)
+    {
+        if (mCtx[i].lock == TRUE)
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}

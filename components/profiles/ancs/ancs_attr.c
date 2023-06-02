@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -532,6 +532,10 @@ bStatus_t app_attrs_get(ancs_ctx_t*   p_ancs, const uint8_t* p_app_id, uint8_t a
     {
         gattPrepareWriteReq_t lreq;
         lreq.pValue = osal_mem_alloc(index);
+
+        if(lreq.pValue == NULL)
+            return bleMemAllocError;
+
         osal_memcpy(lreq.pValue, tx_buf, index);
         lreq.handle = pservice->chars_hdl[ANCS_CTRL_POINT_HDL_START];
         lreq.len = index;
@@ -612,6 +616,10 @@ bStatus_t notif_attrs_get(ancs_ctx_t*   p_ancs,const uint8_t* pNotificationUID)
     {
         gattPrepareWriteReq_t lreq;
         lreq.pValue = osal_mem_alloc(index);
+
+        if(lreq.pValue == NULL)
+            return bleMemAllocError;
+
         osal_memcpy(lreq.pValue, tx_buf, index);
         lreq.handle = pservice->chars_hdl[ANCS_CTRL_POINT_HDL_START];
         lreq.len = index;

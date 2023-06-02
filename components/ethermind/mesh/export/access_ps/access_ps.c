@@ -567,6 +567,9 @@ void ms_access_ps_store (/* IN */ UINT32 records)
 
     if(ms_ps_store_disable_flag == MS_FALSE)
     {
+        #if(FLASH_PROTECT_FEATURE == 1)
+        hal_flash_disable_lock(PS_STORE);
+        #endif
         /* Open the storage */
         ret = nvsto_open_pswrite (access_nvsto_handle);
 
@@ -574,6 +577,9 @@ void ms_access_ps_store (/* IN */ UINT32 records)
         {
             ACCESS_ERR
             ("[ACCESS]: PS Open Failed\n");
+            #if(FLASH_PROTECT_FEATURE == 1)
+            hal_flash_enable_lock(PS_STORE);
+            #endif
             return;
         }
 
@@ -600,6 +606,9 @@ void ms_access_ps_store (/* IN */ UINT32 records)
         nvsto_write_header_ps(access_nvsto_handle, (((UINT32)ms_crc16_code)<<16)|((MS_PS_ACCESS_MAX_RECORDS-12)<<12)|((count&0xf)<<8)|0x1); //writing ok
         /* Close the storage */
         nvsto_close_ps (access_nvsto_handle);
+        #if(FLASH_PROTECT_FEATURE == 1)
+        hal_flash_enable_lock(PS_STORE);
+        #endif
     }
 
     return;

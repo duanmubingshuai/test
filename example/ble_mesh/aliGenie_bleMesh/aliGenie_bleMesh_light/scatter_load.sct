@@ -101,6 +101,7 @@ gattservapp.o(+RO)
 	ali_genie_profile.o(+RO)
 	;appl_prov.o(+RO)
 	aliGenie_led_light*.o (+RO)
+	access_ps.o(+RO)
 
 	gpio.o(+RO)
    *.o(_section_xip_code_, _func_xip_code_.*)

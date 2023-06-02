@@ -1028,7 +1028,6 @@ void rf_phy_direct_test(void)
     int dtmState = 0;
     uint32_t deltTick = 0;
     uint32_t currTick = 0;
-
     hal_clk_gate_disable(MOD_WDT);
     //enable received data available interrupt
     DTM_LOG_INIT();

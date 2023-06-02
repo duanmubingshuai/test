@@ -41,33 +41,30 @@ static MS_TIME_SERVER_CB       time_server_appl_cb;
 
 /* --------------------------------------------- Function */
 /**
-    API to initialize Time Server model. 
+    API to initialize Time Server model.
     Description
     This is to initialize Time Server model and to register with Acess layer.Parameters
-    [in] element_handle Element identifier to be associated with the model instance. 
-    [in,out] time_model_handle Model identifier associated with the time model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration. 
-    [in,out] time_setup_model_handle Model identifier associated with the time setup model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration. 
-    [in] appl_cb Application Callback to be used by the Time Server. 
+    [in] element_handle Element identifier to be associated with the model instance.
+    [in,out] time_model_handle Model identifier associated with the time model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration.
+    [in,out] time_setup_model_handle Model identifier associated with the time setup model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration.
+    [in] appl_cb Application Callback to be used by the Time Server.
     Returns
-    API_SUCCESS or an error code indicating reason for failure 
+    API_SUCCESS or an error code indicating reason for failure
 */
 API_RESULT MS_time_server_init(
-               /* IN */    MS_ACCESS_ELEMENT_HANDLE    element_handle,
-               /* INOUT */ MS_ACCESS_MODEL_HANDLE    * time_model_handle,
-               /* INOUT */ MS_ACCESS_MODEL_HANDLE    * time_setup_model_handle,
-               /* IN */    MS_TIME_SERVER_CB           appl_cb
-           )
+    /* IN */    MS_ACCESS_ELEMENT_HANDLE    element_handle,
+    /* INOUT */ MS_ACCESS_MODEL_HANDLE*     time_model_handle,
+    /* INOUT */ MS_ACCESS_MODEL_HANDLE*     time_setup_model_handle,
+    /* IN */    MS_TIME_SERVER_CB           appl_cb
+)
 {
     API_RESULT              rslt;
     MS_ACCESS_NODE_ID       node;
     MS_ACCESS_MODEL         modl;
-
     /* Using default node ID */
     node = MS_ACCESS_DEFAULT_NODE_ID;
-    
     printf(
         "[TIMER_SERVER] Registered Element Handle 0x%02X\n", element_handle);
-
     /* Configure Model */
     modl.model_id.id = MS_MODEL_ID_TIME_SERVER;
     modl.model_id.type = MS_ACCESS_MODEL_TYPE_SIG;
@@ -79,10 +76,9 @@ API_RESULT MS_time_server_init(
     modl.opcodes = time_server_opcode_list;
     modl.num_opcodes = sizeof(time_server_opcode_list) / sizeof(UINT32);
     rslt = MS_access_register_model(
-                                    node,
-                                    &modl,
-                                    time_model_handle);
-
+               node,
+               &modl,
+               time_model_handle);
     /* Configure Model */
     modl.model_id.id = MS_MODEL_ID_TIME_SETUP_SERVER;
     modl.model_id.type = MS_ACCESS_MODEL_TYPE_SIG;
@@ -94,13 +90,11 @@ API_RESULT MS_time_server_init(
     modl.opcodes = time_setup_server_opcode_list;
     modl.num_opcodes = sizeof(time_setup_server_opcode_list) / sizeof(UINT32);
     rslt = MS_access_register_model(
-                                    node,
-                                    &modl,
-                                    time_setup_model_handle);
-
+               node,
+               &modl,
+               time_setup_model_handle);
     /* Save Application Callback */
     time_server_appl_cb = appl_cb;
-
     return rslt;
 }
 
@@ -119,12 +113,12 @@ API_RESULT MS_time_server_init(
     \return API_SUCCESS or an error code indicating reason for failure
 */
 API_RESULT MS_time_server_state_update(
-               /* IN */ MS_ACCESS_MODEL_REQ_MSG_CONTEXT    * ctx,
-               /* IN */ MS_ACCESS_MODEL_STATE_PARAMS       * current_state_params,
-               /* IN */ MS_ACCESS_MODEL_STATE_PARAMS       * target_state_params,
-               /* IN */ UINT16                               remaining_time,
-               /* IN */ MS_ACCESS_MODEL_EXT_PARAMS         * ext_params
-           )
+    /* IN */ MS_ACCESS_MODEL_REQ_MSG_CONTEXT*     ctx,
+    /* IN */ MS_ACCESS_MODEL_STATE_PARAMS*        current_state_params,
+    /* IN */ MS_ACCESS_MODEL_STATE_PARAMS*        target_state_params,
+    /* IN */ UINT16                               remaining_time,
+    /* IN */ MS_ACCESS_MODEL_EXT_PARAMS*          ext_params
+)
 {
     API_RESULT rslt = API_FAILURE;
     /* TODO: Check what should be maximum length */
@@ -135,7 +129,6 @@ API_RESULT MS_time_server_state_update(
     MS_IGNORE_UNUSED_PARAM(target_state_params);
     MS_IGNORE_UNUSED_PARAM(remaining_time);
     MS_IGNORE_UNUSED_PARAM(ext_params);
-
     printf(
         "[TIME_SERVER] State Update.\n");
 
@@ -150,6 +143,7 @@ API_RESULT MS_time_server_state_update(
         param_p = (MS_STATE_TIME_STRUCT*)current_state_params->state;
         MS_PACK_LE_N_BYTE(&buffer[marker], param_p->tai_seconds,5);
         marker += 5;
+
         if(EM_mem_cmp(param_p->tai_seconds,tai_seconds_com,5) != 0)
         {
             buffer[marker] = param_p->subsecond;
@@ -162,7 +156,7 @@ API_RESULT MS_time_server_state_update(
             buffer[marker] = param_p->time_zone_offset;
             marker += 1;
         }
-        
+
         /* Set Opcode */
         opcode = MS_ACCESS_TIME_STATUS_OPCODE;
     }
@@ -174,15 +168,12 @@ API_RESULT MS_time_server_state_update(
         printf(
             "MS_ACCESS_TIME_ZONE_STATUS_OPCODE\n");
         param_p = (MS_STATE_TIME_ZONE_STRUCT*)current_state_params->state;
-
         buffer[marker] = param_p->time_zone_offset_current;
         marker += 1;
         buffer[marker] = param_p->time_zone_offset_new;
         marker += 1;
-        
         MS_PACK_LE_N_BYTE(&buffer[marker], param_p->tai_of_zone_change,5);
         marker += 5;
-        
         /* Set Opcode */
         opcode = MS_ACCESS_TIME_ZONE_STATUS_OPCODE;
     }
@@ -194,16 +185,12 @@ API_RESULT MS_time_server_state_update(
         printf(
             "MS_ACCESS_TAI_UTC_DELTA_STATUS_OPCODE\n");
         param_p = (MS_STATE_TIME_TAI_UTC_DELTA_STRUCT*)current_state_params->state;
-
         MS_PACK_LE_2_BYTE_VAL(&buffer[marker], (param_p->tai_utc_delta_current & 0x7fff));
         marker += 2;
-
         MS_PACK_LE_2_BYTE_VAL(&buffer[marker], (param_p->tai_utc_delta_new & 0x7fff));
         marker += 2;
-        
         MS_PACK_LE_N_BYTE(&buffer[marker], param_p->tai_of_delta_change,5);
         marker += 5;
-        
         /* Set Opcode */
         opcode = MS_ACCESS_TAI_UTC_DELTA_STATUS_OPCODE;
     }
@@ -215,10 +202,8 @@ API_RESULT MS_time_server_state_update(
         printf(
             "MS_ACCESS_TIME_ROLE_STATUS_OPCODE\n");
         param_p = (MS_STATE_TIME_ROLE_STRUCT*)current_state_params->state;
-
         buffer[marker] = param_p->role;
         marker += 1;
-        
         /* Set Opcode */
         opcode = MS_ACCESS_TIME_ROLE_STATUS_OPCODE;
     }
@@ -243,18 +228,17 @@ API_RESULT MS_time_server_state_update(
     }
 
     rslt = MS_access_reply
-             (
-                 &ctx->handle,
-                 ctx->daddr,
-                 ctx->saddr,
-                 ctx->subnet_handle,
-                 ctx->appkey_handle,
-                 ACCESS_INVALID_DEFAULT_TTL,
-                 opcode,
-                 pdu_ptr,
-                 marker
-             );
-
+           (
+               &ctx->handle,
+               ctx->daddr,
+               ctx->saddr,
+               ctx->subnet_handle,
+               ctx->appkey_handle,
+               ACCESS_INVALID_DEFAULT_TTL,
+               opcode,
+               pdu_ptr,
+               marker
+           );
     return rslt;
 }
 
@@ -336,9 +320,7 @@ API_RESULT time_server_cb(
         /* Get Request Type */
         req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_SET;
         req_type.to_be_acked = 0x01;
-
         UINT8 tai_seconds_com[5] = {0};
-
         /* Decode Parameters */
         marker = 0;
         MS_UNPACK_BE_N_BYTE(&param.tai_seconds[0],&data_param[marker],5);
@@ -348,20 +330,16 @@ API_RESULT time_server_cb(
         {
             param.subsecond = data_param[marker];
             marker += 1;
-
             param.uncertainty = data_param[marker];
             marker += 1;
-
             MS_UNPACK_LE_2_BYTE(&param.tai_utc_delta,&data_param[marker]);
             marker += 2;
-
             param.time_authority = param.tai_utc_delta & 0x01;
             param.tai_utc_delta >>= 1;
-
             param.time_zone_offset = data_param[marker];
             marker += 1;
         }
-        
+
         /* Assign reqeusted state type to the application */
         state_params.state_type = MS_STATE_TIME_T;
         state_params.state = &param;
@@ -387,7 +365,6 @@ API_RESULT time_server_cb(
         /* Get Request Type */
         req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_SET;
         req_type.to_be_acked = 0x01;
-
         /* Decode Parameters */
         marker = 0;
 
@@ -396,8 +373,8 @@ API_RESULT time_server_cb(
             retval = API_SUCCESS;
             return retval;
         }
+
         param_role.role = data_param[marker];
-        
         /* Assign reqeusted state type to the application */
         state_params.state_type = MS_STATE_TIME_ROLE_T;
         state_params.state = &param_role;
@@ -409,7 +386,7 @@ API_RESULT time_server_cb(
         printf(
             "MS_ACCESS_TIME_ZONE_GET_OPCODE\n");
         /* Get Request Type */
-        req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_GET;        
+        req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_GET;
         req_type.to_be_acked = 0x01;
         /* Assign reqeusted state type to the application */
         state_params.state_type = MS_STATE_TIME_ZONE_T;
@@ -423,16 +400,12 @@ API_RESULT time_server_cb(
         /* Get Request Type */
         req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_SET;
         req_type.to_be_acked = 0x01;
-
         /* Decode Parameters */
         marker = 0;
-        
         param_zone.time_zone_offset_new = data_param[marker];
         marker += 1;
-
         MS_UNPACK_BE_N_BYTE(&param_zone.tai_of_zone_change[0],&data_param[marker],5);
         marker += 5;
-        
         /* Assign reqeusted state type to the application */
         state_params.state_type = MS_STATE_TIME_ZONE_T;
         state_params.state = &param_zone;
@@ -458,18 +431,13 @@ API_RESULT time_server_cb(
         /* Get Request Type */
         req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_SET;
         req_type.to_be_acked = 0x01;
-
         /* Decode Parameters */
         marker = 0;
-        
         MS_UNPACK_LE_2_BYTE(&param_delta.tai_utc_delta_new,&data_param[marker]);
         marker += 2;
-
         MS_UNPACK_BE_N_BYTE(&param_delta.tai_of_delta_change[0],&data_param[marker],5);
         marker += 5;
-
         printf("tai_utc_delta_new %x\n",param_delta.tai_utc_delta_new);
-        
         /* Assign reqeusted state type to the application */
         state_params.state_type = MS_STATE_TIME_TAI_UTC_DELTA_T;
         state_params.state = &param_delta;
@@ -477,10 +445,9 @@ API_RESULT time_server_cb(
     break;
     }
 
-    
-
     /* Application callback */
-    if (NULL != time_server_appl_cb) {
+    if (NULL != time_server_appl_cb)
+    {
         time_server_appl_cb(&req_context, &req_raw, &req_type, &state_params, ext_params_p);
     }
 

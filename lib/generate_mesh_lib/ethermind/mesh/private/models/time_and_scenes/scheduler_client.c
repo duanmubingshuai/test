@@ -120,61 +120,53 @@ API_RESULT MS_scheduler_client_send_reliable_pdu
 
     switch(req_opcode)
     {
-        case MS_ACCESS_SCHEDULER_ACTION_SET_OPCODE:
-        case MS_ACCESS_SCHEDULER_ACTION_SET_UNACKNOWLEDGED_OPCODE:
-        {
-            printf("MS_ACCESS_SCHEDULER_ACTION_SET_OPCODE\n");           
-            MS_SCHEDULER_ACTION_SET_STRUCT* param_p;
-            param_p = (MS_SCHEDULER_ACTION_SET_STRUCT*) param;
+    case MS_ACCESS_SCHEDULER_ACTION_SET_OPCODE:
+    case MS_ACCESS_SCHEDULER_ACTION_SET_UNACKNOWLEDGED_OPCODE:
+    {
+        printf("MS_ACCESS_SCHEDULER_ACTION_SET_OPCODE\n");
+        MS_SCHEDULER_ACTION_SET_STRUCT* param_p;
+        param_p = (MS_SCHEDULER_ACTION_SET_STRUCT*) param;
+        buffer[marker] = (param_p->index & 0xf)|((param_p->year & 0xf)<<4);
+        marker += 1;
+        buffer[marker] = ((param_p->year >> 4) & 0x07)|((param_p->month & 0x1f) << 3);
+        marker += 1;
+        buffer[marker] = ((param_p->month >> 5) & 0x7f)|((param_p->day & 0x01) << 7);
+        marker += 1;
+        buffer[marker] = ((param_p->day >> 1) & 0x0f)|((param_p->hour & 0x0f) << 4);
+        marker += 1;
+        buffer[marker] = ((param_p->hour >> 4) & 0x01)|((param_p->minute & 0x3f) << 1)|((param_p->second & 0x01) << 7);
+        marker += 1;
+        buffer[marker] = ((param_p->second >> 1) & 0x1f)|((param_p->dayofweek & 0x07) << 5);
+        marker += 1;
+        buffer[marker] = ((param_p->dayofweek >> 3) & 0x0f)|((param_p->action & 0x0f) << 4);
+        marker += 1;
+        buffer[marker] = param_p->transition_time;
+        marker += 1;
+        MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->scene_number);
+        marker += 2;
+    }
+    break;
 
-            buffer[marker] = (param_p->index & 0xf)|((param_p->year & 0xf)<<4);
-            marker += 1;
+    case MS_ACCESS_SCHEDULER_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SCHEDULER_GET_OPCODE\n");
+    }
+    break;
 
-            buffer[marker] = ((param_p->year >> 4) & 0x07)|((param_p->month & 0x1f) << 3);
-            marker += 1;
-
-            buffer[marker] = ((param_p->month >> 5) & 0x7f)|((param_p->day & 0x01) << 7);
-            marker += 1;
-
-            buffer[marker] = ((param_p->day >> 1) & 0x0f)|((param_p->hour & 0x0f) << 4);
-            marker += 1;
-
-            buffer[marker] = ((param_p->hour >> 4) & 0x01)|((param_p->minute & 0x3f) << 1)|((param_p->second & 0x01) << 7);
-            marker += 1;
-
-            buffer[marker] = ((param_p->second >> 1) & 0x1f)|((param_p->dayofweek & 0x07) << 5);
-            marker += 1;
-
-            buffer[marker] = ((param_p->dayofweek >> 3) & 0x0f)|((param_p->action & 0x0f) << 4);
-            marker += 1;
-
-            buffer[marker] = param_p->transition_time;
-            marker += 1;
-
-            MS_PACK_LE_2_BYTE_VAL(&buffer[marker], param_p->scene_number);
-            marker += 2;
-        }
-        break;
-        case MS_ACCESS_SCHEDULER_GET_OPCODE:
-        {
-            printf("MS_ACCESS_SCHEDULER_GET_OPCODE\n");           
-        }
-        break;
-        case MS_ACCESS_SCHEDULER_ACTION_GET_OPCODE:
-        {
-            printf("MS_ACCESS_SCHEDULER_ACTION_GET_OPCODE\n");           
-            MS_SCHEDULER_ACTION_GET_STRUCT* param_p;
-            param_p = (MS_SCHEDULER_ACTION_GET_STRUCT*) param;
-
-            buffer[marker] = param_p->index;
-            marker += 1;
-        }
-        break;
+    case MS_ACCESS_SCHEDULER_ACTION_GET_OPCODE:
+    {
+        printf("MS_ACCESS_SCHEDULER_ACTION_GET_OPCODE\n");
+        MS_SCHEDULER_ACTION_GET_STRUCT* param_p;
+        param_p = (MS_SCHEDULER_ACTION_GET_STRUCT*) param;
+        buffer[marker] = param_p->index;
+        marker += 1;
+    }
+    break;
 
     default:
         printf("[SCHEDULER ERROR]INVALID OPCODE\n");
-    break;
-    }    
+        break;
+    }
 
     /* Publish - reliable */
     if (0 == marker)
@@ -254,7 +246,7 @@ API_RESULT scheduler_client_cb
     retval = API_SUCCESS;
 
     switch(opcode)
-    {        
+    {
     }
 
     /* Application callback */

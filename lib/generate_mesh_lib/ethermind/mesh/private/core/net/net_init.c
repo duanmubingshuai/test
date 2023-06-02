@@ -330,13 +330,13 @@ void net_pkt_in
             {
                 MS_BUFFER buffer;
                 MS_SUBNET_HANDLE master_subnet_handle;
-                if(*handle == (MS_CONFIG_LIMITS(MS_NUM_NETWORK_INTERFACES) - 1))               
+
+                if(*handle == (MS_CONFIG_LIMITS(MS_NUM_NETWORK_INTERFACES) - 1))
                     is_relay = NETIF_PKT_T_PROXY;
                 else
                     is_relay = NETIF_PKT_T_RELAY;
 
                 hdr.ttl --;
-
                 buffer.payload   = trn_pdu;
                 buffer.length    = trn_pdu_len;
                 NET_TRC("[NET Rx] Relay/Proxy-ing Pkt.\n");
@@ -665,8 +665,10 @@ void net_handle_secure_beacon(UCHAR* pdata, UINT16 pdatalen)
     MS_NET_ADDR unicast_addr;
     MS_access_cm_get_primary_unicast_address(&unicast_addr);
     extern MS_NET_ADDR ms_provisioner_addr;
+
     if(MS_NET_ADDR_UNASSIGNED == unicast_addr || (MS_NET_ADDR_UNASSIGNED == ms_provisioner_addr))
         return;
+
     NET_TRC("[BEACON] Received Secure Beacon\n");
     /**
         Secure Network Beacon will be received in the following format:

@@ -214,6 +214,7 @@
 0x00003901 T LL_CreateConn
 0x00003949 T LL_CreateConn0
 0x00003c91 T LL_CreateConnCancel
+0x00003ca9 T LL_CreateConnCancel0
 0x00003d59 T LL_CtrlToHostFlowControl
 0x00003d71 T LL_DataLengthChangeCback
 0x00003e3d T LL_DirectTestEnd
@@ -307,6 +308,7 @@
 0x000058b5 T LL_PrdAdvSyncEstablishedCback
 0x00005989 T LL_PrdAdvSyncLostCback
 0x000059f1 T LL_ProcessEvent
+0x00005a09 T LL_ProcessEvent0  
 0x00005dd9 T LL_PseudoRand
 0x00005ddd T LL_READ_Anatenna_Info
 0x00005df1 T LL_RX_bm_alloc
@@ -695,6 +697,7 @@
 0x000135fd T ll_readLocalIRK
 0x00013661 T ll_readPeerIRK
 0x000136c5 T ll_read_rxfifo
+0x000136cd T ll_read_rxfifo0
 0x00013761 T ll_schedule_next_event
 0x00013771 T ll_scheduler
 0x00013789 T ll_scheduler0

@@ -75,11 +75,6 @@ extern "C"
 #define SBP_RTC_TEST_EVT                               0x0100
 #define SBP_DYN_CLK_CHG_TEST_EVT                       0x0200
 
-#ifdef PHY_SLB_OTA_ENABLE
-// DEPRECATED
-//#define SBP_PPSP_PERIODIC_EVT                          0x0400
-#define SBP_RSET_CHIP_EVT                              0x4000
-#endif
 
 #define SBP_LL_DEBUG_SHOW_EVT                           0x0800
 /*********************************************************************

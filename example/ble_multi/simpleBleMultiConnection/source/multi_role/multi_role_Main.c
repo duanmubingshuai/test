@@ -35,6 +35,10 @@
 int app_main(void)
 {
     /* Initialize the operating system */
+    #ifdef PHY_SLB_OTA_ENABLE
+    extern uint32 osal_sys_tick;
+    osal_sys_tick = 0;
+    #endif
     osal_init_system();
     osal_pwrmgr_device( PWRMGR_BATTERY );
     /* Start OSAL */

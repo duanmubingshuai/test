@@ -72,10 +72,10 @@ __asm void __attribute__((section("ota_app_loader_area"))) jump2app(uint32_t ent
 void jump2app(uint32_t entry)
 {
     __ASM volatile("ldr r0, %0\n\t"
-          "ldr r1, [r0, #4]\n\t"
-          "bx r1"
-          :"+m"(entry)
-      );
+                   "ldr r1, [r0, #4]\n\t"
+                   "bx r1"
+                   :"+m"(entry)
+                  );
 }
 #endif
 
@@ -87,11 +87,11 @@ int __attribute__((section("ota_app_loader_area"))) run_application(void)
     ret = ota_flash_load_app();
 
     if(ota_slb_xip_addr)
-      app_entry = ota_slb_xip_addr;
+        app_entry = ota_slb_xip_addr;
 
     //bypass cache
     AP_PCR->CACHE_BYPASS = 1;
-    
+
     if(ret == PPlus_SUCCESS)
     {
         jump2app(app_entry);

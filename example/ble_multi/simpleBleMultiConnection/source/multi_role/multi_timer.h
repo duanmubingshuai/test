@@ -24,11 +24,12 @@ int  multitimer_start(struct multiTimer* handle);
 void multitimer_stop(struct multiTimer* handle);
 void multitimer_ticks(uint32 tick);
 void multitimer_loop(void);
+#if ( MAX_CONNECTION_SLAVE_NUM > 0 )
 ///2022 08 04 add for slave timer list
 int  multitimer_start_slave(struct multiTimer* handle);
 void multitimer_stop_slave(struct multiTimer* handle);
 void multitimer_loop_slave(void);
-
+#endif
 // void timer_again(struct Timer* handle);
 // void timer_set_repeat(struct Timer* handle, uint32_t repeat);
 

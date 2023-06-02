@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -44,210 +44,341 @@
 #include "OSAL_Timers.h"
 #include "pwrmgr.h"
 #include "bsp_button_task.h"
-
 uint8 Bsp_Btn_TaskID;
 
-bool bsp_btn_timer_flag = FALSE;
-bool bsp_btn_gpio_flag = FALSE;
-bool bsp_btn_kscan_flag = FALSE;
-bsp_btn_callback_t bsp_btn_cb = NULL;
+KEYBOARD_MODE_t keybaord_extend_mode = NO_EXTEND;
 
-//uint32_t bsp_btn_counter = 0;
-//void wake_test(void)
-//{
-//  bsp_btn_counter++;
-//}
+// ! keyboard register core strure
+static keyboard_cfg app_keyboard_cfg;
 
-#if ((BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_KSCAN) ||  (BSP_BTN_HARDWARE_CONFIG ==BSP_BTN_GPIO_AND_KSCAN))
+static bsp_button_Cfg_t app_button_cfg;
 
-uint8 KscanMK_row[KSCAN_ALL_ROW_NUM];
-uint8 KscanMK_col[KSCAN_ALL_COL_NUM];
+static void PowerOff_key_change_event(uint8 col_nums, uint8 row, uint8 col, uint8 key_state);
+static void PowerOff_key_polling_event(void);
+static void PowerOff_key_restore_event(void);
+static void normal_key_change_event(uint8 col_nums, uint8 row, uint8 col, uint8 key_state);
+static void normal_key_polling_event(void);
+static void normal_key_retore_event(void);
+static void poweroff_Key_switch_keybaord_checking(void);
+static void keyboard_init(void);
+static void keyboard_poweroff_init(void);
 
-static void kscan_evt_handler(kscan_Evt_t* evt)
+// ! keybaord driver register callback for start mode
+static poweroff_key_report AppPoweroffKeyCBs =
 {
-    bool ret;
+    PowerOff_key_change_event,  /* key press or release report by this api when key status change for poweroff key*/
+    PowerOff_key_polling_event, /* key scan report by this api when keybaord polling for poweroff key*/
+    PowerOff_key_restore_event, /* keyboard critical report by this api for poweroff key*/
+};
 
-    for(uint8_t i=0; i<evt->num; i++)
+// ! keybaord driver register callback for working mode
+static normal_key_report AppNormalKeyCBs =
+{
+    normal_key_change_event,  /* key press or release report by this api when key status change */
+    normal_key_polling_event, /* key scan report by this api when keybaord polling*/
+    normal_key_retore_event,  /* keyboard idle*/
+};
+
+/*********************************************************************
+    @fn      PowerOff_key_change_event
+
+    @brief   keybaord soft scan key status change report for poweroffkey
+
+    @param   col_nums row col key_state
+
+    @return  void
+*/
+static void PowerOff_key_change_event(uint8 col_nums, uint8 row, uint8 col, uint8 key_state)
+{
+    if (key_state == 1)
     {
-        if(evt->keys[i].type == KEY_PRESSED)
+        bsp_set_key_value_by_row_col(col_nums, row, col, TRUE);
+    }
+    else
+    {
+        if ((row == READ_MATRIX_KEY % MATRIX_KEYBOARD_ROW) && (col == READ_MATRIX_KEY / MATRIX_KEYBOARD_ROW) && (key_checking_flag == 1))
         {
-            ret = bsp_set_key_value_by_row_col(NUM_KEY_COLS,KscanMK_row[evt->keys[i].row],KscanMK_col[evt->keys[i].col],TRUE);
+            key_checking_flag = 0;
+            poweroff_key_release = 1;
+        }
+
+        bsp_set_key_value_by_row_col(col_nums, row, col, FALSE);
+    }
+}
+
+/*********************************************************************
+    @fn      PowerOff_key_change_event
+
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+static void PowerOff_key_polling_event(void)
+{
+    // ! ir repeated handle
+    static bool send_flag = 0;
+
+    if (get_key_checking_Flag() == 1)
+    {
+        if (time_exceed(poweroff_keydown_timestamp, POWER_REPEATED_RELATIVE_TIME))
+        {
+            if (send_flag == 0)
             {
-                if(ret == TRUE)
+                send_flag = 1;
+
+                if (bsp_btn_cb && bsp_btn_cb->poweroff_Key_lon_cb)
                 {
-                    bsp_btn_timer_flag = TRUE;
-                    osal_start_reload_timer(Bsp_Btn_TaskID,BSP_BTN_EVT_SYSTICK,BTN_SYS_TICK);
+                    bsp_btn_cb->poweroff_Key_lon_cb();
                 }
             }
         }
+    }
+
+    // ! key press or combine key press
+    keybaord_middle_button_data_handle();
+}
+
+/*********************************************************************
+    @fn      PowerOff_key_restore_event
+
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+static void PowerOff_key_restore_event(void)
+{
+    key_checking_flag = 0;
+    poweroff_key_Release_StartPhaseReport();
+    keyboard_init();
+}
+
+/*********************************************************************
+    @fn      normal_key_change_event
+
+    @brief   update keyboard data to middle key layout
+
+    @param   col_nums--col number  row--row value col--col value  key_state--press or release
+
+    @return  void
+*/
+static void normal_key_change_event(uint8 col_nums, uint8 row, uint8 col, uint8 key_state)
+{
+    if (key_state == 1)
+    {
+        // ! key press
+        bsp_set_key_value_by_row_col(col_nums, row, col, TRUE);
+    }
+    else
+    {
+        // ! key release
+        bsp_set_key_value_by_row_col(col_nums, row, col, FALSE);
+    }
+}
+
+/*********************************************************************
+    @fn      normal_key_polling_event
+
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+static void normal_key_polling_event(void)
+{
+    // ! bsp button data handle
+    keybaord_middle_button_data_handle();
+}
+
+/*********************************************************************
+    @fn      normal_key_retore_event
+
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+static void normal_key_retore_event(void)
+{
+    // ! nothing to do
+}
+
+/*********************************************************************
+    @fn      short_press_key_report
+
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+static void poweroff_Key_switch_keybaord_checking(void)
+{
+    uint8 ret = power_Off_init_phase_key_checking(app_keyboard_cfg.keyboard_param.rows, app_keyboard_cfg.keyboard_param.cols);
+
+    // ! poweroffkey aleady report release
+    if (ret == 0)
+    {
+        keyboard_init();
+    }
+    else
+    {
+        // ! poweroffkey long press and switch soft scan this poweroff key status
+        if (READ_MATRIX_KEY <= MATRIX_KEY_MAX && g_system_reset_cause == WAKE_SYSTEM_CAUSE)
+        {
+            keyboard_poweroff_init();
+            osal_start_timerEx(Bsp_Btn_TaskID, BSP_SOFT_POLLING_EVT, 1);
+        }
         else
         {
-            bsp_set_key_value_by_row_col(NUM_KEY_COLS,KscanMK_row[evt->keys[i].row],KscanMK_col[evt->keys[i].col],FALSE);
+            LOG("no check key\r\n");
+            keyboard_init();
         }
     }
 }
 
-void kscan_button_init(uint8 task_id)
+/*********************************************************************
+    @fn      keyboard_init
+
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+static void keyboard_init(void)
 {
-    kscan_Cfg_t cfg;
-    cfg.ghost_key_state = NOT_IGNORE_GHOST_KEY;
-    cfg.key_rows = rows;
-    cfg.key_cols = cols;
-    cfg.interval = 5;
-    cfg.evt_handler = kscan_evt_handler;
-    memset(KscanMK_row,0xff,KSCAN_ALL_ROW_NUM);
-
-    for(int i=0; i<NUM_KEY_ROWS; i++)
-    {
-        KscanMK_row[rows[i]] = i;
-    }
-
-    memset(KscanMK_col,0xff,KSCAN_ALL_COL_NUM);
-
-    for(int i=0; i<NUM_KEY_COLS; i++)
-    {
-        KscanMK_col[cols[i]] = i;
-    }
-
-    hal_kscan_init(cfg, task_id, KSCAN_WAKEUP_TIMEOUT_EVT);
-}
-#endif
-
-#if ((BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_GPIO) || (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_GPIO_AND_KSCAN))
-uint8_t Bsp_Btn_Get_Index(gpio_pin_e pin)
-{
-    uint8_t i;
-
-    if(hal_gpio_btn_get_index(pin,&i) == PPlus_SUCCESS)
-    {
-        #if  (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_GPIO_AND_KSCAN)
-        return (BSP_KSCAN_SINGLE_BTN_NUM + i);
-        #else
-        return (i);
-        #endif
-    }
-
-    return 0xFF;
-}
-#endif
-
-static void Bsp_Btn_Check(uint8_t ucKeyCode)
-{
-    #if (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_GPIO)
-    hal_gpio_btn_cb(ucKeyCode);
-    #else
-    bsp_btn_cb(ucKeyCode);
+    app_keyboard_cfg.keyboard_param.rows = (GPIO_Pin_e*)app_button_cfg.row_pin;
+    app_keyboard_cfg.keyboard_param.cols = (GPIO_Pin_e*)app_button_cfg.col_pin;
+    app_keyboard_cfg.keyboard_param.keyboard_mode = NO_EXTEND;
+    app_keyboard_cfg.keyboard_param.keyboard_osal_event = BSP_SOFT_POLLING_EVT;
+    app_keyboard_cfg.keyboard_param.keyboard_osal_taskId = Bsp_Btn_TaskID;
+    app_keyboard_cfg.keyboard_param.combine_param.keyboard_combine_num = app_button_cfg.combine_btn_num;
+    app_keyboard_cfg.keyboard_param.combine_param.keyboard_combine_btn_array = app_button_cfg.usr_combine_btn_array;
+    app_keyboard_cfg.keyboard_param.polling_interval = 10;
+    app_keyboard_cfg.keyboard_param.poweroff_polling_interval = 0;
+    app_keyboard_cfg.keyboard_param.keyboard_pwrmgr_mod = MOD_USR0;
+    #ifdef BSP_BTN_LONG_PRESS_ENABLE
+    app_keyboard_cfg.keyboard_param.long_press_keep_count = app_button_cfg.bsp_long_press_keep_cnt;
+    app_keyboard_cfg.keyboard_param.long_press_start_count = app_button_cfg.bsp_long_press_start_cnt;
     #endif
-
-    if(bsp_btn_timer_flag == TRUE)
-    {
-        if(bsp_KeyEmpty() == TRUE)
-        {
-            osal_stop_timerEx(Bsp_Btn_TaskID,BSP_BTN_EVT_SYSTICK);
-            bsp_btn_timer_flag = FALSE;
-        }
-    }
+    app_keyboard_cfg.PowerOffKeyReportCB = NULL;
+    app_keyboard_cfg.NormalKeyReportCB = &AppNormalKeyCBs;
+    bsp_button_param_init(&app_keyboard_cfg);
 }
 
-void gpio_btn_pin_event_handler(gpio_pin_e pin,IO_Wakeup_Pol_e type)
-{
-    #if ((BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_GPIO) ||  (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_GPIO_AND_KSCAN))
+/*********************************************************************
+    @fn      keyboard_poweroff_init
 
-    if(((GPIO_SINGLE_BTN_IDLE_LEVEL == 0) && (POL_RISING == type)) || \
-            ((GPIO_SINGLE_BTN_IDLE_LEVEL == 1) && (POL_RISING != type)))
+    @brief   void
+
+    @param   void
+
+    @return  void
+*/
+static void keyboard_poweroff_init(void)
+{
+    app_keyboard_cfg.keyboard_param.rows = (GPIO_Pin_e*)app_button_cfg.row_pin;
+    app_keyboard_cfg.keyboard_param.cols = (GPIO_Pin_e*)app_button_cfg.col_pin;
+    app_keyboard_cfg.keyboard_param.keyboard_mode = keybaord_extend_mode;
+    app_keyboard_cfg.keyboard_param.keyboard_osal_event = BSP_SOFT_POLLING_EVT;
+    app_keyboard_cfg.keyboard_param.keyboard_osal_taskId = Bsp_Btn_TaskID;
+    app_keyboard_cfg.keyboard_param.combine_param.keyboard_combine_num = app_button_cfg.combine_btn_num;
+    app_keyboard_cfg.keyboard_param.combine_param.keyboard_combine_btn_array = app_button_cfg.usr_combine_btn_array;
+    app_keyboard_cfg.keyboard_param.polling_interval = 0;
+    app_keyboard_cfg.keyboard_param.poweroff_polling_interval = 4;
+    app_keyboard_cfg.keyboard_param.keyboard_pwrmgr_mod = MOD_USR4;
+    app_keyboard_cfg.PowerOffKeyReportCB = &AppPoweroffKeyCBs;
+    app_keyboard_cfg.NormalKeyReportCB = NULL;
+    keyboard_register(&app_keyboard_cfg);
+    LOG("%s\r\n", __FUNCTION__);
+}
+
+/*********************************************************************
+    @fn      get_key_checking_Flag
+
+    @brief   get keyboard wheather idle
+
+    @param   void
+
+    @return  1---working  0 -- idle
+*/
+void system_run_keyboard_checking(void)
+{
+    // ! POWEROFF KEY PRESS REPORT
+    poweroff_key_Press_StartPhaseReport();
+    // ! POWEROFF KEY RELEASE CHECKING
+    power_Off_init_phase_key_checking(app_keyboard_cfg.keyboard_param.rows, app_keyboard_cfg.keyboard_param.cols);
+}
+
+/*********************************************************************
+    @fn      btp_button_init
+
+    @brief   kscan or soft scan init config & bsp button config
+
+    @param   void
+
+    @return  void
+*/
+void btp_button_init(bsp_button_Cfg_t* button_cfg)
+{
+    osal_memcpy(&app_button_cfg,button_cfg,sizeof(bsp_button_Cfg_t));
+    key_app_register(app_button_cfg.bsp_evt_cb);
+
+    // ! bsp button hal init config
+    if (g_system_reset_cause == WAKE_SYSTEM_CAUSE)
     {
-        bsp_btn_timer_flag = TRUE;
-        osal_start_reload_timer(Bsp_Btn_TaskID,BSP_BTN_EVT_SYSTICK,BTN_SYS_TICK);
-        bsp_set_key_value_by_index(Bsp_Btn_Get_Index(pin),1);
+        osal_set_event(Bsp_Btn_TaskID, BSP_POWER_ON_EVT);
     }
     else
     {
-        bsp_set_key_value_by_index(Bsp_Btn_Get_Index(pin),0);
+        keyboard_init();
     }
 
-    #endif
+    osal_start_timerEx(Bsp_Btn_TaskID, BSP_SOFT_POLLING_EVT, BSP_SOFT_SCAN_POLLING_TIME);
 }
 
-void Bsp_Btn_Init( uint8 task_id )
+/*********************************************************************
+    @fn      kscan_enter_power_off_gpio_option
+
+    @brief   kscan or soft scan poweroff gpio config
+
+    @param   void
+
+    @return  void
+*/
+void kscan_enter_power_off_gpio_option(void)
+{
+    keyboard_deep_sleep_handler();
+}
+
+void Bsp_Btn_Init(uint8 task_id)
 {
     Bsp_Btn_TaskID = task_id;
-    #if (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_GPIO)
-
-    if(bsp_btn_gpio_flag == TRUE)
-    {
-        ;
-    }
-
-    #elif  (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_KSCAN)
-
-    if(bsp_btn_kscan_flag == TRUE)
-    {
-        kscan_button_init(task_id);
-    }
-
-    #elif  (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_GPIO_AND_KSCAN)
-
-    if((bsp_btn_gpio_flag == TRUE) && (bsp_btn_kscan_flag == TRUE))
-    {
-        kscan_button_init(task_id);
-    }
-
-    #endif
-    else
-    {
-        LOG("btn config error %d %d %d\n",__LINE__,bsp_btn_gpio_flag,bsp_btn_kscan_flag);
-        return;
-    }
-
-    for(int i = 0; i < BSP_TOTAL_BTN_NUM; i++)
-    {
-        usr_sum_btn_array[i].KeyConfig = (BSP_BTN_PD_CFG | BSP_BTN_UP_CFG | BSP_BTN_LPS_CFG|BSP_BTN_LPK_CFG);
-    }
-
-    #if (BSP_COMBINE_BTN_NUM > 0)
-
-    if(PPlus_SUCCESS != bsp_InitBtn(usr_sum_btn_array,BSP_TOTAL_BTN_NUM,BSP_SINGLE_BTN_NUM,usr_combine_btn_array))
-    #else
-    if(PPlus_SUCCESS != bsp_InitBtn(usr_sum_btn_array,BSP_TOTAL_BTN_NUM,0,NULL))
-    #endif
-    {
-        LOG("bsp button init error\n");
-    }
-
-    //hal_pwrmgr_register(MOD_USR8, NULL, wake_test);
 }
 
-uint16 Bsp_Btn_ProcessEvent( uint8 task_id, uint16 events )
+uint16 Bsp_Btn_ProcessEvent(uint8 task_id, uint16 events)
 {
-    uint8_t ucKeyCode;
-
-    if(Bsp_Btn_TaskID != task_id)
+    if (Bsp_Btn_TaskID != task_id)
     {
         return 0;
     }
 
-    #if ((BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_KSCAN) || (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_GPIO_AND_KSCAN))
-
-    if ( events & KSCAN_WAKEUP_TIMEOUT_EVT )
+    if (events & BSP_SOFT_POLLING_EVT) // ! soft scan polling events
     {
-        hal_kscan_timeout_handler();
-        return (events ^ KSCAN_WAKEUP_TIMEOUT_EVT);
+        keyboard_io_read();
+        return (events ^ BSP_SOFT_POLLING_EVT);
     }
 
-    #endif
-
-    if ( events & BSP_BTN_EVT_SYSTICK )
+    if (events & BSP_POWER_ON_EVT) // ! start key or poweroff handle
     {
-//      if((bsp_btn_counter%10)==0)
-//          LOG(".:%d ",bsp_btn_counter);
-        ucKeyCode = bsp_KeyPro();
-
-        if(ucKeyCode != BTN_NONE)
-        {
-            Bsp_Btn_Check(ucKeyCode);
-        }
-
-        return (events ^ BSP_BTN_EVT_SYSTICK);
+        poweroff_Key_switch_keybaord_checking();
+        return (events ^ BSP_POWER_ON_EVT);
     }
 
     return 0;

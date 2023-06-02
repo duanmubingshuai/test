@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************
+/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -38,6 +38,7 @@
 #include "vendormodel_server.h"
 #include "ltrn_extern.h"
 #include "cliface.h"
+#include "access_internal.h"
 
 #define CONSOLE_OUT(...)    printf(__VA_ARGS__)
 #define CONSOLE_IN(...)     scanf(__VA_ARGS__)
@@ -92,7 +93,7 @@ static API_RESULT cli_vendormodel_send_reliable_pdu(
 {
     API_RESULT retval;
     /* TODO: Check what should be maximum length */
-    UCHAR      buffer[256];
+    UCHAR      buffer[384];
     UCHAR*     pdu_ptr;
     UINT16     marker;
     retval = API_FAILURE;
@@ -202,6 +203,31 @@ API_RESULT cli_get_information(UINT32 argc, UCHAR* argv[])
     return API_SUCCESS;
 }
 
+API_RESULT cli_mesh_stack_clear(UINT32 argc, UCHAR* argv[])
+{
+    MS_IGNORE_UNUSED_PARAM(argc);
+    MS_IGNORE_UNUSED_PARAM(argv);
+    printf("cli mesh stack clear\n");
+    #if(BLEMESH_ROLE == PROV_ROLE_PROVISIONER)
+    MS_access_cm_reset(PROV_ROLE_PROVISIONER);
+    #else
+    UCHAR proxy_state;
+    MS_proxy_fetch_state(&proxy_state);
+    MS_access_cm_reset(PROV_ROLE_DEVICE);
+    blebrr_scan_pl(FALSE);
+
+    if(MS_PROXY_CONNECTED != proxy_state)
+    {
+        EM_start_timer (&thandle, 3, timeout_cb, NULL, 0);
+    }
+    else
+    {
+        blebrr_disconnect_pl();
+    }
+
+    #endif
+    return API_SUCCESS;
+}
 #if(BLEMESH_ROLE == PROV_ROLE_PROVISIONER)
 #else
 API_RESULT cli_disp_key(UINT32 argc, UCHAR* argv[])
@@ -213,6 +239,59 @@ API_RESULT cli_disp_key(UINT32 argc, UCHAR* argv[])
     UI_sample_check_app_key();
     return API_SUCCESS;
 }
+
+API_RESULT cli_send_pdu(UINT32 argc, UCHAR* argv[])
+{
+    UINT16  destnation_address;
+    UINT16   data_len,appKeyIndex;
+    UINT8   buffer[384];
+
+    if( argc < 3 )
+    {
+        printf("Invaild RAW DATA Paraments\n");
+        return API_FAILURE;
+    }
+
+    destnation_address = CLI_strtoi(argv[0], CLI_strlen(argv[0]), 16);
+    appKeyIndex = CLI_strtoi(argv[1], CLI_strlen(argv[1]), 16);
+    data_len = CLI_strtoi(argv[2], CLI_strlen(argv[2]), 16);
+
+    if((data_len == 0) || data_len >384)
+    {
+        printf("RAW DATA INVALID,Return\n");
+        return API_FAILURE;
+    }
+
+    for(int i=0; i<data_len; i++)
+    {
+        buffer[i] = i;
+    }
+
+    printf("-before-\n");
+    #if (MESH_HEAP == 1)
+    extern uint32  mesh_osal_memory_statics(void);
+    mesh_osal_memory_statics();
+    #else
+    extern uint32  osal_memory_statics(void);
+    osal_memory_statics();
+    #endif
+    cli_vendormodel_send_reliable_pdu(
+        MS_ACCESS_VENDORMODEL_WRITECMD_OPCODE,
+        destnation_address,
+        appKeyIndex,
+        buffer,
+        data_len
+    );
+    printf("-after-\n");
+    #if (MESH_HEAP == 1)
+    mesh_osal_memory_statics();
+    #else
+    osal_memory_statics();
+    #endif
+    printf("DST 0x%04X data_len 0x%02X\n",destnation_address,data_len);
+    return API_SUCCESS;
+}
+
 #endif
 
 static void ll_dumpConnectionInfo(void )
@@ -262,6 +341,12 @@ API_RESULT cli_demo_reset(UINT32 argc, UCHAR* argv[])
 
     #if(BLEMESH_ROLE == PROV_ROLE_PROVISIONER)
     MS_access_cm_reset(PROV_ROLE_PROVISIONER);
+    extern MS_PROV_DEV_ENTRY g_prov_dev_list[MS_MAX_DEV_KEYS];
+
+    for(int i=0; i<MS_MAX_DEV_KEYS; i++)
+        EM_mem_set(&g_prov_dev_list[i],0,sizeof(MS_PROV_DEV_ENTRY));
+
+    ms_access_ps_store(MS_PS_RECORD_DEV_KEYS);
     #else
     blebrr_scan_pl(FALSE);
     nvs_reset(NVS_BANK_PERSISTENT);
@@ -460,7 +545,6 @@ API_RESULT cli_core_modelc_config_netkey_update(UINT32 argc, UCHAR* argv[])
     printf("retval = 0x%04X\n", retval);
     return retval;
 }
-
 
 
 API_RESULT cli_snb(UINT32 argc, UCHAR* argv[])

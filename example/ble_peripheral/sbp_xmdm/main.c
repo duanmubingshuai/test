@@ -119,11 +119,14 @@ llConnState_t               pConnContext[BLE_MAX_ALLOW_CONNECTION];
 #if ( HOST_CONFIG & OBSERVER_CFG )
     #define     LARGE_HEAP_SIZE  (4*1024)
 #else
-    #define     LARGE_HEAP_SIZE  (2*1024)
+    #define     LARGE_HEAP_SIZE  (3*1024)
 #endif
 ALIGN4_U8   g_largeHeap[LARGE_HEAP_SIZE];
 
-#define     LL_LINK_HEAP_SIZE    (2*1024)
+#define     LL_LINKBUF_CFG_NUM                0
+
+#define     LL_PKT_BUFSIZE                    280
+#define     LL_LINK_HEAP_SIZE    ( ( BLE_MAX_ALLOW_CONNECTION * 3 + LL_LINKBUF_CFG_NUM ) * LL_PKT_BUFSIZE )//basic Space + configurable Space
 ALIGN4_U8   g_llLinkHeap[LL_LINK_HEAP_SIZE];
 /*********************************************************************
     GLOBAL VARIABLES
@@ -314,7 +317,7 @@ int  main(void)
     g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_DBL_32M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
     drv_irq_init();
     init_config();

@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -44,7 +44,7 @@
 #define __DEF_CHIP_TSOP16__                  (0x0002)
 #define SDK_VER_MAJOR                      3
 #define SDK_VER_MINOR                      1
-#define SDK_VER_REVISION                   2
+#define SDK_VER_REVISION                   3
 #define SDK_VER_RELEASE_ID                 ((SDK_VER_MAJOR<<16)|(SDK_VER_MINOR<<8)|(SDK_VER_REVISION))
 #define SDK_VER_CHIP                      __DEF_CHIP_QFN32__
 //#define SDK_VER_TEST_BUILD ""

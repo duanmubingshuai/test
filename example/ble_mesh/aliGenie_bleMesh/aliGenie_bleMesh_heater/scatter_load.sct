@@ -106,6 +106,9 @@ gattservapp.o(+RO)
 	aliGenie_led_light*.o (+RO)
 
 	gpio.o(+RO)
+	cliface.o(+RO)
+	ms_limit_config.o(+RO)
+	access_ps.o(+RO)
    *.o(_section_xip_code_, _func_xip_code_.*)
 	
 }

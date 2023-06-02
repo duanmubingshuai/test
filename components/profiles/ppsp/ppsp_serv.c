@@ -742,7 +742,8 @@ bStatus_t ppsp_serv_set_para( uint8 para, void* valu, uint16 leng )
     {
         if ( leng <= PPSP_SERV_CFGS_CHAR_FED4_DLEN )
         {
-            osal_memcpy(__ppsp_serv_char_ffd4_para, valu, __ppsp_serv_char_ffd4_para_size = leng);
+            __ppsp_serv_char_ffd4_para_size = leng;
+            osal_memcpy(__ppsp_serv_char_ffd4_para, valu, __ppsp_serv_char_ffd4_para_size);
         }
         else
         {

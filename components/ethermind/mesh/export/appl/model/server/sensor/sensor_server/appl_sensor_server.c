@@ -51,7 +51,7 @@ void main_sensor_server_operations(/* IN */ UINT8 have_menu)
                  (
                      element_handle,
                      &appl_sensor_server_model_handle,
-										 &appl_sensor_setup_server_model_handle,
+                     &appl_sensor_setup_server_model_handle,
                      appl_sensor_server_cb
                  );
 
@@ -67,6 +67,7 @@ void main_sensor_server_operations(/* IN */ UINT8 have_menu)
                 "[ERR] Sensor Server Initialization Failed. Result: 0x%04X\n",
                 retval);
         }
+
         appl_model_states_initialization();
         model_initialized = 0x01;
     }

@@ -1,4 +1,5 @@
 import sys
+import os
 from intelhex import IntelHex
 from struct import *
 import traceback
@@ -87,21 +88,26 @@ def main(argv):
 		printhelp()
 		return
 	fname = argv[1]
-	
-	try:
-		ih = IntelHex(fname)
-		ih = None
-		ih_res = None
 
-	except:
-		print('Open hex file failed:', fname)
-		printhelp()
-		return
+	slb_sec_flg = 0
+	if (os.path.splitext(fname)[1] == '.hexe16'):
+		slb_sec_flg = 1
+		print('slb secure!')
+
+	if(slb_sec_flg == 0):
+		try:
+			ih = IntelHex(fname)
+			ih = None
+			ih_res = None
+
+		except:
+			print('Open hex file failed:', fname)
+			printhelp()
+			return
 		
 	ih = hexf(fname)
 	ih_res = []
-		
-	
+
 	fname_bin = fname + '.bin'
 	fp = open(fname_bin, 'wb')
 	try:
@@ -168,7 +174,10 @@ def main(argv):
 		for ihp in ih:
 			#flash address
 			param = faddr
-			print('run is', hex(ihp[0]), 'faddr is', hex(faddr), 'offset is', offset, 'size is ', len(ihp[1]))
+			if (slb_sec_flg == 1):
+				print('run is', hex(ihp[0]), 'faddr is', hex(faddr), 'offset is', offset, 'size is ', len(ihp[1])-4)
+			else:
+				print('run is', hex(ihp[0]), 'faddr is', hex(faddr), 'offset is', offset, 'size is ', len(ihp[1]))
 			for i in range(len(ihp[1])):
 				lval[faddr + 0x1000 + i] = ihp[1][i]
 
@@ -186,7 +195,10 @@ def main(argv):
 			lval[offset + 7] = (param>>24) & 0xff
 
 			#partition size
-			param = len(ihp[1])
+			if (slb_sec_flg == 1) :
+				param = len(ihp[1])-4
+			else:
+				param = len(ihp[1])
 			faddr = faddr + (param+3) &0xfffffffc
 			lval[offset + 8] = param & 0xff
 			lval[offset + 9] = (param>>8) & 0xff
@@ -194,12 +206,23 @@ def main(argv):
 			lval[offset + 11] = (param>>24) & 0xff
 			
 			#checksum
-			param = crc16(0, ihp[1])
-			print('crc is ', hex(param))
-			lval[offset + 12] = param & 0xff
-			lval[offset + 13] = (param>>8) & 0xff
-			lval[offset + 14] = (param>>16) & 0xff
-			lval[offset + 15] = (param>>24) & 0xff
+			if (slb_sec_flg == 1):
+				param = ihp[1][len(ihp[1]) - 4] & 0xff
+				lval[offset + 12] = param
+				param1 = (ihp[1][len(ihp[1]) - 3]) & 0xff
+				lval[offset + 13] = param1
+				param2 = (ihp[1][len(ihp[1]) - 2]) & 0xff
+				lval[offset + 14] = param2
+				param3 = (ihp[1][len(ihp[1]) - 1]) & 0xff
+				lval[offset + 15] = param3
+				print('mic is ', hex(param|(param1 << 8 )|(param2 << 16)|(param3 << 24)))
+			else:
+				param = crc16(0, ihp[1])
+				print('crc is ', hex(param))
+				lval[offset + 12] = param & 0xff
+				lval[offset + 13] = (param>>8) & 0xff
+				lval[offset + 14] = (param>>16) & 0xff
+				lval[offset + 15] = (param>>24) & 0xff
 			offset += 0x10
 			
 			

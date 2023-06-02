@@ -40,6 +40,7 @@
 #include "mesh_clients.h"
 #include "access_extern.h"
 #include "flash.h"
+#include "global_config.h"
 extern void appl_mesh(void);
 extern void appl_dump_bytes(UCHAR* buffer, UINT16 length);
 
@@ -76,7 +77,7 @@ API_RESULT cli_demo_reset(UINT32 argc, UCHAR* argv[]);
 API_RESULT cli_disp_key(UINT32 argc, UCHAR* argv[]);
 
 
-UCHAR cmdstr[64];
+UCHAR cmdstr[CLI_MAX_ARGS];
 UCHAR cmdlen;
 DECL_CONST CLI_COMMAND cli_cmd_list[] =
 {
@@ -484,6 +485,10 @@ static void bleMesh_ProcessGAPMsg( gapEventHdr_t* pMsg )
     case GAP_LINK_ESTABLISHED_EVENT:
     {
         blebrr_timer_stop();
+
+        if(BLEBRR_GET_STATE() == BLEBRR_STATE_ADV_ENABLED)
+            BLEBRR_SET_STATE(BLEBRR_STATE_IDLE);
+
         blebrr_scan_enable();
         gapEstLinkReqEvent_t* pPkt = (gapEstLinkReqEvent_t*)pMsg;
         printf("\n GAP_LINK_ESTABLISHED_EVENT received! \n");

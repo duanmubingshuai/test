@@ -83,6 +83,7 @@
     #include "EXT_cbtimer.h"
 #endif
 #include "hal_keyboard_matrix.h"
+#include "bsp_button_task.h"
 
 /*********************************************************************
     GLOBAL VARIABLES
@@ -107,7 +108,7 @@ __ATTR_SECTION_SRAM__ const pTaskEventHandlerFn tasksArr[] =
     GATTServApp_ProcessEvent,                                         // task 6
 
 
-    hal_keyboard_matrix_task_ProcessEvent,
+    Bsp_Btn_ProcessEvent,
     bleMesh_ProcessEvent,                                              // task 8
     #if defined ( OSAL_CBTIMER_NUM_TASKS )
     OSAL_CBTIMER_PROCESS_EVENT( osal_CbTimerProcessEvent ),
@@ -165,8 +166,8 @@ void osalInitTasks( void )
 //    GAPRole_Init( taskID++ );
     /* Profiles */
     GATTServApp_Init( taskID++ );
-    hal_keyboard_matrix_task_init(taskID++);
     /* Application */
+    Bsp_Btn_Init(taskID++);
     bleMesh_Init( taskID++ );
     #if defined ( OSAL_CBTIMER_NUM_TASKS )
     /* Callback Timer Tasks */

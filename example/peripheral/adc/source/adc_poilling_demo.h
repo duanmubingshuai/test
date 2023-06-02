@@ -45,13 +45,16 @@
 extern "C"
 {
 #endif
-#include "voice.h"
-#include "voice_circ_buff.h"
-#include "adc.h"
-#include "adc_demo.h"
+
+
 /*********************************************************************
     INCLUDES
 */
+#include "types.h"
+#include "adc_config.h"
+
+#if (APP_RUN_MODE == ADC_RUNMODE_POLLING)
+
 
 /*********************************************************************
     CONSTANTS
@@ -60,17 +63,20 @@ extern "C"
 /*********************************************************************
     MACROS
 */
-#define adcMeasureTask_Poilling_EVT                   0x0080
+
 
 /*********************************************************************
     FUNCTIONS
 */
 
+
 extern void adc_Poilling_Init( uint8 task_id );
+
+
 extern uint16 adc_Poilling_ProcessEvent( uint8 task_id, uint16 events );
 
-extern uint8 adcDemo_TaskID;
 
+#endif
 
 /*********************************************************************
 *********************************************************************/

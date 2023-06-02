@@ -66,8 +66,9 @@ void hal_voice_enable(void)
 // Disable voice core
 void hal_voice_disable(void)
 {
-    hal_clk_gate_disable(MOD_ADCC);
     subWriteReg(0x40050000,0,0,0);
+    hal_clk_reset(MOD_ADCC);
+    hal_clk_gate_disable(MOD_ADCC);
 }
 
 // Select DMIC
@@ -261,7 +262,10 @@ void __attribute__((used)) hal_ADC_VOICE_IRQHandler(void)
 
     ENABLE_VOICE_INT;
 }
-
+static void voice_wakeup_hdl(void)
+{
+    NVIC_SetPriority((IRQn_Type)ADCC_IRQn, IRQ_PRIO_HAL);
+}
 /**************************************************************************************
     @fn          hal_voice_init
 
@@ -282,8 +286,7 @@ void __attribute__((used)) hal_ADC_VOICE_IRQHandler(void)
  **************************************************************************************/
 void hal_voice_init(void)
 {
-    hal_pwrmgr_register(MOD_ADCC,NULL,NULL);
-    hal_pwrmgr_register(MOD_VOC,NULL,NULL);
+    hal_pwrmgr_register(MOD_VOC,NULL,voice_wakeup_hdl);
     memset(&mVoiceCtx, 0, sizeof(mVoiceCtx));;
 }
 
@@ -393,6 +396,8 @@ int hal_voice_stop(void)
         AP_PCRM->ANA_CTL &= ~BIT(16);   //Power off PGA
     }
 
+    //Power down ADC
+    AP_PCRM->ANA_CTL &= ~BIT(3);
     //Enable sleep
     hal_pwrmgr_unlock(MOD_VOC);
     hal_pwrmgr_unlock(MOD_ADCC);

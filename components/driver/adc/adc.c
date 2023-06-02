@@ -1,4 +1,4 @@
-/**************************************************************************************************
+﻿/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -334,6 +334,7 @@ int hal_adc_compare_start(void)
     //ENABLE_ADC;
     AP_PCRM->ANA_CTL |= BIT(3);
     AP_PCRM->ANA_CTL |= BIT(0);//new
+    NVIC_SetPriority((IRQn_Type)ADCC_IRQn, IRQ_PRIO_HAL);
     //ADC_IRQ_ENABLE;
     NVIC_EnableIRQ((IRQn_Type)ADCC_IRQn);
     //ENABLE_ADC_INT;
@@ -358,8 +359,11 @@ int hal_adc_start(uint8_t adc_mode)
 
     mAdc_Ctx.enable = TRUE;
     hal_pwrmgr_lock(MOD_ADCC);
+    CLEAR_ADC_INT_ALL;
 
     if( adc_mode == POLLING_MODE )
+        JUMP_FUNCTION(ADCC_IRQ_HANDLER)                  =   0;
+    else if(adc_mode == INTERRUPT_MODE)
         JUMP_FUNCTION(ADCC_IRQ_HANDLER)                  =   (uint32_t)&hal_ADC_IRQHandler;
     else
         JUMP_FUNCTION(ADCC_IRQ_HANDLER)                  =   (uint32_t)&hal_ADC_compare_IRQHandler;
@@ -403,9 +407,14 @@ int hal_adc_start(uint8_t adc_mode)
     //ADC_IRQ_ENABLE;
 
     if( adc_mode == INTERRUPT_MODE || adc_mode == CCOMPARE_MODE)
+    {
+        NVIC_SetPriority((IRQn_Type)ADCC_IRQn, IRQ_PRIO_HAL);
         NVIC_EnableIRQ((IRQn_Type)ADCC_IRQn);
+    }
     else
+    {
         NVIC_DisableIRQ((IRQn_Type)ADCC_IRQn);
+    }
 
     //ENABLE_ADC_INT;
     AP_ADCC->intr_mask = 0x1ff;
@@ -646,6 +655,7 @@ int hal_adc_stop(void)
     }
 
     AP_PCRM->ANA_CTL &= ~BIT(0);//Power down analog LDO
+    hal_clk_reset(MOD_ADCC);
     hal_clk_gate_disable(MOD_ADCC);
     clear_adcc_cfg();
     //enableSleep();

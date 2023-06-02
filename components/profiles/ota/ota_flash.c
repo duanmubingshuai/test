@@ -198,7 +198,7 @@ int OTA_APP_LOADAREA_T ota_flash_load_app(void)
         // LOG("OTAF_DUAL_SLBXIP\r\n");
         bank_addr = 0;
     }
-    else 
+    else
     {
         // LOG("PPlus_ERR_OTA_BAD_DATA - bank numb > 2\r\n");
         return PPlus_ERR_OTA_BAD_DATA;
@@ -224,7 +224,7 @@ int OTA_APP_LOADAREA_T ota_flash_load_app(void)
         ota_flash_read(&ota_load_checksum,   OTAF_2nd_BOOTINFO_ADDR + i*4*4 + 12, 4);
 
         if(is_not_xip==false && i == 1)
-          xip_entry = ota_load_run_addr;
+            xip_entry = ota_load_run_addr;
 
         if((ota_load_flash_addr==0xffffffff) || (ota_load_run_addr == 0xffffffff )||(ota_load_size == 0xffffffff )||(ota_load_checksum == 0xffffffff ))
         {
@@ -234,8 +234,8 @@ int OTA_APP_LOADAREA_T ota_flash_load_app(void)
         //ota_sec_flag = ota_load_size&0x80000000;
 
         //case XIP mode, shoud be in single bank and no fct
-        if((ota_load_run_addr == ota_load_flash_addr ) && 
-              ((ota_load_flash_addr & 0xff000000) == OTAF_BASE_ADDR))
+        if((ota_load_run_addr == ota_load_flash_addr ) &&
+                ((ota_load_flash_addr & 0xff000000) == OTAF_BASE_ADDR))
         {
             // LOG("XIP MODE >>> ");
             if(USE_FCT==0 && CFG_OTA_BANK_MODE==OTA_SINGLE_BANK)
@@ -244,12 +244,15 @@ int OTA_APP_LOADAREA_T ota_flash_load_app(void)
                 // continue;
                 if(is_encrypt)
                 {
-                    flash_check_parition((uint8_t*)ota_load_flash_addr,(int)ota_load_size,NULL,(uint8_t*)&ota_load_crc);
-
-                    if ( ota_load_crc!=ota_load_checksum )
+                    if(ota_boot_bypass_crc!=OTA_FAST_BOOT_MAGIC)
                     {
-                        write_reg(OTA_MODE_SELECT_REG, OTA_MODE_OTA);
-                        hal_system_soft_reset();
+                        flash_check_parition((uint8_t*)ota_load_flash_addr,(int)ota_load_size,NULL,(uint8_t*)&ota_load_crc);
+
+                        if ( ota_load_crc!=ota_load_checksum )
+                        {
+                            write_reg(OTA_MODE_SELECT_REG, OTA_MODE_OTA);
+                            hal_system_soft_reset();
+                        }
                     }
                 }
                 else
@@ -327,7 +330,6 @@ int OTA_APP_LOADAREA_T ota_flash_load_app(void)
     }
 
     ota_slb_xip_addr = xip_entry;
-
     // LOG("PPlus_SUCCESS\r\n");
     return PPlus_SUCCESS;
 }

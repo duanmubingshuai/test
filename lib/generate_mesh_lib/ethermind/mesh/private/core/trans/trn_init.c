@@ -372,6 +372,7 @@ API_RESULT  trn_pkt_in
             marker += 2;
             /* Handle Friend Clear Confirmation */
             trn_handle_frnd_clear_cnf(net_hdr, subnet_handle, &frnd_clear_cnf_param);
+            result = API_FAILURE;
         }
         break;
             #endif /* (defined MS_FRIEND_SUPPORT || defined MS_LPN_SUPPORT) */

@@ -337,7 +337,7 @@ int hal_dma_wait_channel_complete(DMA_CH_t ch)
     {
         Temp ++;
 
-        if(AP_DMA_INT->RawTfr)
+        if(AP_DMA_INT->RawTfr & BIT(ch))
         {
             break;
         }

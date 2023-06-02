@@ -1,6 +1,7 @@
 #include "osal.h"
 #include "crc16.h"
 #include "fs.h"
+#include "fs_shadow.h"
 #include "error.h"
 #include "fs_autotest.h"
 #include "cliface.h"
@@ -66,8 +67,10 @@ uint16_t fst_read( uint32_t argc, uint8_t* argv[])
 {
     uint16_t fid =(uint16_t)CLI_strtoi(argv[0], strlen((const char*)argv[0]), 10);
     uint16_t size =(uint16_t)CLI_strtoi(argv[1], strlen((const char*)argv[1]), 10);
-    uint16_t rd_size = size;
-    int iret = hal_fs_item_read(fid, fs_test_buf, 16*1024, &rd_size);
+    uint16_t rd_size = 0;
+    uint8_t x_flag = (uint8_t)(osal_rand()&0xff);
+    fs_test_buf[size] = x_flag;
+    int iret = hal_fs_item_read(fid, fs_test_buf, size, &rd_size);
 
     if(iret)
     {
@@ -81,9 +84,16 @@ uint16_t fst_read( uint32_t argc, uint8_t* argv[])
         }
         else
         {
-            uint16_t crc=0;
-            crc = crc16(0, fs_test_buf, size);
-            CLIT_output("[%d,%d]",PPlus_SUCCESS,crc);
+            if(x_flag !=fs_test_buf[size])
+            {
+                CLIT_output("[%d, %d]",PPlus_ERR_INTERNAL,PPlus_ERR_DATA_CORRUPTION);
+            }
+            else
+            {
+                uint16_t crc=0;
+                crc = crc16(0, fs_test_buf, size);
+                CLIT_output("[%d,%d]",PPlus_SUCCESS,crc);
+            }
         }
     }
 
@@ -98,25 +108,34 @@ uint16_t fst_write(uint32_t argc, uint8_t* argv[])
     int iret;
     uint16_t fid =(uint16_t)CLI_strtoi(argv[0], strlen((const char*)argv[0]), 10);
     uint16_t size =(uint16_t)CLI_strtoi(argv[1], strlen((const char*)argv[1]), 10);
+    uint8_t x_flag = (uint8_t)(osal_rand()&0xff);
+    uint16_t crc=0;
 
     if(size <= free_size)
     {
-        for(int i = 0; i<16*1024; i++)
+        for(int i = 0; i<size; i++)
         {
             fs_test_buf[i] = (uint8_t)(osal_rand()&0xff);
         }
 
-        iret = hal_fs_item_write(fid, fs_test_buf, size);
+        crc = crc16(0, fs_test_buf, size);
+        fs_test_buf[size] = x_flag;
+        iret =  hal_fs_item_write(fid, fs_test_buf, size);
 
         if(iret)
         {
-            CLIT_output("[%d, 0]",iret);
+            CLIT_output("[%d,0]",iret);
         }
         else
         {
-            uint16_t crc=0;
-            crc = crc16(0, fs_test_buf, size);
-            CLIT_output("[%d,%d]",PPlus_SUCCESS,crc);
+            if(x_flag != fs_test_buf[size])
+            {
+                CLIT_output("[%d, %d]",PPlus_ERR_INTERNAL,PPlus_ERR_DATA_CORRUPTION);
+            }
+            else
+            {
+                CLIT_output("[%d, %d]",PPlus_SUCCESS,crc);
+            }
         }
     }
     else
@@ -136,6 +155,113 @@ uint16_t fst_del(uint32_t argc, uint8_t* argv[])
     CLIT_output("[%d, 0]",iret);
     return 0;
 }
+
+//return del file status
+uint16_t fst_ass_s(uint32_t argc, uint8_t* argv[])
+{
+    uint16_t fid =(uint16_t)CLI_strtoi(argv[0], strlen((const char*)argv[0]), 10);
+    uint16_t iret;
+    iret = fss_assert(fid);
+    CLIT_output("[%d, 0]",iret);
+    return 0;
+}
+
+
+//shadow read
+uint16_t fst_read_s( uint32_t argc, uint8_t* argv[])
+{
+    uint16_t fid =(uint16_t)CLI_strtoi(argv[0], strlen((const char*)argv[0]), 10);
+    uint16_t size =(uint16_t)CLI_strtoi(argv[1], strlen((const char*)argv[1]), 10);
+    uint16_t rd_size = 0;
+    uint8_t x_flag = (uint8_t)(osal_rand()&0xff);
+    fs_test_buf[size] = x_flag;
+    int iret = fss_read(fid, fs_test_buf, size, &rd_size);
+
+    if(iret)
+    {
+        CLIT_output("[%d, 0]",iret);
+    }
+    else
+    {
+        if(rd_size != size)
+        {
+            CLIT_output("[%d, 0]",PPlus_ERR_DATA_SIZE);
+        }
+        else
+        {
+            if(x_flag !=fs_test_buf[size])
+            {
+                CLIT_output("[%d, %d]",PPlus_ERR_INTERNAL,PPlus_ERR_DATA_CORRUPTION);
+            }
+            else
+            {
+                uint16_t crc=0;
+                crc = crc16(0, fs_test_buf, size);
+                CLIT_output("[%d,%d]",PPlus_SUCCESS,crc);
+            }
+        }
+    }
+
+    return 0;
+}
+
+//return write res_status and cksum of file
+//shadow write
+uint16_t fst_write_s(uint32_t argc, uint8_t* argv[])
+{
+    uint32_t free_size;
+    hal_fs_get_free_size(&free_size);
+    int iret;
+    uint16_t fid =(uint16_t)CLI_strtoi(argv[0], strlen((const char*)argv[0]), 10);
+    uint16_t size =(uint16_t)CLI_strtoi(argv[1], strlen((const char*)argv[1]), 10);
+    uint8_t x_flag = (uint8_t)(osal_rand()&0xff);
+    uint16_t crc=0;
+
+    if(size <= free_size)
+    {
+        for(int i = 0; i<size; i++)
+        {
+            fs_test_buf[i] = (uint8_t)(osal_rand()&0xff);
+        }
+
+        crc = crc16(0, fs_test_buf, size);
+        fs_test_buf[size] = x_flag;
+        iret =  fss_write(fid, fs_test_buf, size);
+
+        if(iret)
+        {
+            CLIT_output("[%d,0]",iret);
+        }
+        else
+        {
+            if(x_flag != fs_test_buf[size])
+            {
+                CLIT_output("[%d, %d]",PPlus_ERR_INTERNAL,PPlus_ERR_DATA_CORRUPTION);
+            }
+            else
+            {
+                CLIT_output("[%d, %d]",PPlus_SUCCESS,crc);
+            }
+        }
+    }
+    else
+    {
+        CLIT_output("[%d, 0]",PPlus_ERR_FS_NOT_ENOUGH_SIZE);
+    }
+
+    return 0;
+}
+
+//return del file status
+uint16_t fst_del_s(uint32_t argc, uint8_t* argv[])
+{
+    uint16_t fid =(uint16_t)CLI_strtoi(argv[0], strlen((const char*)argv[0]), 10);
+    uint16_t iret;
+    iret = fss_del(fid);
+    CLIT_output("[%d, 0]",iret);
+    return 0;
+}
+
 
 
 //return available free size
@@ -218,6 +344,10 @@ CLI_COMMAND fst_cmd_list[] =
     {"fst_r",       "fst_read",     fst_read    },//read file
     {"fst_w",       "fst_write",    fst_write   },//write file
     {"fst_d",       "fst_del",      fst_del     },//delete file
+    {"fst_as",      "fst_assert_s", fst_ass_s   },//shadow file assert crc error
+    {"fst_rs",      "fst_read_s",   fst_read_s  },//read shadow file
+    {"fst_ws",      "fst_write_s",  fst_write_s },//write shadow file
+    {"fst_ds",      "fst_del_s",    fst_del_s   },//delete shadow file
     {"fst_free",    "fst_free",     fst_free    },//get free size
     {"fst_g",       "fst_garbage",  fst_garbage },//get garbage information
     {"fst_gc",      "fst_clean",    fst_clean   },//garbage collection

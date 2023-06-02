@@ -45,79 +45,45 @@ extern "C"
 {
 #endif
 
-#include "bus_dev.h"
-#include "bsp_gpio.h"
-#include "kscan.h"
-#include "bsp_button.h"
-#include "log.h"
-
-
 /*********************************************************************
     INCLUDES
 */
+#include "bus_dev.h"
+#include "bsp_gpio.h"
+#include "bsp_button.h"
+#include "log.h"
 
 /*********************************************************************
     CONSTANTS
 */
-#define BSP_BTN_JUST_GPIO                                   (0x01)
-#define BSP_BTN_JUST_KSCAN                                  (0x02)
-#define BSP_BTN_GPIO_AND_KSCAN                              (0x03)
-#define BSP_BTN_HARDWARE_CONFIG                             BSP_BTN_JUST_GPIO
+typedef struct _bsp_button_Cfg_t
+{
+    #ifdef BSP_BTN_LONG_PRESS_ENABLE
+    uint16 bsp_long_press_start_cnt;
+    uint16 bsp_long_press_keep_cnt;
+    #endif
+    #if (BSP_COMBINE_BTN_NUM > 0)
+    uint32_t usr_combine_btn_array[BSP_COMBINE_BTN_NUM];
+    uint8 combine_btn_num;
+    #endif
+    const GPIO_Pin_e col_pin[MATRIX_KEYBOARD_ROW];
+    const GPIO_Pin_e row_pin[MATRIX_KEYBOARD_ROW];
+    bsp_app* bsp_evt_cb;
+} bsp_button_Cfg_t;
+/*********************************************************************
+    MACROS
+*/
+#define BSP_SOFT_POLLING_EVT (0x0001)
+#define BSP_POWER_ON_EVT (0x0004)
 
-#if (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_GPIO)
+#define POWER_REPEATED_RELATIVE_TIME (210 * 1000 / 625)
+#define BSP_SOFT_SCAN_POLLING_TIME (10)
 
-#define BSP_SINGLE_BTN_NUM                                  (GPIO_SINGLE_BTN_NUM)
-#define BSP_COMBINE_BTN_NUM                                 (2)
-#define BSP_TOTAL_BTN_NUM                                   (BSP_SINGLE_BTN_NUM + BSP_COMBINE_BTN_NUM)
-
-#elif  (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_KSCAN)
-
-#define BSP_SINGLE_BTN_NUM                                  (NUM_KEY_ROWS * NUM_KEY_COLS)
-#define BSP_COMBINE_BTN_NUM                                 (2)
-#define BSP_TOTAL_BTN_NUM                                   (BSP_SINGLE_BTN_NUM + BSP_COMBINE_BTN_NUM)
-
-#elif  (BSP_BTN_HARDWARE_CONFIG == BSP_BTN_GPIO_AND_KSCAN)
-
-#define BSP_KSCAN_SINGLE_BTN_NUM                            (NUM_KEY_ROWS * NUM_KEY_COLS)
-#define BSP_GPIO_SINGLE_BTN_NUM                             (GPIO_SINGLE_BTN_NUM)
-
-#define BSP_KSCAN_COMBINE_BTN_NUM                           (1)
-#define BSP_GPIO_COMBINE_BTN_NUM                            (1)
-
-#define BSP_SINGLE_BTN_NUM                                  (BSP_KSCAN_SINGLE_BTN_NUM + BSP_GPIO_SINGLE_BTN_NUM)
-#define BSP_COMBINE_BTN_NUM                                 (BSP_KSCAN_COMBINE_BTN_NUM + BSP_GPIO_COMBINE_BTN_NUM)
-#define BSP_TOTAL_BTN_NUM                                   (BSP_SINGLE_BTN_NUM + BSP_COMBINE_BTN_NUM)
-
-#else
-
-#error "error bsp button config,please check"
-
-#endif
-
-
-extern BTN_T usr_sum_btn_array[BSP_TOTAL_BTN_NUM];
-#if (BSP_COMBINE_BTN_NUM > 0)
-extern uint32_t usr_combine_btn_array[BSP_COMBINE_BTN_NUM];
-#endif
-
-extern bool bsp_btn_gpio_flag;
-extern bool bsp_btn_kscan_flag;
-
-typedef void (*bsp_btn_callback_t)(uint8_t evt);
-extern bsp_btn_callback_t bsp_btn_cb;
-
-#define BSP_BTN_EVT_SYSTICK                                 (0x0010)
-#define KSCAN_WAKEUP_TIMEOUT_EVT                            (0x0020)
-#define BSP_BTN_EVT_DBG                                     (0x0040)
-
-uint16 Bsp_Btn_ProcessEvent( uint8 task_id, uint16 events);
-void   Bsp_Btn_Init( uint8 task_id );
-
-#if ((BSP_BTN_HARDWARE_CONFIG == BSP_BTN_JUST_KSCAN) ||  (BSP_BTN_HARDWARE_CONFIG ==BSP_BTN_GPIO_AND_KSCAN))
-extern KSCAN_ROWS_e rows[NUM_KEY_ROWS];
-extern KSCAN_COLS_e cols[NUM_KEY_COLS];
-#endif
-
+void system_run_keyboard_checking(void);
+void kscan_enter_power_off_gpio_option(void);
+void btp_button_init(bsp_button_Cfg_t* button_cfg);
+uint16 Bsp_Btn_ProcessEvent(uint8 task_id, uint16 events);
+void Bsp_Btn_Init(uint8 task_id);
 
 /*********************************************************************
 *********************************************************************/

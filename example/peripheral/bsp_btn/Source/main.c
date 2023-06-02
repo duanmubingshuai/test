@@ -166,8 +166,8 @@ static void hal_low_power_io_init(void)
     DCDC_CONFIG_SETTING(0x0a);
     DCDC_REF_CLK_SETTING(1);
     DIG_LDO_CURRENT_SETTING(0x01);
-    //hal_pwrmgr_RAM_retention(RET_SRAM0|RET_SRAM1|RET_SRAM2);
-    hal_pwrmgr_RAM_retention(RET_SRAM0);
+    hal_pwrmgr_RAM_retention(RET_SRAM0|RET_SRAM1|RET_SRAM2);
+//    hal_pwrmgr_RAM_retention(RET_SRAM0);
     hal_pwrmgr_RAM_retention_set();
     hal_pwrmgr_LowCurrentLdo_enable();
 }
@@ -230,7 +230,7 @@ int  main(void)
     g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_XTAL_16M;SYS_CLK_DLL_48M;SYS_CLK_DLL_64M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
     drv_irq_init();
     init_config();

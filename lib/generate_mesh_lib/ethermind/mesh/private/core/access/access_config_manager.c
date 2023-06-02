@@ -1180,17 +1180,19 @@ API_RESULT MS_access_cm_set_friendship_role
     /* Lock */
     /* TODO: Parameter Validation */
     retval = API_SUCCESS;
-
+    UINT8   role;
     /**
         Check if the current friend role or next friend role is LPN,
         try to send heartbeat.
     */
-    if ((MS_FRND_ROLE_LPN == frnd_role) || (MS_FRND_ROLE_LPN == ms_friend_role))
+    role = ms_friend_role;
+    ms_friend_role = frnd_role;
+
+    if ((MS_FRND_ROLE_LPN == frnd_role) || (MS_FRND_ROLE_LPN == role))
     {
         MS_trn_trigger_heartbeat(1 << MS_FEATURE_LPN);
     }
 
-    ms_friend_role = frnd_role;
     ACCESS_TRC("[CM] Set current friendship role 0x%02X\n", frnd_role);
     /* Unlock */
     return retval;
@@ -3732,6 +3734,10 @@ API_RESULT MS_access_cm_reset(UINT8 role)
         );
     }
 
+    /* Reset Reply Cache and net cache*/
+    ltrn_init_replay_cache();
+    MS_INIT_GLOBAL_ARRAY(NET_CACHE_ELEMENT, net_cache, MS_CONFIG_LIMITS(MS_NET_CACHE_SIZE), 0x00);
+    net_init_cache();
     /* Clear DevKey Information */
     ms_dev_key_table_entries = 0;
     ms_dev_key_table_pointer = ms_start_unicast_addr;
@@ -3765,6 +3771,8 @@ API_RESULT MS_access_cm_reset(UINT8 role)
 
     MS_net_set_seq_num_state(&seq_number_state);
     ms_provisioner_addr = MS_NET_ADDR_UNASSIGNED;
+    extern UCHAR ms_stack_init_state;
+    ms_stack_init_state = MS_STACK_INIT_UNDEFINED;
     retval = API_SUCCESS;
     return retval;
 }

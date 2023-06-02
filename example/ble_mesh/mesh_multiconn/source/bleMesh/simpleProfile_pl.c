@@ -72,7 +72,6 @@ static uint16_t appl_simpleProfile_data_out_ccd_cb(uint16_t conn_hndl, uint8_t e
         private_conn_hndl = conn_hndl;
         BLEBRRPL_LOG("Simple Profile Out CCD Enabled");
         MS_private_server_adv_stop();
-        blebrr_scan_enable();
     }
     else
     {

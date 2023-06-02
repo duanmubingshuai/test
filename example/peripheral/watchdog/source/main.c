@@ -63,8 +63,8 @@ extern void hal_rom_boot_init(void);
 */
 
 #define   BLE_MAX_ALLOW_CONNECTION              1
-#define   BLE_MAX_ALLOW_PKT_PER_EVENT_TX        4
-#define   BLE_MAX_ALLOW_PKT_PER_EVENT_RX        4
+#define   BLE_MAX_ALLOW_PKT_PER_EVENT_TX        3
+#define   BLE_MAX_ALLOW_PKT_PER_EVENT_RX        3
 #define   BLE_PKT_VERSION                       BLE_PKT_VERSION_5_1 //BLE_PKT_VERSION_5_1 //BLE_PKT_VERSION_5_1     
 
 
@@ -233,7 +233,7 @@ int  main(void)
     g_system_clk = SYS_CLK_XTAL_16M;//SYS_CLK_XTAL_16M;//SYS_CLK_DLL_64M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
     drv_irq_init();
     init_config();

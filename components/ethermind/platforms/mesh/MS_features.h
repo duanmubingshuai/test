@@ -101,8 +101,9 @@
     #endif /* !((defined MS_PROXY_SERVER) || (defined MS_PROXY_CLIENT)) */
 #endif /* MS_PROXY_SUPPORT */
 
-#undef MS_PRIVATE_SUPPORT
-
+#if (MAX_NUM_LL_CONN == 2)
+    #define MS_PRIVATE_SUPPORT
+#endif
 /*
     MS_FRIEND_SUPPORT
 
@@ -539,6 +540,8 @@
 //#define CONFIG_DEBUG
 /* #define CONFIG_DEBUG */
 
-#undef BLE_CLIENT_ROLE
+#if (GATT_PVNR == 1)
+    #define BLE_CLIENT_ROLE
+#endif
 #endif /* _H_MS_FEATURES_ */
 

@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************
+/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -155,14 +155,20 @@ void _rom_sec_boot_init(void)
     }
 }
 
-void _rom_efuse_version_init(void)
+
+bool _rom_efuse_version_init(void)
 {
     uint32_t buf[2];
     efuse_read(EFUSE_BLOCK_3,buf);
     lib_efuse_load((uint32_t*)buf);
+
+    if(!buf[0] && !buf[1])
+        return FALSE;
+    else
+        return TRUE;
 }
 
-
+#if (0)
 //int ota_sec_efuse_lock(void)
 //{
 //  efuse_lock(EFUSE_BLOCK_1);
@@ -170,7 +176,6 @@ void _rom_efuse_version_init(void)
 //  return PPlus_SUCCESS;
 //}
 
-#if (0)
 /*******************************************************************************
     @fn          pplus_LoadMACFromChipMAddr
 

@@ -50,6 +50,9 @@
 #include "multiRoleProfile.h"
 #include "multi_role.h"
 #include "multi_schedule.h"
+#ifdef PHY_OTA_ENABLE
+    #include "ota_app_service.h"
+#endif
 /*********************************************************************
     MACROS
 */
@@ -74,7 +77,7 @@
 
 #define DEFAULE_SCAN_MAX_NUM                    5
 // Scan duration in ms
-#define DEFAULT_SCAN_DURATION                   1000
+#define DEFAULT_SCAN_DURATION                   50
 
 // Slave latency to use if automatic parameter update request is enabled
 #define DEFAULT_UPDATE_SLAVE_LATENCY          0
@@ -145,7 +148,6 @@ uint16 MR_WakeupCnt = 0;
 
 // Task ID for internal task/event processing
 uint8 multiRole_TaskId;
-
 //
 //MultiRoleApp_Link_t g_MRLink[MAX_CONNECTION_NUM];
 
@@ -172,7 +174,9 @@ static void multiRoleApp_ProcessOSALMsg( osal_event_hdr_t* pMsg );
 static void multiRoleAppProcessGATTMsg( gattMsgEvent_t* pMsg );
 extern void ll_dbg_show(void);
 
-
+extern void TRNG_INIT(void);
+extern uint8_t TRNG_Rand(uint8_t* buf,uint8_t len);
+extern uint8 gapMultiRole_TaskID;
 /*********************************************************************
     LOCAL VARIABLES
 */
@@ -228,27 +232,18 @@ void multiRoleApp_Init( uint8 task_id )
 {
     multiRole_TaskId = task_id;
     uint8   roleProfile = 0;
+    TRNG_INIT();
     #if ( MAX_CONNECTION_SLAVE_NUM > 0 )
     {
         roleProfile |= GAP_PROFILE_PERIPHERAL;
         multiRoleAPP_AdvInit();
-        uint32_t add_adv_node = 0;
-
-        for(uint8_t i=0; i<MAX_CONNECTION_SLAVE_NUM; i++)
-        {
-            add_adv_node = (add_adv_node&0xFFFFFFFF) | 1<<(i+4);
-        }
-
-        add_adv_node |= 0x01;
-
-        if( SCH_SUCCESS == muliSchedule_config( MULTI_SCH_ADV_MODE, add_adv_node ) )
-        {
-            LOG("Multi Role advertising scheduler success :%x\n",add_adv_node);
-        }
-
+        llInitFeatureSetDLE(TRUE);
         // Initialize GATT attributes
         GGS_AddService( GATT_ALL_SERVICES );         // GAP
         GATTServApp_AddService( GATT_ALL_SERVICES ); // GATT attributes
+        #ifdef PHY_OTA_ENABLE
+        ota_app_AddService();
+        #endif
         MultiProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile
         MultiProfile_RegisterAppCBs(&multiRole_ProfileCBs);
     }
@@ -258,16 +253,6 @@ void multiRoleApp_Init( uint8 task_id )
         roleProfile |= GAP_PROFILE_CENTRAL;
         multiRoleAPP_ScIn_Init();
         LOG("Start muliSchedule_config \n");
-        uint8 ret = muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
-
-        if( SCH_SUCCESS == ret )
-        {
-            LOG("Multi Role scanning scheduler success \n");
-        }
-        else
-        {
-            LOG("Multi Role scanning scheduler failure %d\n",ret);
-        }
     }
     #endif
     GAPMultiRole_SetParameter( GAPMULTIROLE_PROFILEROLE,sizeof(uint8),&roleProfile);
@@ -340,7 +325,38 @@ uint16 multiRoleApp_ProcessEvent( uint8 task_id, uint16 events )
         else
             LOG("MAX available connection %d\n",numConns);
 
-        osal_start_reload_timer(multiRole_TaskId,MULTIROLE_PERIOD_EVT,500);
+        #if ( MAX_CONNECTION_SLAVE_NUM > 0 )
+        {
+            uint32_t add_adv_node = 0;
+
+            for(uint8_t i=0; i<MAX_CONNECTION_SLAVE_NUM; i++)
+            {
+                add_adv_node = (add_adv_node&0xFFFFFFFF) | 1<<(i+4);
+            }
+
+            add_adv_node |= 0x01;
+
+            if( SCH_SUCCESS == muliSchedule_config( MULTI_SCH_ADV_MODE, add_adv_node ) )
+            {
+                LOG("Multi Role advertising scheduler success :%x\n",add_adv_node);
+            }
+        }
+        #endif
+        #if ( MAX_CONNECTION_MASTER_NUM > 0 )
+        {
+            uint8 ret = muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
+
+            if( SCH_SUCCESS == ret )
+            {
+                LOG("Multi Role scanning scheduler success \n");
+            }
+            else
+            {
+                LOG("Multi Role scanning scheduler failure %d\n",ret);
+            }
+        }
+        #endif
+        osal_start_reload_timer(multiRole_TaskId,MULTIROLE_PERIOD_EVT,5000);
         return ( events ^ START_DEVICE_EVT );
     }
 
@@ -458,6 +474,15 @@ static void multiRoleEstablishCB( uint8 status,uint16 connHandle,GAPMultiRole_St
             {
                 muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
             }
+            else
+            {
+                ///2023 04 25 add: restart multi schedule state machine
+                if(osal_get_timeoutEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT) == 0)
+                {
+                    AT_LOG("restart multi schedule state machine\n");
+                    osal_start_timerEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT,MULTI_SCH_DELAY);
+                }
+            }
 
             #endif
         }
@@ -526,6 +551,15 @@ static void multiRoleTerminateCB( uint16 connHandle,GAPMultiRole_State_t role,ui
 
             if(scan_init_node_num < (MAX_CONNECTION_MASTER_NUM - curr_master_conn_num))
                 muliSchedule_config( MULTI_SCH_INITIATOR_MODE, 0x01 );
+            else
+            {
+                ///2023 04 25 add: restart multi schedule state machine
+                if(osal_get_timeoutEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT) == 0)
+                {
+                    AT_LOG("restart multi schedule state machine\n");
+                    osal_start_timerEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT,MULTI_SCH_DELAY);
+                }
+            }
         }
         else
             AT_LOG("error\n");
@@ -758,31 +792,27 @@ static void multiRoleScanDoneCB( GAPMultiRolScanner_t* node )
             multiAddSlaveConnList( node->addrtype,node->addr );
         }
 
-        LOG("node %p\n",node);
-        LOG( bdAddr2Str( node->addr ) );
-        LOG("--addrtype %d\n",node->addrtype);
+//        LOG("node %p\n",node);
+//        LOG( bdAddr2Str( node->addr ) );
+//        LOG("--addrtype %d\n",node->addrtype);
 
         if( node->advDatalen > 0)
         {
-            LOG("advDatalen %d\n",node->advDatalen);
-
-            for( uint8 i=0; i<node->advDatalen; i++)
-                LOG("0x%02X,",node->advData[i]);
-
-            LOG("\n");
+//            LOG("advDatalen %d\n",node->advDatalen);
+//            for( uint8 i=0; i<node->advDatalen; i++)
+//                LOG("0x%02X,",node->advData[i]);
+//            LOG("\n");
         }
 
         if( node->scanRsplen > 0 )
         {
-            LOG("scanRsplen %d\n",node->scanRsplen);
-
-            for( uint8 i=0; i<node->scanRsplen; i++)
-                LOG("0x%02X,",node->rspData[i]);
-
-            LOG("\n");
+//            LOG("scanRsplen %d\n",node->scanRsplen);
+//            for( uint8 i=0; i<node->scanRsplen; i++)
+//                LOG("0x%02X,",node->rspData[i]);
+//            LOG("\n");
         }
 
-        LOG("\n");
+//        LOG("\n");
         node = node->next;
     }
 
@@ -798,6 +828,11 @@ static void multiRoleScanDoneCB( GAPMultiRolScanner_t* node )
     }
     else
     {
+        //2022 02 14 Increased probability of scanning adv devices
+        uint8  rand_char;
+        TRNG_Rand(&rand_char,1);
+        GAP_SetParamValue( TGAP_GEN_DISC_SCAN, DEFAULT_SCAN_DURATION + (rand_char/*&0x0F*/) );
+        GAP_SetParamValue( TGAP_LIM_DISC_SCAN, DEFAULT_SCAN_DURATION + (rand_char/*&0x0F*/) );
         muliSchedule_config( MULTI_SCH_SCAN_MODE, 0x01 );
     }
 }

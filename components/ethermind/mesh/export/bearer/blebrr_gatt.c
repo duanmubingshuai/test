@@ -197,7 +197,11 @@ API_RESULT blebrr_pl_gatt_connection
     blebrr_gatt.binfo = &buffer;
     buffer.payload = (UCHAR*)&blebrr_gatt_ch_info;
     buffer.length = sizeof(blebrr_gatt_ch_info);
-    retval = MS_brr_add_bearer(BRR_TYPE_GATT, &blebrr_gatt, handle);
+
+    if(mode == BLEBRR_GATT_PROXY_MODE)
+        retval = MS_brr_add_bearer(BRR_TYPE_GATT, &blebrr_gatt, handle);
+    else
+        retval = MS_brr_add_bearer(BRR_TYPE_PB_GATT, &blebrr_gatt, handle);
 
     /* Check the PDU type received and Add bearer to Mesh stack */
     if (BLEBRR_SERVER_ROLE == role)

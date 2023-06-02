@@ -35,9 +35,16 @@ LR_ROM_XIP  0x11020000 0x020000 {
    linkdb.o(+RO)
    sm*.o(+RO)
    gap*.o(+RO)
-  ;  my_printf.o(+RO)
+   my_printf.o(+RO)
    osal_snv.o(+RO)
    *.o(_section_xip_code_, _func_xip_code_.*)
    multi*.o(+RO)
+   ppsp_serv.o(+RO)
+   ppsp_impl.o(+RO)
+   fs.o(+RO)
+   uart.o(+RO)
+   gpio.o(+RO)
+   timer.o(+RO)
+   .ANY(.constdata)
   }
  }  	

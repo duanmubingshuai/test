@@ -36,33 +36,30 @@ static MS_SCHEDULER_SERVER_CB       scheduler_server_appl_cb;
 
 /* --------------------------------------------- Function */
 /**
-    API to initialize Scheduler Server model. 
+    API to initialize Scheduler Server model.
     Description
     This is to initialize Time Server model and to register with Acess layer.Parameters
-    [in] element_handle Element identifier to be associated with the model instance. 
-    [in,out] time_model_handle Model identifier associated with the time model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration. 
-    [in,out] time_setup_model_handle Model identifier associated with the time setup model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration. 
-    [in] appl_cb Application Callback to be used by the Time Server. 
+    [in] element_handle Element identifier to be associated with the model instance.
+    [in,out] time_model_handle Model identifier associated with the time model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration.
+    [in,out] time_setup_model_handle Model identifier associated with the time setup model instance on successful initialization. After power cycle of an already provisioned node, the model handle will have valid value and the same will be reused for registration.
+    [in] appl_cb Application Callback to be used by the Time Server.
     Returns
-    API_SUCCESS or an error code indicating reason for failure 
+    API_SUCCESS or an error code indicating reason for failure
 */
 API_RESULT MS_scheduler_server_init(
-               /* IN */    MS_ACCESS_ELEMENT_HANDLE     element_handle,
-               /* INOUT */ MS_ACCESS_MODEL_HANDLE       * scheduler_model_handle,
-               /* INOUT */ MS_ACCESS_MODEL_HANDLE       * scheduler_setup_model_handle,
-               /* IN */    MS_SCHEDULER_SERVER_CB       appl_cb
-           )
+    /* IN */    MS_ACCESS_ELEMENT_HANDLE     element_handle,
+    /* INOUT */ MS_ACCESS_MODEL_HANDLE*        scheduler_model_handle,
+    /* INOUT */ MS_ACCESS_MODEL_HANDLE*        scheduler_setup_model_handle,
+    /* IN */    MS_SCHEDULER_SERVER_CB       appl_cb
+)
 {
     API_RESULT              rslt;
     MS_ACCESS_NODE_ID       node;
     MS_ACCESS_MODEL         modl;
-
     /* Using default node ID */
     node = MS_ACCESS_DEFAULT_NODE_ID;
-    
     printf(
         "[SCHEDULER_SERVER] Registered Element Handle 0x%02X\n", element_handle);
-
     /* Configure Model */
     modl.model_id.id = MS_MODEL_ID_SCHEDULER_SERVER;
     modl.model_id.type = MS_ACCESS_MODEL_TYPE_SIG;
@@ -74,10 +71,9 @@ API_RESULT MS_scheduler_server_init(
     modl.opcodes = scheduler_server_opcode_list;
     modl.num_opcodes = sizeof(scheduler_server_opcode_list) / sizeof(UINT32);
     rslt = MS_access_register_model(
-                                    node,
-                                    &modl,
-                                    scheduler_model_handle);
-
+               node,
+               &modl,
+               scheduler_model_handle);
     /* Configure Model */
     modl.model_id.id = MS_MODEL_ID_SCHEDULER_SETUP_SERVER;
     modl.model_id.type = MS_ACCESS_MODEL_TYPE_SIG;
@@ -89,13 +85,11 @@ API_RESULT MS_scheduler_server_init(
     modl.opcodes = scheduler_setup_server_opcode_list;
     modl.num_opcodes = sizeof(scheduler_setup_server_opcode_list) / sizeof(UINT32);
     rslt = MS_access_register_model(
-                                    node,
-                                    &modl,
-                                    scheduler_setup_model_handle);
-
+               node,
+               &modl,
+               scheduler_setup_model_handle);
     /* Save Application Callback */
     scheduler_server_appl_cb = appl_cb;
-
     return rslt;
 }
 
@@ -114,12 +108,12 @@ API_RESULT MS_scheduler_server_init(
     \return API_SUCCESS or an error code indicating reason for failure
 */
 API_RESULT MS_scheduler_server_state_update(
-               /* IN */ MS_ACCESS_MODEL_REQ_MSG_CONTEXT    * ctx,
-               /* IN */ MS_ACCESS_MODEL_STATE_PARAMS       * current_state_params,
-               /* IN */ MS_ACCESS_MODEL_STATE_PARAMS       * target_state_params,
-               /* IN */ UINT16                               remaining_time,
-               /* IN */ MS_ACCESS_MODEL_EXT_PARAMS         * ext_params
-           )
+    /* IN */ MS_ACCESS_MODEL_REQ_MSG_CONTEXT*     ctx,
+    /* IN */ MS_ACCESS_MODEL_STATE_PARAMS*        current_state_params,
+    /* IN */ MS_ACCESS_MODEL_STATE_PARAMS*        target_state_params,
+    /* IN */ UINT16                               remaining_time,
+    /* IN */ MS_ACCESS_MODEL_EXT_PARAMS*          ext_params
+)
 {
     API_RESULT rslt = API_FAILURE;
     /* TODO: Check what should be maximum length */
@@ -130,7 +124,6 @@ API_RESULT MS_scheduler_server_state_update(
     MS_IGNORE_UNUSED_PARAM(target_state_params);
     MS_IGNORE_UNUSED_PARAM(remaining_time);
     MS_IGNORE_UNUSED_PARAM(ext_params);
-
     printf(
         "[SCHEDULER_SERVER] State Update.\n");
 
@@ -144,7 +137,6 @@ API_RESULT MS_scheduler_server_state_update(
         param_p = (MS_STATE_SCHEDULER_SCHEDULES_STRUCT*)current_state_params->state;
         MS_PACK_LE_2_BYTE(&buffer[marker], &param_p->schedules);
         marker += 2;
-        
         /* Set Opcode */
         opcode = MS_ACCESS_SCHEDULER_STATUS_OPCODE;
     }
@@ -157,37 +149,26 @@ API_RESULT MS_scheduler_server_state_update(
         printf(
             "MS_STATE_SCHEDULER_ENTRY_INDEX_T\n");
         param_p = (MS_STATE_SCHEDULER_ENTRY_STRUCT*)current_state_params->state;
-        
         buffer[marker] = (param_p->index & 0xf) | 0x10;
         marker += 1;
-
         buffer[marker] = (param_p->year & 0x7f)|((param_p->month & 0x1) << 7);
         marker += 1;
-
         buffer[marker] = (param_p->month >> 1) & 0xff;
         marker += 1;
-
         buffer[marker] = ((param_p->month >> 9) & 0x07)|((param_p->day & 0x1f) << 3);
         marker += 1;
-
         buffer[marker] = (param_p->hour & 0x1f)|((param_p->minute & 0x07) << 5);
         marker += 1;
-
         buffer[marker] = ((param_p->minute >> 3) & 0x07)|((param_p->second & 0x1f) << 3);
         marker += 1;
-
         buffer[marker] = ((param_p->second >> 5) & 0x01)|((param_p->dayofweek & 0x7f) << 1);
         marker += 1;
-
         buffer[marker] = (param_p->action & 0x0f)|((param_p->transition_time & 0xf) << 4);
         marker += 1;
-
         buffer[marker] = (param_p->transition_time >> 4)|((param_p->scene_number & 0xf) << 4);
         marker += 1;
-
         buffer[marker] = (param_p->scene_number >> 4) & 0xff;
         marker += 1;
-        
         /* Set Opcode */
         opcode = MS_ACCESS_SCHEDULER_ACTION_STATUS_OPCODE;
     }
@@ -212,18 +193,17 @@ API_RESULT MS_scheduler_server_state_update(
     }
 
     rslt = MS_access_reply
-             (
-                 &ctx->handle,
-                 ctx->daddr,
-                 ctx->saddr,
-                 ctx->subnet_handle,
-                 ctx->appkey_handle,
-                 ACCESS_INVALID_DEFAULT_TTL,
-                 opcode,
-                 pdu_ptr,
-                 marker
-             );
-
+           (
+               &ctx->handle,
+               ctx->daddr,
+               ctx->saddr,
+               ctx->subnet_handle,
+               ctx->appkey_handle,
+               ACCESS_INVALID_DEFAULT_TTL,
+               opcode,
+               pdu_ptr,
+               marker
+           );
     return rslt;
 }
 
@@ -261,7 +241,6 @@ API_RESULT scheduler_server_cb(
     MS_ACCESS_MODEL_STATE_PARAMS        state_params;
     MS_STATE_SCHEDULER_ENTRY_INDEX_STRUCT   param;
     MS_STATE_SCHEDULER_ENTRY_STRUCT     param_entry;
-    
 //    MS_STATE_TIME_TAI_UTC_DELTA_STRUCT  param_delta;
 //    MS_STATE_TIME_ROLE_STRUCT           param_role;
     UINT16        marker;
@@ -303,21 +282,22 @@ API_RESULT scheduler_server_cb(
         /* Get Request Type */
         req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_GET;
         req_type.to_be_acked = 0x01;
-        
         marker = 0;
         param.index = data_param[marker];
         marker += 1;
+
         if(param.index > 0x0f)
         {
             retval = API_SUCCESS;
             return retval;
         }
-        
+
         /* Assign reqeusted state type to the application */
         state_params.state_type = MS_STATE_SCHEDULER_ENTRY_INDEX_T;
         state_params.state = &param;
     }
     break;
+
     case MS_ACCESS_SCHEDULER_ACTION_SET_OPCODE:
     case MS_ACCESS_SCHEDULER_ACTION_SET_UNACKNOWLEDGED_OPCODE:
     {
@@ -325,17 +305,17 @@ API_RESULT scheduler_server_cb(
             "MS_ACCESS_SCHEDULER_ACTION_SET_OPCODE\n");
         /* Get Request Type */
         req_type.type = MS_ACCESS_MODEL_REQ_MSG_T_SET;
+
         if(opcode == MS_ACCESS_SCHEDULER_ACTION_SET_OPCODE)
             req_type.to_be_acked = 0x01;
         else
             req_type.to_be_acked = 0x00;
 
         marker = 0;
-
         param_entry.index = data_param[marker] & 0x0f;
         marker += 1;
-
         param_entry.year = (data_param[marker] & 0x7f)/*|0x01*/;
+
         if(param_entry.year > 0x64)
         {
             retval = API_SUCCESS;
@@ -344,14 +324,13 @@ API_RESULT scheduler_server_cb(
 
         UINT16 month;
         month = (data_param[marker] >> 7) | ((UINT16)(data_param[marker+1]) << 1)
-            | ((UINT16)(data_param[marker+2] & 0x07) << 9);
+                | ((UINT16)(data_param[marker+2] & 0x07) << 9);
         param_entry.month = month;
         marker += 2;
-
         param_entry.day = data_param[marker] >> 3;
         marker += 1;
-
         param_entry.hour = data_param[marker] & 0x1f;
+
         if(param_entry.hour > 0x19)
         {
             retval = API_SUCCESS;
@@ -362,43 +341,37 @@ API_RESULT scheduler_server_cb(
         minute = ((data_param[marker] >> 5) & 0x7) | (((data_param[marker+1]) & 0x7)<<3);
         param_entry.minute = minute;
         marker += 1;
-
         UINT8 second;
         second = (data_param[marker] >> 3) | ((data_param[marker + 1]&0x01) << 5);
         param_entry.second = second;
         marker += 1;
-
         param_entry.dayofweek = data_param[marker] >> 1;
         marker += 1;
-
         param_entry.action = data_param[marker] & 0xf;
-
         UINT8 transition_time;
         transition_time = (data_param[marker] >> 4) | ((data_param[marker + 1]&0x0f) << 4);
         param_entry.transition_time = transition_time;
         marker += 1;
-
         UINT16 scene_number;
         scene_number = (data_param[marker] >> 4) | ((UINT16)(data_param[marker+1]) << 4)
-            | ((UINT16)(data_param[marker+2] & 0x0f) << 12);
+                       | ((UINT16)(data_param[marker+2] & 0x0f) << 12);
         param_entry.scene_number = scene_number;
         marker += 2;
-        
         /* Assign reqeusted state type to the application */
         state_params.state_type = MS_STATE_SCHEDULER_ENTRY_T;
         state_params.state = &param_entry;
     }
     break;
+
     default:
         printf(
             "Invalid Opcode: 0x%02X\n", opcode);
         return retval;
     }
 
-    
-
     /* Application callback */
-    if (NULL != scheduler_server_appl_cb) {
+    if (NULL != scheduler_server_appl_cb)
+    {
         scheduler_server_appl_cb(&req_context, &req_raw, &req_type, &state_params, ext_params_p);
     }
 

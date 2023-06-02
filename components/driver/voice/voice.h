@@ -50,6 +50,13 @@ extern "C" {
 #include "types.h"
 #include "gpio.h"
 #include "adc.h"
+
+#define VOICE_RECORD_START_EVT                        0x0001
+#define VOICE_RECORD_STOP_EVT                         0x0002
+#define VOICE_OUTQUEUE_EVT                            0X0004
+#define VOICE_ENCODE_EVT                              0X0008
+#define VOICE_VOICE_RECORD_STOP_EVT                   0X0010
+
 #define    MAX_VOICE_SAMPLE_SIZE        512
 #define    MAX_VOICE_SAMPLE_ID          (MAX_VOICE_SAMPLE_SIZE-1)
 #define    HALF_VOICE_SAMPLE_SIZE       256

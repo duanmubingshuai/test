@@ -48,6 +48,7 @@ void c_start(void)
     const uint8_t* src;
     uint8_t* dest;
     uint8_t* edest;
+    spif_config(SYS_CLK_DLL_64M, 1, 0x801003b, 0, 0);
     AP_PCR->CACHE_BYPASS = 1; //just bypass cache
     //spif_config(SYS_CLK_DLL_64M, 1, 0x801003b, 0, 0);
     /*  Clear .bss.  We'll do this inline (vs. calling memset) just to be

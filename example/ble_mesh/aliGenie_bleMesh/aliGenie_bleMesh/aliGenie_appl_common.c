@@ -1,4 +1,4 @@
-﻿/**************************************************************************************************
+/**************************************************************************************************
 
     Phyplus Microelectronics Limited confidential and proprietary.
     All rights reserved.
@@ -397,6 +397,10 @@ API_RESULT UI_app_config_server_callback (
         light_blink_set(LIGHT_RED,LIGHT_BLINK_FAST,  3);
         ERROR_PRINT("[ST TimeOut CB]\n");
         UI_prov_state=0;
+        nvs_reset(NVS_BANK_PERSISTENT);
+        BRR_HANDLE handle;
+        handle = 1;
+        MS_brr_remove_bearer(BRR_TYPE_GATT, &handle);
         EM_start_timer (&thandle, 5, timeout_cb, NULL, 0);
         break;
 

@@ -404,6 +404,7 @@
     #define LL_ConnUpdate _symrom_LL_ConnUpdate
     #define LL_CreateConn _symrom_LL_CreateConn
     #define LL_CreateConnCancel _symrom_LL_CreateConnCancel
+    #define LL_CreateConnCancel0 _symrom_LL_CreateConnCancel0
     #define LL_CTE_Report_FailedCback _symrom_LL_CTE_Report_FailedCback
     #define LL_CtrlToHostFlowControl _symrom_LL_CtrlToHostFlowControl
     #define LL_DataLengthChangeCback _symrom_LL_DataLengthChangeCback
@@ -583,6 +584,7 @@
     #define LL_prdScanTimerExpProcess _symrom_LL_prdScanTimerExpProcess
     #define ll_processBasicIRQ _symrom_ll_processBasicIRQ
     #define LL_ProcessEvent _symrom_LL_ProcessEvent
+    #define LL_ProcessEvent0 _symrom_LL_ProcessEvent0
     /*  #define ll_processExtAdvIRQ _symrom_ll_processExtAdvIRQ
     #define ll_processExtInitIRQ _symrom_ll_processExtInitIRQ
     #define ll_processExtScanIRQ _symrom_ll_processExtScanIRQ
@@ -596,6 +598,7 @@
     #define LL_RandCback _symrom_LL_RandCback
     #define LL_READ_Anatenna_Info _symrom_LL_READ_Anatenna_Info
     #define ll_read_rxfifo _symrom_ll_read_rxfifo
+    #define ll_read_rxfifo0 _symrom_ll_read_rxfifo0
     #define LL_ReadAdvChanTxPower _symrom_LL_ReadAdvChanTxPower
     #define LL_ReadBDADDR _symrom_LL_ReadBDADDR
     #define LL_ReadCarrSens _symrom_LL_ReadCarrSens

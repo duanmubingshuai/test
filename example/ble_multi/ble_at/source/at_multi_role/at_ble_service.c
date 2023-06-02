@@ -413,18 +413,31 @@ static uint8 multiProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t* pAttr,
     // 16B UUID
     if ( pAttr->type.len == ATT_UUID_SIZE )
     {
-        if(osal_memcmp(multiProfilechar1UUID,pAttr->type.uuid,16) || osal_memcmp(multiProfilechar2UUID,pAttr->type.uuid,16) )
+        if(osal_memcmp(multiProfilechar1UUID,pAttr->type.uuid,ATT_UUID_SIZE))
         {
             // No need for "GATT_SERVICE_UUID" or "GATT_CLIENT_CHAR_CFG_UUID" cases;
             // gattserverapp handles those reads
-            *pLen = multiChar2NotifyLen;
+            *pLen = sizeof(multiProfileChar1);
             VOID osal_memcpy( pValue, pAttr->pValue, ATT_MTU_SIZE );
+        }
+        else if(osal_memcmp(multiProfilechar2UUID,pAttr->type.uuid,ATT_UUID_SIZE))
+        {
+            *pLen = multiChar2NotifyLen;
+            VOID osal_memcpy( pValue, pAttr->pValue, multiChar2NotifyLen);
         }
         else
         {
             // Should never get here! (characteristics 3 and 4 do not have read permissions)
             *pLen = 0;
             status = ATT_ERR_ATTR_NOT_FOUND;
+        }
+    }
+    else if (pAttr->type.len == ATT_BT_UUID_SIZE)
+    {
+        if(osal_memcmp(clientCharCfgUUID,pAttr->type.uuid,ATT_BT_UUID_SIZE))
+        {
+            *pLen = multiChar2NotifyLen;
+            VOID osal_memcpy( pValue, pAttr->pValue, multiChar2NotifyLen);
         }
     }
 

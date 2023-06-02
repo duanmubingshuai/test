@@ -20,6 +20,7 @@
 #include <stdarg.h>
 
 #include "OSAL.h"
+#include "rom_sym_def.h"
 
 /* --------------------------------------------- Global Definitions */
 #define EM_HAVE_STATIC_DECL

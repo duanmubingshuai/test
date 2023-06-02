@@ -229,10 +229,10 @@ static void hal_init(void)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 int  main(void)
 {
-    g_system_clk = SYS_CLK_DBL_32M;//SYS_CLK_DLL_64M;//SYS_CLK_XTAL_16M;
+    g_system_clk = SYS_CLK_DLL_48M;
     g_clk32K_config = CLK_32K_RCOSC;//CLK_32K_XTAL;//CLK_32K_XTAL,CLK_32K_RCOSC
     #if(FLASH_PROTECT_FEATURE == 1)
-    hal_flash_lock();
+    hal_flash_enable_lock(MAIN_INIT);
     #endif
     drv_irq_init();
     init_config();

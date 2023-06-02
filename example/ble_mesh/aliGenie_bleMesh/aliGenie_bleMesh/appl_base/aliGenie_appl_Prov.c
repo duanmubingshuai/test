@@ -167,6 +167,8 @@ void UI_prov_cb_PROVISIONING_COMPLETE(PROV_HANDLE* phandle,UCHAR event_type,API_
         blebrr_gatt_mode_set(BLEBRR_GATT_PROXY_MODE);
         /* LED ON/OFF for Provisioning Indication Abstraction Call */
         mesh_model_device_provisioned_ind_pl();
+        BRR_HANDLE handle = 1;
+        MS_brr_remove_bearer(BRR_TYPE_GATT, &handle);
         //light_blink_set(LIGHT_BLUE, LIGHT_BLINK_FAST,3);l???????
         UI_prov_state=ALIG_CONFIG;
     }

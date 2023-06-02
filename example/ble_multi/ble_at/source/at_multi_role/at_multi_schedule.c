@@ -39,9 +39,6 @@
 /*******************************************************************************************************
     @ Description    :  macro define
  *******************************************************************************************************/
-#define MULTI_SCH_DELAY         500     // unit ms
-
-
 #define MULTI_SCH_ADV_DURATION_TIME     4 //ms
 
 
@@ -777,10 +774,12 @@ void multiRole_insert_node(uint8 mode,uint16 param, uint16 idx_len, void* pValue
             pAdv->advParam.pScanRspData = osal_mem_alloc( len );
             osal_memcpy( pAdv->advParam.pScanRspData,(uint8*)pValue,len );
             AT_LOG("set scan rsp data:");
+
             for(uint8_t i = 0; i < pAdv->advParam.ScanRspDataLen; i++)
             {
-              AT_LOG("%02X",pAdv->advParam.pScanRspData[i]);
+                AT_LOG("%02X",pAdv->advParam.pScanRspData[i]);
             }
+
             AT_LOG("\n");
             break;
 
@@ -849,7 +848,7 @@ void multiRole_insert_node(uint8 mode,uint16 param, uint16 idx_len, void* pValue
         {
             while( node != NULL)
             {
-                LOG("node %p\n",node);
+                LOG("node %p role %d\n",node,node->role);
 
                 if( node->next == NULL )
                 {
@@ -1528,11 +1527,17 @@ static void MultiScheduleInitating(multiScehdule_t* node)
             node->roleScd.initiate.initiating = TRUE;
 //          LOG( bdAddr2Str( lnode->addr ) );
             osal_start_timerEx(gapMultiRole_TaskID, CONN_TIMEOUT_EVT,node->nextScdTime);
-            LOG("start establish success \n");
+            LOG("start establish success TO :%d\n",node->nextScdTime);
         }
         else
         {
             LOG("start establish failure ret %d\n",ret);
+
+            ///2023 04 25 add: restart multi schedule state machine
+            if(osal_get_timeoutEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT) == 0)
+            {
+                osal_start_timerEx(gapMultiRole_TaskID,MULTI_SCHEDULE_EVT,MULTI_SCH_DELAY);
+            }
         }
     }
 }
@@ -1654,7 +1659,7 @@ GAPMultiLinkInfo_t multiConfigLink_status(uint8 opcode,void* pkt)
 
         if( tNode->RoleState == Master_Role )
         {
-            multiAddSlaveConnList( tNode->peerDevAddrType,tNode->peerDevAddr );
+            // multiAddSlaveConnList( tNode->peerDevAddrType,tNode->peerDevAddr );
         }
 
         #endif

@@ -41,10 +41,10 @@
 #endif
 
 #if (TIM2_IRQHANDLER1_ENABLE==TRUE)
-extern uint32_t  g_TIM2_IRQ_TIM3_CurrCount;
-extern uint32_t  g_TIM2_IRQ_PendingTick;
-extern uint32 osal_sys_tick;
-extern int clear_timer_int(AP_TIM_TypeDef *TIMx);
+    extern uint32_t  g_TIM2_IRQ_TIM3_CurrCount;
+    extern uint32_t  g_TIM2_IRQ_PendingTick;
+    extern uint32 osal_sys_tick;
+    extern int clear_timer_int(AP_TIM_TypeDef* TIMx);
 #endif
 
 AP_TIM_TypeDef* const TimerIndex[FREE_TIMER_NUMBER]= {AP_TIM5,AP_TIM6};

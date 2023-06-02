@@ -83,6 +83,18 @@ extern uint8 bleMesh_TaskID;   // Task ID for internal task/event processing
 #define BLEMESH_GAP_TERMINATE                               0x1000
 #define BLEMESH_GAP_MSG_EVT                                 0x2000
 
+// ! row gpio
+#define KSCAN_ROW_0_GPIO        GPIO_P00
+#define KSCAN_ROW_1_GPIO        GPIO_P24
+#define KSCAN_ROW_2_GPIO        GPIO_P07
+#define KSCAN_ROW_3_GPIO        GPIO_P34
+
+// ! col gpio
+#define KSCAN_COL_0_GPIO        GPIO_P11
+#define KSCAN_COL_1_GPIO        GPIO_P23
+#define KSCAN_COL_2_GPIO        GPIO_P25
+#define KSCAN_COL_3_GPIO        GPIO_P18
+
 /*********************************************************************
     FUNCTIONS
 */
