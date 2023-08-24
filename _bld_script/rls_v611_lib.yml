@@ -1,0 +1,34 @@
+---
+#release tag name @ current repo
+ReleaseTagName: 
+- tag_v611_lib_2
+
+ReleaseBranchName:
+- PHY62XX_SDK_6.1.1_2
+
+#build config
+# - yaml file
+BuildConfig: 
+- bld_v611_lib
+
+#Protect file config
+ProtectFile:
+- rls_example:
+  - bld_v611_lib
+- remove_file:
+  - misc\*.asm 
+  - misc\*.map 
+  - misc\*.axf 
+  - '*.py'
+  - '*.txt'
+- remove_folder:
+  - lib\generate_lib\
+  - lib\otpbin_lib\
+  - lib\otpbin_sbpusb\
+  - lib\otpbin_usb\
+  - lib\src_ble\
+  # - example\fpga_app\
+  - components\
+  # - components\libraries\dwc\
+  # - components\libraries\libc\
+  - misc\
