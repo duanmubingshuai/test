@@ -1,24 +1,24 @@
 ---
 #release tag name @ current repo
 ReleaseTagName: 
-- tag_v612_test
+- tag_v611_lib
 
 ReleaseBranchName:
-- PHY62XX_SDK_6.1.2
+- PHY62XX_SDK_6.1.1_lib
 
 #build config
 # - yaml file
 BuildConfig: 
-- bld_v612
+- bld_v611_lib
 
 #Protect file config
 ProtectFile:
 - rls_example:
-  - bld_v612
+  - bld_v611_lib
 - remove_file:
-  - misc\*.asm 
-  - misc\*.map 
-  - misc\*.axf 
+  # - misc\*.asm 
+  # - misc\*.map 
+  # - misc\*.axf 
   - '*.py'
   - '*.txt'
 - remove_folder:
@@ -27,6 +27,9 @@ ProtectFile:
   - lib\otpbin_sbpusb\
   - lib\otpbin_usb\
   - lib\src_ble\
-  - example\fpga_app\
-  - components\libraries\dwc\
-  - components\libraries\libc\
+  # - example\fpga_app\
+  - components\
+  # - components\libraries\dwc\
+  # - components\libraries\libc\
+  - misc\
+  - _bld_script\
